@@ -967,6 +967,7 @@ public class VirtualStorageGroupProcessor {
         long currTime = insertTabletPlan.getTimes()[loc];
         // skip points that do not satisfy TTL
         if (!isAlive(currTime)) {
+          logger.info("Insert tablet out of TTL");
           results[loc] =
               RpcUtils.getStatus(
                   TSStatusCode.OUT_OF_TTL_ERROR,
@@ -979,6 +980,7 @@ public class VirtualStorageGroupProcessor {
       }
       // loc pointing at first legal position
       if (loc == insertTabletPlan.getRowCount()) {
+        logger.info("Insert tablet out of TTL of all points");
         throw new BatchProcessException(results);
       }
 
@@ -1096,6 +1098,7 @@ public class VirtualStorageGroupProcessor {
     TsFileProcessor tsFileProcessor = getOrCreateTsFileProcessor(timePartitionId, sequence);
     if (tsFileProcessor == null) {
       for (int i = start; i < end; i++) {
+        logger.info("Insert tablet: internal_server_error");
         results[i] =
             RpcUtils.getStatus(
                 TSStatusCode.INTERNAL_SERVER_ERROR,

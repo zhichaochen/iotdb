@@ -1652,6 +1652,7 @@ public class PlanExecutor implements IPlanExecutor {
       return;
     }
     try {
+      logger.info("Execute insert tablet {}", insertTabletPlan.getRowCount());
       insertTabletPlan.setMeasurementMNodes(
           new IMeasurementMNode[insertTabletPlan.getMeasurements().length]);
 
