@@ -55,15 +55,15 @@ public class ClusterConfig {
 
   private boolean useAsyncApplier = true;
 
-  private int connectionTimeoutInMS = (int) TimeUnit.SECONDS.toMillis(20);
+  private int connectionTimeoutInMS = (int) TimeUnit.SECONDS.toMillis(120);
 
   private long heartbeatIntervalMs = TimeUnit.SECONDS.toMillis(1);
 
   private long electionTimeoutMs = TimeUnit.SECONDS.toMillis(20);
 
-  private int readOperationTimeoutMS = (int) TimeUnit.SECONDS.toMillis(30);
+  private int readOperationTimeoutMS = (int) TimeUnit.SECONDS.toMillis(120);
 
-  private int writeOperationTimeoutMS = (int) TimeUnit.SECONDS.toMillis(30);
+  private int writeOperationTimeoutMS = (int) TimeUnit.SECONDS.toMillis(120);
 
   private int catchUpTimeoutMS = (int) TimeUnit.SECONDS.toMillis(300);
 
