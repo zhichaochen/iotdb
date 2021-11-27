@@ -36,6 +36,7 @@ import org.apache.iotdb.cluster.rpc.thrift.Node;
 import org.apache.iotdb.cluster.rpc.thrift.RaftNode;
 import org.apache.iotdb.cluster.server.member.MetaGroupMember;
 import org.apache.iotdb.cluster.server.monitor.Timer;
+import org.apache.iotdb.cluster.server.monitor.Timer.Statistic;
 import org.apache.iotdb.cluster.utils.PartitionUtils;
 import org.apache.iotdb.cluster.utils.StatusUtils;
 import org.apache.iotdb.db.conf.IoTDBConstant;
@@ -235,7 +236,7 @@ public class Coordinator {
       return concludeFinalStatus(
           plan, plan.getPaths().size(), true, false, false, null, Collections.emptyList());
     }
-
+    long startTime = Statistic.SPLIT_PLAN.getOperationStartTime();
     // split the plan into sub-plans that each only involve one data group
     Map<PhysicalPlan, PartitionGroup> planGroupMap;
     try {
@@ -244,6 +245,7 @@ public class Coordinator {
       return StatusUtils.getStatus(
           StatusUtils.CONSISTENCY_FAILURE, checkConsistencyException.getMessage());
     }
+    Timer.Statistic.SPLIT_PLAN.calOperationCostTimeFromStart(startTime);
 
     // the storage group is not found locally
     if (planGroupMap == null || planGroupMap.isEmpty()) {

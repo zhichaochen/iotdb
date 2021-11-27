@@ -49,6 +49,7 @@ public class Timer {
     // meta group member
     META_GROUP_MEMBER_EXECUTE_NON_QUERY(
         META_GROUP_MEMBER, "execute non query", TIME_SCALE, true, COORDINATOR_EXECUTE_NON_QUERY),
+    SPLIT_PLAN(META_GROUP_MEMBER, "split plan", TIME_SCALE, true, COORDINATOR_EXECUTE_NON_QUERY),
     META_GROUP_MEMBER_EXECUTE_NON_QUERY_IN_LOCAL_GROUP(
         META_GROUP_MEMBER,
         "execute in local group",
