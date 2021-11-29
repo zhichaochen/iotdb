@@ -1898,7 +1898,9 @@ public abstract class RaftMember implements RaftMemberMBean {
           getAppendNodeEntryHandler(log, voteCounter, node, leaderShipStale, newLeaderTerm, peer);
       try {
         logger.debug("{} sending a log to {}: {}", name, node, log);
+        long startTime = Timer.Statistic.RAFT_SENDER_SEND_LOG.getOperationStartTime();
         long result = client.appendEntry(request);
+        Timer.Statistic.RAFT_SENDER_SEND_LOG.calOperationCostTimeFromStart(startTime);
         handler.onComplete(result);
       } catch (TException e) {
         client.getInputProtocol().getTransport().close();
