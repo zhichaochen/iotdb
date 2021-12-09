@@ -177,7 +177,7 @@ public abstract class RaftMember implements RaftMemberMBean {
    */
   volatile long lastHeartbeatReceivedTime;
   /** the raft logs are all stored and maintained in the log manager */
-  RaftLogManager logManager;
+  public RaftLogManager logManager;
   /**
    * the single thread pool that runs the heartbeat thread, which send heartbeats to the follower
    * when this node is a leader, or start elections when this node is an elector.
@@ -193,7 +193,7 @@ public abstract class RaftMember implements RaftMemberMBean {
    * lastLogIndex when generating the previous member report, to show the log ingestion rate of the
    * member by comparing it with the current last log index.
    */
-  long lastReportedLogIndex;
+  public long lastReportedLogIndex;
   /** the thread pool that runs catch-up tasks */
   private ExecutorService catchUpService;
   /**

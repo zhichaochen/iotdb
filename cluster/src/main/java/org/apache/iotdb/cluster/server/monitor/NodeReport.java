@@ -24,6 +24,7 @@ import org.apache.iotdb.cluster.rpc.thrift.RaftNode;
 import org.apache.iotdb.cluster.server.NodeCharacter;
 import org.apache.iotdb.rpc.RpcStat;
 import org.apache.iotdb.rpc.RpcTransportFactory;
+import org.apache.iotdb.tsfile.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,10 +39,15 @@ public class NodeReport {
   private Node thisNode;
   private MetaMemberReport metaMemberReport;
   private List<DataMemberReport> dataMemberReportList;
+  private Pair<Integer, Integer> groups;
 
   public NodeReport(Node thisNode) {
     this.thisNode = thisNode;
     dataMemberReportList = new ArrayList<>();
+  }
+
+  public void setGroups(Pair<Integer, Integer> groups) {
+    this.groups = groups;
   }
 
   public void setMetaMemberReport(MetaMemberReport metaMemberReport) {
@@ -60,6 +66,14 @@ public class NodeReport {
     for (DataMemberReport dataMemberReport : dataMemberReportList) {
       stringBuilder.append(dataMemberReport).append(System.lineSeparator());
     }
+    stringBuilder
+        .append("DataGroupReport{curAllLogIndex=")
+        .append(groups.left)
+        .append(",prevAllLogIndex=")
+        .append(groups.right)
+        .append(",logIncrement=")
+        .append(groups.left - groups.right)
+        .append("}");
     return stringBuilder.toString();
   }
 

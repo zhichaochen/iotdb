@@ -43,6 +43,7 @@ import org.apache.iotdb.db.exception.StartupException;
 import org.apache.iotdb.db.service.IService;
 import org.apache.iotdb.db.service.ServiceType;
 import org.apache.iotdb.db.utils.TestOnly;
+import org.apache.iotdb.tsfile.utils.Pair;
 
 import org.apache.thrift.async.AsyncMethodCallback;
 import org.apache.thrift.protocol.TProtocolFactory;
@@ -464,10 +465,19 @@ public class DataGroupEngine implements IService, DataGroupEngineMBean {
   public List<DataMemberReport> genMemberReports() {
     List<DataMemberReport> dataMemberReports = new ArrayList<>();
     for (DataGroupMember value : headerGroupMap.values()) {
-
       dataMemberReports.add(value.genReport());
     }
     return dataMemberReports;
+  }
+
+  public Pair<Integer, Integer> getGroupReports() {
+    int last = 0;
+    int all = 0;
+    for (DataGroupMember value : headerGroupMap.values()) {
+      last += value.lastReportedLogIndex;
+      all += value.logManager.getLastLogIndex();
+    }
+    return new Pair<>(all, last);
   }
 
   public Map<RaftNode, DataGroupMember> getHeaderGroupMap() {
