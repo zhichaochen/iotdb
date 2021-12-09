@@ -258,6 +258,8 @@ public class ClusterIoTDB implements ClusterIoTDBMBean {
       return;
     }
 
+    preStartCustomize();
+
     // we start IoTDB kernel first. then we start the cluster module.
     if (MODE_START.equals(mode)) {
       cluster.activeStartNodeMode();
@@ -529,7 +531,7 @@ public class ClusterIoTDB implements ClusterIoTDBMBean {
 
   /** Developers may perform pre-start customizations here for debugging or experiments. */
   @SuppressWarnings("java:S125") // leaving examples
-  private void preStartCustomize() {
+  private static void preStartCustomize() {
     // customize data distribution
     // The given example tries to divide storage groups like "root.sg_1", "root.sg_2"... into k
     // nodes evenly, and use default strategy for other groups
