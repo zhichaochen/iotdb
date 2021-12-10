@@ -219,8 +219,8 @@ public class ClusterIoTDB implements ClusterIoTDBMBean {
       try {
         NodeReport report = new NodeReport(thisNode);
         report.setMetaMemberReport(metaGroupMember.genMemberReport());
-        report.setDataMemberReportList(dataGroupEngine.genMemberReports());
         report.setGroups(dataGroupEngine.getGroupReports());
+        report.setDataMemberReportList(dataGroupEngine.genMemberReports());
         logger.info(report.toString());
       } catch (Exception e) {
         logger.error("exception occurred when generating node report", e);
