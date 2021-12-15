@@ -541,12 +541,13 @@ public class ClusterIoTDB implements ClusterIoTDBMBean {
           final SlotStrategy defaultStrategy = new SlotStrategy.DefaultStrategy();
           final int clusterSize =
               ClusterDescriptor.getInstance().getConfig().getSeedNodeUrls().size();
+          final int factor = ClusterDescriptor.getInstance().getConfig().getMultiRaftFactor();
 
           @Override
           public int calculateSlotByTime(String storageGroupName, long timestamp, int maxSlotNum) {
-            int sgSerialNum = extractSerialNumInSGName(storageGroupName) % clusterSize;
+            int sgSerialNum = extractSerialNumInSGName(storageGroupName) % (clusterSize * factor);
             if (sgSerialNum >= 0) {
-              return maxSlotNum / clusterSize * sgSerialNum;
+              return maxSlotNum / (clusterSize * factor) * sgSerialNum;
             } else {
               return defaultStrategy.calculateSlotByTime(storageGroupName, timestamp, maxSlotNum);
             }
@@ -555,9 +556,9 @@ public class ClusterIoTDB implements ClusterIoTDBMBean {
           @Override
           public int calculateSlotByPartitionNum(
               String storageGroupName, long partitionId, int maxSlotNum) {
-            int sgSerialNum = extractSerialNumInSGName(storageGroupName) % clusterSize;
+            int sgSerialNum = extractSerialNumInSGName(storageGroupName) % (clusterSize * factor);
             if (sgSerialNum >= 0) {
-              return maxSlotNum / clusterSize * sgSerialNum;
+              return maxSlotNum / (clusterSize * factor) * sgSerialNum;
             } else {
               return defaultStrategy.calculateSlotByPartitionNum(
                   storageGroupName, partitionId, maxSlotNum);
