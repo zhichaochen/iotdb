@@ -122,7 +122,13 @@ public class MeasurementChunkMetadataListMapIteratorTest {
     FileGenerator.generateFile(10000, deviceNum, measurementNum);
 
     try (TsFileSequenceReader fileReader = new TsFileSequenceReader(FILE_PATH)) {
-      Map<String, List<String>> deviceMeasurementListMap = fileReader.getDeviceMeasurementsMap();
+      List<Path> paths = fileReader.getAllPaths();
+      Map<String, List<String>> deviceMeasurementListMap = new HashMap<>();
+      for (Path path : paths) {
+        deviceMeasurementListMap
+            .computeIfAbsent(path.getDevice(), d -> new ArrayList<>())
+            .add(path.getMeasurement());
+      }
 
       List<String> devices = fileReader.getAllDevices();
 

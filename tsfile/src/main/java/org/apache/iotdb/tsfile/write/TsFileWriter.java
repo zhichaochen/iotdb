@@ -160,8 +160,9 @@ public class TsFileWriter implements AutoCloseable {
       Map<Path, MeasurementGroup> measurementGroupMap = new HashMap<>();
       for (Map.Entry<Path, IMeasurementSchema> entry : schemaMap.entrySet()) {
         IMeasurementSchema measurementSchema = entry.getValue();
+        MeasurementGroup group;
         if (measurementSchema instanceof VectorMeasurementSchema) {
-          MeasurementGroup group =
+          group =
               measurementGroupMap.getOrDefault(
                   new Path(entry.getKey().getDevice()), new MeasurementGroup(true));
           List<String> measurementList = measurementSchema.getSubMeasurementsList();
@@ -175,17 +176,16 @@ public class TsFileWriter implements AutoCloseable {
                         measurementSchema.getSubMeasurementsTSDataTypeList().get(i),
                         measurementSchema.getSubMeasurementsTSEncodingList().get(i)));
           }
-          measurementGroupMap.put(new Path(entry.getKey().getDevice()), group);
         } else {
-          MeasurementGroup group =
+          group =
               measurementGroupMap.getOrDefault(
                   new Path(entry.getKey().getDevice()), new MeasurementGroup(false));
           group
               .getMeasurementSchemaMap()
               .put(
                   measurementSchema.getMeasurementId(), (UnaryMeasurementSchema) measurementSchema);
-          measurementGroupMap.put(new Path(entry.getKey().getDevice()), group);
         }
+        measurementGroupMap.put(new Path(entry.getKey().getDevice()), group);
       }
       this.schema = new Schema(measurementGroupMap);
     } else {

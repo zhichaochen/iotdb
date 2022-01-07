@@ -60,13 +60,13 @@ public class TsFileMetadata {
     // metadataIndex
     if (config.getMetadataIndexType().equals(MetadataIndexType.TWO_LEVEL)) {
       fileMetaData.metadataIndex = MetadataIndexNode.deserializeFrom(buffer);
-
-      // metaOffset
-      long metaOffset = ReadWriteIOUtils.readLong(buffer);
-      fileMetaData.setMetaOffset(metaOffset);
     } else if (config.getMetadataIndexType().equals(MetadataIndexType.B_PLUS_TREE)) {
       fileMetaData.metadataIndex = BPlusTreeNode.deserializeFrom(buffer);
     }
+
+    // metaOffset
+    long metaOffset = ReadWriteIOUtils.readLong(buffer);
+    fileMetaData.setMetaOffset(metaOffset);
 
     // read bloom filter
     if (buffer.hasRemaining()) {

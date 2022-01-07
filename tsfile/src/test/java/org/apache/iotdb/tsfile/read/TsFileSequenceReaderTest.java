@@ -20,11 +20,13 @@
 package org.apache.iotdb.tsfile.read;
 
 import org.apache.iotdb.tsfile.common.conf.TSFileConfig;
+import org.apache.iotdb.tsfile.common.conf.TSFileDescriptor;
 import org.apache.iotdb.tsfile.file.MetaMarker;
 import org.apache.iotdb.tsfile.file.header.ChunkGroupHeader;
 import org.apache.iotdb.tsfile.file.header.ChunkHeader;
 import org.apache.iotdb.tsfile.file.header.PageHeader;
 import org.apache.iotdb.tsfile.file.metadata.ChunkMetadata;
+import org.apache.iotdb.tsfile.file.metadata.metadataIndex.MetadataIndexType;
 import org.apache.iotdb.tsfile.utils.FileGenerator;
 import org.apache.iotdb.tsfile.utils.Pair;
 
@@ -104,25 +106,31 @@ public class TsFileSequenceReaderTest {
 
   @Test
   public void testReadChunkMetadataInDevice() throws IOException {
-    TsFileSequenceReader reader = new TsFileSequenceReader(FILE_PATH);
+    // this method does not need to be tested when B_PLUS_TREE index
+    if (TSFileDescriptor.getInstance()
+        .getConfig()
+        .getMetadataIndexType()
+        .equals(MetadataIndexType.TWO_LEVEL)) {
+      TsFileSequenceReader reader = new TsFileSequenceReader(FILE_PATH);
 
-    // test for exist device "d2"
-    Map<String, List<ChunkMetadata>> chunkMetadataMap = reader.readChunkMetadataInDevice("d2");
-    int[] res = new int[] {20, 75, 100, 13};
+      // test for exist device "d2"
+      Map<String, List<ChunkMetadata>> chunkMetadataMap = reader.readChunkMetadataInDevice("d2");
+      int[] res = new int[] {20, 75, 100, 13};
 
-    Assert.assertEquals(4, chunkMetadataMap.size());
-    for (int i = 0; i < chunkMetadataMap.size(); i++) {
-      int id = i + 1;
-      List<ChunkMetadata> metadataList = chunkMetadataMap.get("s" + id);
-      int numOfPoints = 0;
-      for (ChunkMetadata metadata : metadataList) {
-        numOfPoints += metadata.getNumOfPoints();
+      Assert.assertEquals(4, chunkMetadataMap.size());
+      for (int i = 0; i < chunkMetadataMap.size(); i++) {
+        int id = i + 1;
+        List<ChunkMetadata> metadataList = chunkMetadataMap.get("s" + id);
+        int numOfPoints = 0;
+        for (ChunkMetadata metadata : metadataList) {
+          numOfPoints += metadata.getNumOfPoints();
+        }
+        Assert.assertEquals(res[i], numOfPoints);
       }
-      Assert.assertEquals(res[i], numOfPoints);
-    }
 
-    // test for non-exist device "d3"
-    Assert.assertTrue(reader.readChunkMetadataInDevice("d3").isEmpty());
-    reader.close();
+      // test for non-exist device "d3"
+      Assert.assertTrue(reader.readChunkMetadataInDevice("d3").isEmpty());
+      reader.close();
+    }
   }
 }

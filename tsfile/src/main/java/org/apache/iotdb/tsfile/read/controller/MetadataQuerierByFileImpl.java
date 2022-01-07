@@ -39,7 +39,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -92,7 +91,7 @@ public class MetadataQuerierByFileImpl implements IMetadataQuerier {
 
   @Override
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
-  public void loadChunkMetaDatas(List<Path> paths) throws IOException {
+  public void loadChunkMetadatas(List<Path> paths) throws IOException {
     // group measurements by device
     TreeMap<String, Set<String>> deviceMeasurementsMap = new TreeMap<>();
     for (Path path : paths) {
@@ -167,42 +166,21 @@ public class MetadataQuerierByFileImpl implements IMetadataQuerier {
     ArrayList<TimeRange> timeRangesInCandidates = new ArrayList<>();
     ArrayList<TimeRange> timeRangesBeforeCandidates = new ArrayList<>();
 
-    // group measurements by device
-
-    TreeMap<String, Set<String>> deviceMeasurementsMap = new TreeMap<>();
     for (Path path : paths) {
-      deviceMeasurementsMap
-          .computeIfAbsent(path.getDevice(), key -> new HashSet<>())
-          .add(path.getMeasurement());
-    }
-    for (Map.Entry<String, Set<String>> deviceMeasurements : deviceMeasurementsMap.entrySet()) {
-      String selectedDevice = deviceMeasurements.getKey();
-      Set<String> selectedMeasurements = deviceMeasurements.getValue();
-
-      // measurement -> ChunkMetadata list
-      Map<String, List<ChunkMetadata>> seriesMetadatas =
-          tsFileReader.readChunkMetadataInDevice(selectedDevice);
-
-      for (Entry<String, List<ChunkMetadata>> seriesMetadata : seriesMetadatas.entrySet()) {
-
-        if (!selectedMeasurements.contains(seriesMetadata.getKey())) {
-          continue;
+      List<ChunkMetadata> seriesMetadatas = tsFileReader.readChunkMetadataInPath(path);
+      for (IChunkMetadata chunkMetadata : seriesMetadatas) {
+        LocateStatus location =
+            checkLocateStatus(chunkMetadata, spacePartitionStartPos, spacePartitionEndPos);
+        if (location == LocateStatus.after) {
+          break;
         }
 
-        for (IChunkMetadata chunkMetadata : seriesMetadata.getValue()) {
-          LocateStatus location =
-              checkLocateStatus(chunkMetadata, spacePartitionStartPos, spacePartitionEndPos);
-          if (location == LocateStatus.after) {
-            break;
-          }
-
-          if (location == LocateStatus.in) {
-            timeRangesInCandidates.add(
-                new TimeRange(chunkMetadata.getStartTime(), chunkMetadata.getEndTime()));
-          } else {
-            timeRangesBeforeCandidates.add(
-                new TimeRange(chunkMetadata.getStartTime(), chunkMetadata.getEndTime()));
-          }
+        if (location == LocateStatus.in) {
+          timeRangesInCandidates.add(
+              new TimeRange(chunkMetadata.getStartTime(), chunkMetadata.getEndTime()));
+        } else {
+          timeRangesBeforeCandidates.add(
+              new TimeRange(chunkMetadata.getStartTime(), chunkMetadata.getEndTime()));
         }
       }
     }

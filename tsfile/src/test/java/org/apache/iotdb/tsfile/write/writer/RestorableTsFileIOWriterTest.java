@@ -53,15 +53,20 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 
 @SuppressWarnings("squid:S4042") // Suppress use java.nio.Files#delete warning
 public class RestorableTsFileIOWriterTest {
 
   private static final String FILE_NAME =
       TsFileGeneratorForTest.getTestTsFilePath("root.sg1", 0, 0, 1);
+  private static final String INDEX_FILE_NAME = FILE_NAME.concat(".index");
   private static final FSFactory fsFactory = FSFactoryProducer.getFSFactory();
   File file = fsFactory.getFile(FILE_NAME);
+  File indexFile = fsFactory.getFile(INDEX_FILE_NAME);
 
   @Before
   public void setUp() throws IOException {
@@ -74,6 +79,9 @@ public class RestorableTsFileIOWriterTest {
   public void tearDown() {
     if (file.exists()) {
       Assert.assertTrue(file.delete());
+    }
+    if (indexFile.exists()) {
+      Assert.assertTrue(indexFile.delete());
     }
   }
 

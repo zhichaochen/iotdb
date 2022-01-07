@@ -54,6 +54,8 @@ import java.util.Arrays;
 
 public class TsFileReaderTest {
 
+  // FIXME ignored currently when config is B_PLUS_TREE index
+
   private static final String FILE_PATH = TsFileGeneratorForTest.outputDataFile;
   private TsFileSequenceReader fileReader;
   private TsFileReader tsFile;

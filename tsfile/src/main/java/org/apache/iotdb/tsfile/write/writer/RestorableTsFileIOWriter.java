@@ -22,7 +22,6 @@ package org.apache.iotdb.tsfile.write.writer;
 import org.apache.iotdb.tsfile.exception.NotCompatibleTsFileException;
 import org.apache.iotdb.tsfile.file.metadata.ChunkGroupMetadata;
 import org.apache.iotdb.tsfile.file.metadata.ChunkMetadata;
-import org.apache.iotdb.tsfile.file.metadata.IChunkMetadata;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.fileSystem.FSFactoryProducer;
 import org.apache.iotdb.tsfile.read.TsFileCheckStatus;
@@ -81,6 +80,8 @@ public class RestorableTsFileIOWriter extends TsFileIOWriter {
     this.file = file;
     this.tsFileOutput =
         FSFactoryProducer.getFileOutputFactory().getTsFileOutput(file.getPath(), true);
+    this.indexFileOutput =
+        FSFactoryProducer.getFileOutputFactory().getTsFileOutput(file.getPath() + ".index", true);
 
     // file doesn't exist
     if (file.length() == 0) {
@@ -100,8 +101,10 @@ public class RestorableTsFileIOWriter extends TsFileIOWriter {
           crashed = false;
           canWrite = false;
           tsFileOutput.close();
+          indexFileOutput.close();
         } else if (truncatedSize == TsFileCheckStatus.INCOMPATIBLE_FILE) {
           tsFileOutput.close();
+          indexFileOutput.close();
           throw new NotCompatibleTsFileException(
               String.format("%s is not in TsFile format.", file.getAbsolutePath()));
         } else {
@@ -109,6 +112,7 @@ public class RestorableTsFileIOWriter extends TsFileIOWriter {
           canWrite = true;
           // remove broken data
           tsFileOutput.truncate(truncatedSize);
+          indexFileOutput.truncate(0);
         }
       }
     }
@@ -140,8 +144,10 @@ public class RestorableTsFileIOWriter extends TsFileIOWriter {
           crashed = false;
           canWrite = false;
           tsFileOutput.close();
+          indexFileOutput.close();
         } else if (truncatedSize == TsFileCheckStatus.INCOMPATIBLE_FILE) {
           tsFileOutput.close();
+          indexFileOutput.close();
           throw new NotCompatibleTsFileException(
               String.format("%s is not in TsFile format.", file.getAbsolutePath()));
         } else {
@@ -150,6 +156,7 @@ public class RestorableTsFileIOWriter extends TsFileIOWriter {
           // remove broken data
           if (truncate) {
             tsFileOutput.truncate(truncatedSize);
+            indexFileOutput.truncate(0);
           }
         }
       }
@@ -210,12 +217,12 @@ public class RestorableTsFileIOWriter extends TsFileIOWriter {
     List<ChunkMetadata> chunkMetadataList = new ArrayList<>();
     if (metadatasForQuery.containsKey(deviceId)
         && metadatasForQuery.get(deviceId).containsKey(measurementId)) {
-      for (IChunkMetadata chunkMetaData : metadatasForQuery.get(deviceId).get(measurementId)) {
+      for (ChunkMetadata chunkMetaData : metadatasForQuery.get(deviceId).get(measurementId)) {
         // filter: if a device'measurement is defined as float type, and data has been persistent.
         // Then someone deletes the timeseries and recreate it with Int type. We have to ignore
         // all the stale data.
         if (dataType == null || dataType.equals(chunkMetaData.getDataType())) {
-          chunkMetadataList.add((ChunkMetadata) chunkMetaData);
+          chunkMetadataList.add(chunkMetaData);
         }
       }
     }

@@ -120,6 +120,11 @@ public class TsFileIOWriter {
     startFile();
   }
 
+  /** for test only */
+  public TsFileIOWriter(TsFileOutput output, boolean test) {
+    this.tsFileOutput = output;
+  }
+
   /**
    * for writing a new tsfile.
    *
@@ -282,12 +287,12 @@ public class TsFileIOWriter {
     }
     long footerIndex = tsFileOutput.getPosition();
     if (logger.isDebugEnabled()) {
-      logger.debug("start to flush the footer,file pos:{}", footerIndex);
+      logger.debug("start to flush the footer,file pos: {}", footerIndex);
     }
 
     long rootNodeOffset = indexFileOutput.getPosition();
     // write TsFileMetaData
-    int size = tsFileMetaData.serializeTo(indexFileOutput.wrapAsStream());
+    tsFileMetaData.serializeTo(indexFileOutput.wrapAsStream());
     if (logger.isDebugEnabled()) {
       logger.debug(
           "finish flushing the footer {}, file pos:{}",
@@ -296,20 +301,19 @@ public class TsFileIOWriter {
     }
 
     // write bloom filter
-    size +=
-        tsFileMetaData.serializeBloomFilter(
-            indexFileOutput.wrapAsStream(), chunkMetadataListMap.keySet());
+    tsFileMetaData.serializeBloomFilter(
+        indexFileOutput.wrapAsStream(), chunkMetadataListMap.keySet());
     if (logger.isDebugEnabled()) {
       logger.debug("finish flushing the bloom filter file pos:{}", tsFileOutput.getPosition());
     }
 
     // write TsFileMetaData size
     ReadWriteIOUtils.write(
-        size, tsFileOutput.wrapAsStream()); // write the size of the file metadata.
+        metaOffset, tsFileOutput.wrapAsStream()); // write the size of the file metadata.
     ReadWriteIOUtils.write(rootNodeOffset, indexFileOutput.wrapAsStream());
     indexFileOutput.close();
 
-    ReadWriteIOUtils.write(metaOffset, tsFileOutput.wrapAsStream());
+    // ReadWriteIOUtils.write(metaOffset, tsFileOutput.wrapAsStream());
     // write magic string
     tsFileOutput.write(MAGIC_STRING_BYTES);
 
@@ -444,6 +448,7 @@ public class TsFileIOWriter {
   public void close() throws IOException {
     canWrite = false;
     tsFileOutput.close();
+    indexFileOutput.close();
   }
 
   void writeSeparatorMaskForTest() throws IOException {

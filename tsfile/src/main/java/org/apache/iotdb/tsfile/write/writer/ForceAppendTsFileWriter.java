@@ -21,7 +21,6 @@ package org.apache.iotdb.tsfile.write.writer;
 import org.apache.iotdb.tsfile.exception.write.TsFileNotCompleteException;
 import org.apache.iotdb.tsfile.file.metadata.ChunkGroupMetadata;
 import org.apache.iotdb.tsfile.file.metadata.ChunkMetadata;
-import org.apache.iotdb.tsfile.file.metadata.TsFileMetadata;
 import org.apache.iotdb.tsfile.fileSystem.FSFactoryProducer;
 import org.apache.iotdb.tsfile.read.TsFileSequenceReader;
 
@@ -30,8 +29,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * ForceAppendTsFileWriter opens a COMPLETE TsFile, reads and truncate its metadata to support
@@ -39,8 +38,8 @@ import java.util.List;
  */
 public class ForceAppendTsFileWriter extends TsFileIOWriter {
 
-  private long truncatePosition;
-  private static Logger logger = LoggerFactory.getLogger(ForceAppendTsFileWriter.class);
+  private final long truncatePosition;
+  private static final Logger logger = LoggerFactory.getLogger(ForceAppendTsFileWriter.class);
 
   public ForceAppendTsFileWriter(File file) throws IOException {
     if (logger.isDebugEnabled()) {
@@ -48,6 +47,8 @@ public class ForceAppendTsFileWriter extends TsFileIOWriter {
     }
     this.tsFileOutput =
         FSFactoryProducer.getFileOutputFactory().getTsFileOutput(file.getPath(), true);
+    this.indexFileOutput =
+        FSFactoryProducer.getFileOutputFactory().getTsFileOutput(file.getPath() + ".index", true);
     this.file = file;
 
     // file doesn't exist
@@ -62,16 +63,14 @@ public class ForceAppendTsFileWriter extends TsFileIOWriter {
         throw new TsFileNotCompleteException(
             "File " + file.getPath() + " is not a complete TsFile");
       }
-      TsFileMetadata tsFileMetadata = reader.readFileMetadata();
       // truncate metadata and marker
-      truncatePosition = tsFileMetadata.getMetaOffset();
-
+      truncatePosition = reader.getFileMetadataPos();
       canWrite = true;
-      List<String> devices = reader.getAllDevices();
-      for (String device : devices) {
-        List<ChunkMetadata> chunkMetadataList = new ArrayList<>();
-        reader.readChunkMetadataInDevice(device).values().forEach(chunkMetadataList::addAll);
-        ChunkGroupMetadata chunkGroupMetadata = new ChunkGroupMetadata(device, chunkMetadataList);
+
+      for (Map.Entry<String, List<ChunkMetadata>> entry :
+          reader.readAllChunkMetadata().entrySet()) {
+        ChunkGroupMetadata chunkGroupMetadata =
+            new ChunkGroupMetadata(entry.getKey(), entry.getValue());
         chunkGroupMetadataList.add(chunkGroupMetadata);
       }
     }
@@ -79,6 +78,7 @@ public class ForceAppendTsFileWriter extends TsFileIOWriter {
 
   public void doTruncate() throws IOException {
     tsFileOutput.truncate(truncatePosition);
+    indexFileOutput.truncate(0);
   }
 
   public long getTruncatePosition() {

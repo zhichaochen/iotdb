@@ -49,7 +49,7 @@ import static org.junit.Assert.fail;
 public class ForceAppendTsFileWriterTest {
   private static final String FILE_NAME =
       TsFileGeneratorForTest.getTestTsFilePath("root.sg1", 0, 0, 1);
-  private static FSFactory fsFactory = FSFactoryProducer.getFSFactory();
+  private static final FSFactory fsFactory = FSFactoryProducer.getFSFactory();
 
   @Test
   public void test() throws Exception {

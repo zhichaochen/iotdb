@@ -68,7 +68,7 @@ public class Path implements Serializable, Comparable<Path> {
           while (endIndex != -1 && pathSc.charAt(endIndex - 1) == '\\') {
             endIndex = pathSc.lastIndexOf('"', endIndex - 2);
           }
-          if (endIndex != -1 && (endIndex == 0 || pathSc.charAt(endIndex - 1) == '.')) {
+          if (endIndex != -1 && pathSc.charAt(endIndex - 1) == '.') {
             fullPath = pathSc;
             device = pathSc.substring(0, endIndex - 1);
             measurement = pathSc.substring(endIndex);
@@ -87,6 +87,11 @@ public class Path implements Serializable, Comparable<Path> {
             device = pathSc.substring(0, endIndex);
             measurement = pathSc.substring(endIndex + 1);
           }
+        } else if (pathSc.charAt(pathSc.length() - 1) == TsFileConstant.PATH_SEPARATOR_CHAR) {
+          // aligned timeseries
+          fullPath = pathSc;
+          device = pathSc.substring(0, pathSc.length() - 1);
+          measurement = "";
         } else {
           throw new IllegalArgumentException(ILLEGAL_PATH_ARGUMENT);
         }

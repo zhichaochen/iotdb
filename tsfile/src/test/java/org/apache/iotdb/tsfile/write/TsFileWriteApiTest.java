@@ -39,6 +39,9 @@ import java.util.List;
 
 public class TsFileWriteApiTest {
   private final File f = FSFactoryProducer.getFSFactory().getFile("TsFileWriteTest.tsfile");
+  private final File indexFile =
+      FSFactoryProducer.getFSFactory().getFile("TsFileWriteTest.tsfile.index");
+
   private final String deviceId = "root.sg.d1";
   private final List<UnaryMeasurementSchema> alignedMeasurementSchemas = new ArrayList<>();
   private final List<UnaryMeasurementSchema> measurementSchemas = new ArrayList<>();
@@ -52,7 +55,12 @@ public class TsFileWriteApiTest {
 
   @After
   public void end() {
-    if (f.exists()) f.delete();
+    if (f.exists()) {
+      f.delete();
+    }
+    if (indexFile.exists()) {
+      indexFile.delete();
+    }
   }
 
   private void setEnv(int chunkGroupSize, int pageSize) {
