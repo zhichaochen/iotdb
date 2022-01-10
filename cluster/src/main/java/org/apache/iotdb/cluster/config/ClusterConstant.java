@@ -39,7 +39,7 @@ public class ClusterConstant {
           (int) ClusterConstant.getHeartbeatIntervalMs(),
           ClusterConstant.getConnectionTimeoutInMS());
 
-  public static final int SLOT_NUM = 9999;
+  public static final int SLOT_NUM = 10000;
   public static final int HASH_SALT = 2333;
   public static final int CHECK_ALIVE_TIME_OUT_MS = 1000;
 
