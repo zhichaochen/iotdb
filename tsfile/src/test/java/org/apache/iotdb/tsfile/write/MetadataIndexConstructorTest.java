@@ -32,12 +32,6 @@ import org.apache.iotdb.tsfile.read.TsFileSequenceReader;
 import org.apache.iotdb.tsfile.read.common.Path;
 import org.apache.iotdb.tsfile.utils.FileGenerator;
 import org.apache.iotdb.tsfile.utils.Pair;
-import org.apache.iotdb.tsfile.write.record.TSRecord;
-import org.apache.iotdb.tsfile.write.record.Tablet;
-import org.apache.iotdb.tsfile.write.record.datapoint.DataPoint;
-import org.apache.iotdb.tsfile.write.record.datapoint.LongDataPoint;
-import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
-import org.apache.iotdb.tsfile.write.schema.Schema;
 
 import org.junit.After;
 import org.junit.Before;
@@ -397,100 +391,5 @@ public class MetadataIndexConstructorTest {
       correctMeasurements.add(measurements);
     }
     Collections.sort(correctDevices);
-  }
-
-  /**
-   * @param devices name and number of device
-   * @param vectorMeasurement the number of device and the number of values to include in the tablet
-   * @param singleMeasurement non-vector measurement name, set null if no need
-   */
-  private void generateFile(
-      String[] devices, int[][] vectorMeasurement, String[][] singleMeasurement) {
-    File f = FSFactoryProducer.getFSFactory().getFile(FILE_PATH);
-    if (f.exists() && !f.delete()) {
-      fail("can not delete " + f.getAbsolutePath());
-    }
-    Schema schema = new Schema();
-    try (TsFileWriter tsFileWriter = new TsFileWriter(f, schema)) {
-      // write single-variable timeseries
-      if (singleMeasurement != null) {
-        for (int i = 0; i < singleMeasurement.length; i++) {
-          String device = devices[i];
-          for (String measurement : singleMeasurement[i]) {
-            tsFileWriter.registerTimeseries(
-                new Path(device),
-                new MeasurementSchema(measurement, TSDataType.INT64, TSEncoding.RLE));
-          }
-          // the number of record rows
-          int rowNum = 10;
-          for (int row = 0; row < rowNum; row++) {
-            TSRecord tsRecord = new TSRecord(row, device);
-            for (String measurement : singleMeasurement[i]) {
-              DataPoint dPoint = new LongDataPoint(measurement, row);
-              tsRecord.addTuple(dPoint);
-            }
-            if (tsRecord.dataPointList.size() > 0) {
-              tsFileWriter.write(tsRecord);
-            }
-          }
-        }
-      }
-
-      // write multi-variable timeseries
-      for (int i = 0; i < devices.length; i++) {
-        String device = devices[i];
-        logger.info("generating device {}...", device);
-        // the number of rows to include in the tablet
-        int rowNum = 10;
-        for (int vectorIndex = 0; vectorIndex < vectorMeasurement[i].length; vectorIndex++) {
-          String vectorName =
-              vectorPrefix + generateIndexString(vectorIndex, vectorMeasurement.length);
-          logger.info("generating vector {}...", vectorName);
-          int measurementNum = vectorMeasurement[i][vectorIndex];
-          List<MeasurementSchema> schemas = new ArrayList<>();
-          List<MeasurementSchema> tabletSchema = new ArrayList<>();
-          for (int measurementIndex = 0; measurementIndex < measurementNum; measurementIndex++) {
-            String measurementName =
-                measurementPrefix + generateIndexString(measurementIndex, measurementNum);
-            logger.info("generating vector measurement {}...", measurementName);
-            // add measurements into file schema (all with INT64 data type)
-            MeasurementSchema schema1 =
-                new MeasurementSchema(measurementName, TSDataType.INT64, TSEncoding.RLE);
-            schemas.add(schema1);
-            tabletSchema.add(schema1);
-          }
-          MeasurementGroup group = new MeasurementGroup(true, schemas);
-          schema.registerMeasurementGroup(new Path(device), group);
-          // add measurements into TSFileWriter
-          // construct the tablet
-          Tablet tablet = new Tablet(device, tabletSchema);
-          long[] timestamps = tablet.timestamps;
-          Object[] values = tablet.values;
-          long timestamp = 1;
-          long value = 1000000L;
-          for (int r = 0; r < rowNum; r++, value++) {
-            int row = tablet.rowSize++;
-            timestamps[row] = timestamp++;
-            for (int j = 0; j < measurementNum; j++) {
-              long[] sensor = (long[]) values[j];
-              sensor[row] = value;
-            }
-            // write Tablet to TsFile
-            if (tablet.rowSize == tablet.getMaxRowNumber()) {
-              tsFileWriter.writeAligned(tablet);
-              tablet.reset();
-            }
-          }
-          // write Tablet to TsFile
-          if (tablet.rowSize != 0) {
-            tsFileWriter.writeAligned(tablet);
-            tablet.reset();
-          }
-        }
-      }
-    } catch (Exception e) {
-      logger.error("meet error in TsFileWrite with tablet", e);
-      fail(e.getMessage());
-    }
   }
 }
