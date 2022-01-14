@@ -18,6 +18,8 @@
  */
 package org.apache.iotdb.db.engine.storagegroup;
 
+import org.apache.iotdb.db.concurrent.IoTDBThreadPoolFactory;
+import org.apache.iotdb.db.concurrent.ThreadName;
 import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBConstant;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
@@ -113,7 +115,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -271,13 +272,17 @@ public class VirtualStorageGroupProcessor {
   private String insertWriteLockHolder = "";
 
   private ScheduledExecutorService timedCompactionScheduleTask =
-      Executors.newSingleThreadScheduledExecutor();
+      IoTDBThreadPoolFactory.newSingleThreadScheduledExecutor(
+          ThreadName.COMPACTION_SCHEDULE.getName());
 
   public static final long COMPACTION_TASK_SUBMIT_DELAY = 20L * 1000L;
 
   private IDTable idTable;
 
-  /** get the direct byte buffer from pool, each fetch contains two ByteBuffer */
+  /**
+   * get the direct byte buffer from pool, each fetch contains two ByteBuffer, return null if fetch
+   * fails
+   */
   public ByteBuffer[] getWalDirectByteBuffer() {
     ByteBuffer[] res = new ByteBuffer[2];
     synchronized (walByteBufferPool) {
@@ -307,9 +312,20 @@ public class VirtualStorageGroupProcessor {
       } else {
         // if the queue is empty and current size is less than MAX_BYTEBUFFER_NUM
         // we can construct another two more new byte buffer
-        currentWalPoolSize += 2;
-        res[0] = ByteBuffer.allocateDirect(WAL_BUFFER_SIZE);
-        res[1] = ByteBuffer.allocateDirect(WAL_BUFFER_SIZE);
+        try {
+          res[0] = ByteBuffer.allocateDirect(WAL_BUFFER_SIZE);
+          res[1] = ByteBuffer.allocateDirect(WAL_BUFFER_SIZE);
+          currentWalPoolSize += 2;
+        } catch (OutOfMemoryError e) {
+          logger.error("Allocate ByteBuffers error", e);
+          if (res[0] != null) {
+            MmapUtil.clean((MappedByteBuffer) res[0]);
+          }
+          if (res[1] != null) {
+            MmapUtil.clean((MappedByteBuffer) res[1]);
+          }
+          return null;
+        }
       }
       // if the pool is empty, set the time back to MAX_VALUE
       if (walByteBufferPool.isEmpty()) {
@@ -386,7 +402,8 @@ public class VirtualStorageGroupProcessor {
       logger.error("create Storage Group system Directory {} failed", storageGroupSysDir.getPath());
     }
 
-    ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    ScheduledExecutorService executorService =
+        IoTDBThreadPoolFactory.newSingleThreadScheduledExecutor(ThreadName.WAL_TRIM.getName());
     executorService.scheduleWithFixedDelay(
         this::trimTask,
         config.getWalPoolTrimIntervalInMS(),
@@ -1494,12 +1511,10 @@ public class VirtualStorageGroupProcessor {
       return;
     }
     long ttlLowerBound = System.currentTimeMillis() - dataTTL;
-    if (logger.isDebugEnabled()) {
-      logger.debug(
-          "{}: TTL removing files before {}",
-          logicalStorageGroupName + "-" + virtualStorageGroupId,
-          new Date(ttlLowerBound));
-    }
+    logger.debug(
+        "{}: TTL removing files before {}",
+        logicalStorageGroupName + "-" + virtualStorageGroupId,
+        new Date(ttlLowerBound));
 
     // copy to avoid concurrent modification of deletion
     List<TsFileResource> seqFiles = new ArrayList<>(tsFileManager.getTsFileList(true));
@@ -1518,33 +1533,23 @@ public class VirtualStorageGroupProcessor {
       return;
     }
 
-    TsFileResourceList resourceList =
-        tsFileManager.getSequenceListByTimePartition(resource.getTimePartition());
-    resourceList.writeLock();
-    try {
-      // prevent new merges and queries from choosing this file
-      resource.setDeleted(true);
+    // prevent new merges and queries from choosing this file
+    resource.setDeleted(true);
 
-      // ensure that the file is not used by any queries
-      if (resource.tryWriteLock()) {
-        try {
-          // physical removal
-          resource.remove();
-          resourceList.remove(resource);
-          if (logger.isInfoEnabled()) {
-            logger.info(
-                "Removed a file {} before {} by ttl ({}ms)",
-                resource.getTsFilePath(),
-                new Date(ttlLowerBound),
-                dataTTL);
-          }
-          tsFileManager.remove(resource, isSeq);
-        } finally {
-          resource.writeUnlock();
-        }
+    // ensure that the file is not used by any queries
+    if (resource.tryWriteLock()) {
+      try {
+        // try to delete physical data file
+        resource.remove();
+        tsFileManager.remove(resource, isSeq);
+        logger.info(
+            "Removed a file {} before {} by ttl ({}ms)",
+            resource.getTsFilePath(),
+            new Date(ttlLowerBound),
+            dataTTL);
+      } finally {
+        resource.writeUnlock();
       }
-    } finally {
-      resourceList.writeUnlock();
     }
   }
 
@@ -1705,31 +1710,32 @@ public class VirtualStorageGroupProcessor {
     }
   }
 
-  // TODO need a read lock, please consider the concurrency with flush manager threads.
-
   /**
    * build query data source by searching all tsfile which fit in query filter
    *
-   * @param fullPath data path
+   * @param pathList data paths
    * @param context query context
    * @param timeFilter time filter
+   * @param singleDeviceId selected deviceId (not null only when all the selected series are under
+   *     the same device)
    * @return query data source
    */
   public QueryDataSource query(
-      PartialPath fullPath,
+      List<PartialPath> pathList,
+      String singleDeviceId,
       QueryContext context,
       QueryFileManager filePathsManager,
       Filter timeFilter)
       throws QueryProcessException {
     readLock();
-    fullPath = IDTable.translateQueryPath(fullPath);
 
     try {
       List<TsFileResource> seqResources =
           getFileResourceListForQuery(
               tsFileManager.getTsFileList(true),
               upgradeSeqFileList,
-              fullPath,
+              pathList,
+              singleDeviceId,
               context,
               timeFilter,
               true);
@@ -1737,7 +1743,8 @@ public class VirtualStorageGroupProcessor {
           getFileResourceListForQuery(
               tsFileManager.getTsFileList(false),
               upgradeUnseqFileList,
-              fullPath,
+              pathList,
+              singleDeviceId,
               context,
               timeFilter,
               false);
@@ -1790,31 +1797,32 @@ public class VirtualStorageGroupProcessor {
   private List<TsFileResource> getFileResourceListForQuery(
       Collection<TsFileResource> tsFileResources,
       List<TsFileResource> upgradeTsFileResources,
-      PartialPath fullPath,
+      List<PartialPath> pathList,
+      String singleDeviceId,
       QueryContext context,
       Filter timeFilter,
       boolean isSeq)
       throws MetadataException {
-    String deviceId = fullPath.getDevice();
 
     if (context.isDebug()) {
       DEBUG_LOGGER.info(
-          "Path: {}.{}, get tsfile list: {} isSeq: {} timefilter: {}",
-          deviceId,
-          fullPath.getMeasurement(),
+          "Path: {}, get tsfile list: {} isSeq: {} timefilter: {}",
+          pathList,
           tsFileResources,
           isSeq,
           (timeFilter == null ? "null" : timeFilter));
     }
 
     List<TsFileResource> tsfileResourcesForQuery = new ArrayList<>();
-    long ttlLowerBound =
+
+    long timeLowerBound =
         dataTTL != Long.MAX_VALUE ? System.currentTimeMillis() - dataTTL : Long.MIN_VALUE;
-    context.setQueryTimeLowerBound(ttlLowerBound);
+    context.setQueryTimeLowerBound(timeLowerBound);
 
     // for upgrade files and old files must be closed
     for (TsFileResource tsFileResource : upgradeTsFileResources) {
-      if (!tsFileResource.isSatisfied(deviceId, timeFilter, isSeq, dataTTL, context.isDebug())) {
+      if (!tsFileResource.isSatisfied(
+          singleDeviceId, timeFilter, isSeq, dataTTL, context.isDebug())) {
         continue;
       }
       closeQueryLock.readLock().lock();
@@ -1827,7 +1835,7 @@ public class VirtualStorageGroupProcessor {
 
     for (TsFileResource tsFileResource : tsFileResources) {
       if (!tsFileResource.isSatisfied(
-          fullPath.getDevice(), timeFilter, isSeq, dataTTL, context.isDebug())) {
+          singleDeviceId, timeFilter, isSeq, dataTTL, context.isDebug())) {
         continue;
       }
       closeQueryLock.readLock().lock();
@@ -1835,9 +1843,7 @@ public class VirtualStorageGroupProcessor {
         if (tsFileResource.isClosed()) {
           tsfileResourcesForQuery.add(tsFileResource);
         } else {
-          tsFileResource
-              .getUnsealedFileProcessor()
-              .query(fullPath, context, tsfileResourcesForQuery);
+          tsFileResource.getProcessor().query(pathList, context, tsfileResourcesForQuery);
         }
       } catch (IOException e) {
         throw new MetadataException(e);
@@ -2018,7 +2024,7 @@ public class VirtualStorageGroupProcessor {
 
       // delete data in memory of unsealed file
       if (!tsFileResource.isClosed()) {
-        TsFileProcessor tsfileProcessor = tsFileResource.getUnsealedFileProcessor();
+        TsFileProcessor tsfileProcessor = tsFileResource.getProcessor();
         tsfileProcessor.deleteDataInMemory(deletion, devicePaths);
       }
 
@@ -2925,7 +2931,6 @@ public class VirtualStorageGroupProcessor {
 
   public void setDataTTL(long dataTTL) {
     this.dataTTL = dataTTL;
-    checkFilesTTL();
   }
 
   public List<TsFileResource> getSequenceFileTreeSet() {
@@ -2938,6 +2943,11 @@ public class VirtualStorageGroupProcessor {
 
   public String getVirtualStorageGroupId() {
     return virtualStorageGroupId;
+  }
+
+  /** @return virtual storage group path, like root.sg1/0 */
+  public String getStorageGroupPath() {
+    return logicalStorageGroupName + File.separator + virtualStorageGroupId;
   }
 
   public StorageGroupInfo getStorageGroupInfo() {

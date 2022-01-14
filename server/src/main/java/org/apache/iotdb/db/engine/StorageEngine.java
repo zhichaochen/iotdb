@@ -19,6 +19,7 @@
 package org.apache.iotdb.db.engine;
 
 import org.apache.iotdb.db.concurrent.IoTDBThreadPoolFactory;
+import org.apache.iotdb.db.concurrent.ThreadName;
 import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.conf.ServerConfigConsistent;
@@ -27,7 +28,6 @@ import org.apache.iotdb.db.engine.flush.CloseFileListener;
 import org.apache.iotdb.db.engine.flush.FlushListener;
 import org.apache.iotdb.db.engine.flush.TsFileFlushPolicy;
 import org.apache.iotdb.db.engine.flush.TsFileFlushPolicy.DirectFlushPolicy;
-import org.apache.iotdb.db.engine.querycontext.QueryDataSource;
 import org.apache.iotdb.db.engine.storagegroup.TsFileProcessor;
 import org.apache.iotdb.db.engine.storagegroup.TsFileResource;
 import org.apache.iotdb.db.engine.storagegroup.VirtualStorageGroupProcessor;
@@ -55,8 +55,6 @@ import org.apache.iotdb.db.qp.physical.crud.InsertPlan;
 import org.apache.iotdb.db.qp.physical.crud.InsertRowPlan;
 import org.apache.iotdb.db.qp.physical.crud.InsertRowsOfOneDevicePlan;
 import org.apache.iotdb.db.qp.physical.crud.InsertTabletPlan;
-import org.apache.iotdb.db.query.context.QueryContext;
-import org.apache.iotdb.db.query.control.QueryFileManager;
 import org.apache.iotdb.db.rescon.SystemInfo;
 import org.apache.iotdb.db.service.IService;
 import org.apache.iotdb.db.service.IoTDB;
@@ -66,7 +64,6 @@ import org.apache.iotdb.db.utils.UpgradeUtils;
 import org.apache.iotdb.rpc.RpcUtils;
 import org.apache.iotdb.rpc.TSStatusCode;
 import org.apache.iotdb.service.rpc.thrift.TSStatus;
-import org.apache.iotdb.tsfile.read.filter.basic.Filter;
 import org.apache.iotdb.tsfile.utils.FilePathUtils;
 import org.apache.iotdb.tsfile.utils.Pair;
 
@@ -81,7 +78,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -91,7 +87,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -278,7 +273,7 @@ public class StorageEngine implements IService {
 
     recover();
 
-    ttlCheckThread = Executors.newSingleThreadScheduledExecutor();
+    ttlCheckThread = IoTDBThreadPoolFactory.newSingleThreadScheduledExecutor("TTL-Check");
     ttlCheckThread.scheduleAtFixedRate(
         this::checkTTL, TTL_CHECK_INTERVAL, TTL_CHECK_INTERVAL, TimeUnit.MILLISECONDS);
     logger.info("start ttl check thread successfully.");
@@ -301,7 +296,9 @@ public class StorageEngine implements IService {
   private void startTimedService() {
     // timed flush sequence memtable
     if (config.isEnableTimedFlushSeqMemtable()) {
-      seqMemtableTimedFlushCheckThread = Executors.newSingleThreadScheduledExecutor();
+      seqMemtableTimedFlushCheckThread =
+          IoTDBThreadPoolFactory.newSingleThreadScheduledExecutor(
+              ThreadName.TIMED_FlUSH_SEQ_MEMTABLE.getName());
       seqMemtableTimedFlushCheckThread.scheduleAtFixedRate(
           this::timedFlushSeqMemTable,
           config.getSeqMemtableFlushCheckInterval(),
@@ -311,7 +308,9 @@ public class StorageEngine implements IService {
     }
     // timed flush unsequence memtable
     if (config.isEnableTimedFlushUnseqMemtable()) {
-      unseqMemtableTimedFlushCheckThread = Executors.newSingleThreadScheduledExecutor();
+      unseqMemtableTimedFlushCheckThread =
+          IoTDBThreadPoolFactory.newSingleThreadScheduledExecutor(
+              ThreadName.TIMED_FlUSH_UNSEQ_MEMTABLE.getName());
       unseqMemtableTimedFlushCheckThread.scheduleAtFixedRate(
           this::timedFlushUnseqMemTable,
           config.getUnseqMemtableFlushCheckInterval(),
@@ -321,7 +320,9 @@ public class StorageEngine implements IService {
     }
     // timed close tsfile
     if (config.isEnableTimedCloseTsFile()) {
-      tsFileTimedCloseCheckThread = Executors.newSingleThreadScheduledExecutor();
+      tsFileTimedCloseCheckThread =
+          IoTDBThreadPoolFactory.newSingleThreadScheduledExecutor(
+              ThreadName.TIMED_CLOSE_TSFILE.getName());
       tsFileTimedCloseCheckThread.scheduleAtFixedRate(
           this::timedCloseTsFileProcessor,
           config.getCloseTsFileCheckInterval(),
@@ -367,10 +368,12 @@ public class StorageEngine implements IService {
       storageGroupManager.stopCompactionSchedulerPool();
     }
     syncCloseAllProcessor();
-    stopTimedService(ttlCheckThread, "TTlCheckThread");
-    stopTimedService(seqMemtableTimedFlushCheckThread, "SeqMemtableTimedFlushCheckThread");
-    stopTimedService(unseqMemtableTimedFlushCheckThread, "UnseqMemtableTimedFlushCheckThread");
-    stopTimedService(tsFileTimedCloseCheckThread, "TsFileTimedCloseCheckThread");
+    stopTimedService(ttlCheckThread, ThreadName.TTL_CHECK_SERVICE.getName());
+    stopTimedService(
+        seqMemtableTimedFlushCheckThread, ThreadName.TIMED_FlUSH_SEQ_MEMTABLE.getName());
+    stopTimedService(
+        unseqMemtableTimedFlushCheckThread, ThreadName.TIMED_FlUSH_UNSEQ_MEMTABLE.getName());
+    stopTimedService(tsFileTimedCloseCheckThread, ThreadName.TIMED_CLOSE_TSFILE.getName());
     recoveryThreadPool.shutdownNow();
     for (PartialPath storageGroup : IoTDB.metaManager.getAllStorageGroupPaths()) {
       this.releaseWalDirectByteBufferPoolInOneStorageGroup(storageGroup);
@@ -783,15 +786,6 @@ public class StorageEngine implements IService {
     }
   }
 
-  /** query data. */
-  public QueryDataSource query(
-      PartialPath fullPath, Filter filter, QueryContext context, QueryFileManager filePathsManager)
-      throws StorageEngineException, QueryProcessException {
-    PartialPath deviceId = fullPath.getDevicePath();
-    VirtualStorageGroupProcessor virtualStorageGroupProcessor = getProcessor(deviceId);
-    return virtualStorageGroupProcessor.query(fullPath, context, filePathsManager, filter);
-  }
-
   /**
    * count all Tsfiles which need to be upgraded
    *
@@ -1044,23 +1038,34 @@ public class StorageEngine implements IService {
   }
 
   /** get all merge lock of the storage group processor related to the query */
-  public List<VirtualStorageGroupProcessor> mergeLock(List<PartialPath> pathList)
-      throws StorageEngineException {
-    Set<VirtualStorageGroupProcessor> set = new HashSet<>();
+  public Pair<
+          List<VirtualStorageGroupProcessor>, Map<VirtualStorageGroupProcessor, List<PartialPath>>>
+      mergeLock(List<PartialPath> pathList) throws StorageEngineException {
+    Map<VirtualStorageGroupProcessor, List<PartialPath>> map = new HashMap<>();
     for (PartialPath path : pathList) {
-      set.add(getProcessor(path.getDevicePath()));
+      map.computeIfAbsent(getProcessor(path.getDevicePath()), key -> new ArrayList<>()).add(path);
     }
     List<VirtualStorageGroupProcessor> list =
-        set.stream()
+        map.keySet().stream()
             .sorted(Comparator.comparing(VirtualStorageGroupProcessor::getVirtualStorageGroupId))
             .collect(Collectors.toList());
     list.forEach(VirtualStorageGroupProcessor::readLock);
-    return list;
+
+    return new Pair<>(list, map);
   }
 
   /** unlock all merge lock of the storage group processor related to the query */
   public void mergeUnLock(List<VirtualStorageGroupProcessor> list) {
     list.forEach(VirtualStorageGroupProcessor::readUnlock);
+  }
+
+  /** @return virtual storage group name, like root.sg1/0 */
+  public String getStorageGroupPath(PartialPath path) throws StorageEngineException {
+    PartialPath deviceId = path.getDevicePath();
+    VirtualStorageGroupProcessor storageGroupProcessor = getProcessor(deviceId);
+    return storageGroupProcessor.getLogicalStorageGroupName()
+        + File.separator
+        + storageGroupProcessor.getVirtualStorageGroupId();
   }
 
   protected void getSeriesSchemas(InsertPlan insertPlan, VirtualStorageGroupProcessor processor)

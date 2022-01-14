@@ -21,9 +21,11 @@ package org.apache.iotdb.db.metadata;
 import org.apache.iotdb.db.concurrent.IoTDBThreadPoolFactory;
 import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
+import org.apache.iotdb.db.cq.ContinuousQueryService;
 import org.apache.iotdb.db.engine.StorageEngine;
 import org.apache.iotdb.db.engine.fileSystem.SystemFileFactory;
 import org.apache.iotdb.db.engine.trigger.executor.TriggerEngine;
+import org.apache.iotdb.db.exception.ContinuousQueryException;
 import org.apache.iotdb.db.exception.metadata.AliasAlreadyExistException;
 import org.apache.iotdb.db.exception.metadata.DataTypeMismatchException;
 import org.apache.iotdb.db.exception.metadata.DeleteFailedException;
@@ -118,7 +120,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -497,6 +498,15 @@ public class MManager {
       case UNSET_TEMPLATE:
         UnsetTemplatePlan unsetTemplatePlan = (UnsetTemplatePlan) plan;
         unsetSchemaTemplate(unsetTemplatePlan);
+        break;
+      case CREATE_CONTINUOUS_QUERY:
+        CreateContinuousQueryPlan createContinuousQueryPlan = (CreateContinuousQueryPlan) plan;
+        createContinuousQuery(createContinuousQueryPlan);
+        break;
+      case DROP_CONTINUOUS_QUERY:
+        DropContinuousQueryPlan dropContinuousQueryPlan = (DropContinuousQueryPlan) plan;
+        dropContinuousQuery(dropContinuousQueryPlan);
+        break;
       default:
         logger.error("Unrecognizable command {}", plan.getOperatorType());
     }
@@ -504,11 +514,27 @@ public class MManager {
   // endregion
 
   // region Interfaces for CQ
-  public void createContinuousQuery(CreateContinuousQueryPlan plan) throws IOException {
+  public void createContinuousQuery(CreateContinuousQueryPlan plan) throws MetadataException {
+    try {
+      ContinuousQueryService.getInstance().register(plan, false);
+    } catch (ContinuousQueryException e) {
+      throw new MetadataException(e);
+    }
+  }
+
+  public void dropContinuousQuery(DropContinuousQueryPlan plan) throws MetadataException {
+    try {
+      ContinuousQueryService.getInstance().deregister(plan, false);
+    } catch (ContinuousQueryException e) {
+      throw new MetadataException(e);
+    }
+  }
+
+  public void writeCreateContinuousQueryLog(CreateContinuousQueryPlan plan) throws IOException {
     logWriter.createContinuousQuery(plan);
   }
 
-  public void dropContinuousQuery(DropContinuousQueryPlan plan) throws IOException {
+  public void writeDropContinuousQueryLog(DropContinuousQueryPlan plan) throws IOException {
     logWriter.dropContinuousQuery(plan);
   }
   // endregion
@@ -548,14 +574,13 @@ public class MManager {
       mNodeCache.invalidate(path.getDevicePath());
 
       // update tag index
-      if (plan.getTags() != null) {
+
+      if (offset != -1) {
+        // offset != -1 means the timeseries has already been created and now system is recovering
+        tagManager.recoverIndex(offset, leafMNode);
+      } else if (plan.getTags() != null) {
         // tag key, tag value
-        for (Entry<String, String> entry : plan.getTags().entrySet()) {
-          if (entry.getKey() == null || entry.getValue() == null) {
-            continue;
-          }
-          tagManager.addIndex(entry.getKey(), entry.getValue(), leafMNode);
-        }
+        tagManager.addIndex(plan.getTags(), leafMNode);
       }
 
       // update statistics and schemaDataTypeNumMap
@@ -976,6 +1001,11 @@ public class MManager {
   public int getNodesCountInGivenLevel(PartialPath pathPattern, int level)
       throws MetadataException {
     return mtree.getNodesCountInGivenLevel(pathPattern, level);
+  }
+
+  public Map<PartialPath, Integer> getMeasurementCountGroupByLevel(
+      PartialPath pathPattern, int level) throws MetadataException {
+    return mtree.getMeasurementCountGroupByLevel(pathPattern, level);
   }
 
   // endregion
@@ -1855,11 +1885,22 @@ public class MManager {
     IMNode deviceMNode = getDeviceNodeWithAutoCreate(devicePath);
 
     // check insert non-aligned InsertPlan for aligned timeseries
-    if (plan.isAligned() && deviceMNode.isEntity() && !deviceMNode.getAsEntityMNode().isAligned()) {
-      throw new MetadataException(
-          String.format(
-              "Timeseries under path [%s] is not aligned , please set InsertPlan.isAligned() = false",
-              plan.getDevicePath()));
+    if (deviceMNode.isEntity()) {
+      if (plan.isAligned()) {
+        if (!deviceMNode.getAsEntityMNode().isAligned()) {
+          throw new MetadataException(
+              String.format(
+                  "Timeseries under path [%s] is not aligned , please set InsertPlan.isAligned() = false",
+                  plan.getDevicePath()));
+        }
+      } else {
+        if (deviceMNode.getAsEntityMNode().isAligned()) {
+          throw new MetadataException(
+              String.format(
+                  "Timeseries under path [%s] is aligned , please set InsertPlan.isAligned() = true",
+                  plan.getDevicePath()));
+        }
+      }
     }
 
     // 2. get schema of each measurement
@@ -1933,7 +1974,9 @@ public class MManager {
             internalCreateTimeseries(devicePath.concatNode(measurement), plan.getDataTypes()[loc]);
           } else {
             internalAlignedCreateTimeseries(
-                devicePath, Arrays.asList(measurementList), Arrays.asList(plan.getDataTypes()));
+                devicePath,
+                Collections.singletonList(measurement),
+                Collections.singletonList(plan.getDataTypes()[loc]));
           }
           // after creating timeseries, the deviceMNode has been replaced by a new entityMNode
           deviceMNode = mtree.getNodeByPath(devicePath);

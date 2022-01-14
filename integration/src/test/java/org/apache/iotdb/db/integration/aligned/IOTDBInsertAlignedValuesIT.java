@@ -17,17 +17,18 @@
  * under the License.
  */
 
-package org.apache.iotdb.db.integration;
+package org.apache.iotdb.db.integration.aligned;
 
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.utils.EnvironmentUtils;
 import org.apache.iotdb.itbase.category.LocalStandaloneTest;
 import org.apache.iotdb.jdbc.Config;
+import org.apache.iotdb.jdbc.IoTDBSQLException;
+import org.apache.iotdb.tsfile.common.conf.TSFileDescriptor;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -69,15 +70,14 @@ public class IOTDBInsertAlignedValuesIT {
   }
 
   @Test
-  @Ignore // SQL of insert aligned record is not supported yet
   public void testInsertAlignedValues() throws SQLException {
     Statement st0 = connection.createStatement();
     st0.execute(
-        "insert into root.t1.wf01.wt01(time, (status, temperature)) values (4000, (true, 17.1))");
+        "insert into root.t1.wf01.wt01(time, status, temperature) aligned values (4000, true, 17.1)");
     st0.execute(
-        "insert into root.t1.wf01.wt01(time, (status, temperature)) values (5000, (true, 20.1))");
+        "insert into root.t1.wf01.wt01(time, status, temperature) aligned values (5000, true, 20.1)");
     st0.execute(
-        "insert into root.t1.wf01.wt01(time, (status, temperature)) values (6000, (true, 22))");
+        "insert into root.t1.wf01.wt01(time, status, temperature) aligned values (6000, true, 22)");
     st0.close();
 
     Statement st1 = connection.createStatement();
@@ -86,7 +86,7 @@ public class IOTDBInsertAlignedValuesIT {
     rs1.next();
     Assert.assertEquals(true, rs1.getBoolean(2));
 
-    ResultSet rs2 = st1.executeQuery("select * from root.t1.wf01.wt01");
+    ResultSet rs2 = st1.executeQuery("select status, temperature from root.t1.wf01.wt01");
     rs2.next();
     Assert.assertEquals(4000, rs2.getLong(1));
     Assert.assertEquals(true, rs2.getBoolean(2));
@@ -105,15 +105,12 @@ public class IOTDBInsertAlignedValuesIT {
   }
 
   @Test
-  @Ignore // SQL of insert aligned record is not supported yet
   public void testInsertAlignedNullableValues() throws SQLException {
     Statement st0 = connection.createStatement();
     st0.execute(
-        "insert into root.t1.wf01.wt01(time, (status, temperature)) values (4000, (true, 17.1))");
-    st0.execute(
-        "insert into root.t1.wf01.wt01(time, (status, temperature)) values (5000, (true, null))");
-    st0.execute(
-        "insert into root.t1.wf01.wt01(time, (status, temperature)) values (6000, (NULL, 22))");
+        "insert into root.t1.wf01.wt01(time, status, temperature) aligned values (4000, true, 17.1)");
+    st0.execute("insert into root.t1.wf01.wt01(time, status) aligned values (5000, true)");
+    st0.execute("insert into root.t1.wf01.wt01(time, temperature) aligned values (6000, 22)");
     st0.close();
 
     Statement st1 = connection.createStatement();
@@ -122,7 +119,7 @@ public class IOTDBInsertAlignedValuesIT {
     rs1.next();
     Assert.assertEquals(true, rs1.getBoolean(2));
 
-    ResultSet rs2 = st1.executeQuery("select * from root.t1.wf01.wt01");
+    ResultSet rs2 = st1.executeQuery("select status, temperature from root.t1.wf01.wt01");
     rs2.next();
     Assert.assertEquals(4000, rs2.getLong(1));
     Assert.assertEquals(true, rs2.getBoolean(2));
@@ -141,17 +138,13 @@ public class IOTDBInsertAlignedValuesIT {
   }
 
   @Test
-  @Ignore // SQL of insert aligned record is not supported yet
   public void testUpdatingAlignedValues() throws SQLException {
     Statement st0 = connection.createStatement();
     st0.execute(
-        "insert into root.t1.wf01.wt01(time, (status, temperature)) values (4000, (true, 17.1))");
-    st0.execute(
-        "insert into root.t1.wf01.wt01(time, (status, temperature)) values (5000, (true, null))");
-    st0.execute(
-        "insert into root.t1.wf01.wt01(time, (status, temperature)) values (5000, (NULL, 20.1))");
-    st0.execute(
-        "insert into root.t1.wf01.wt01(time, (status, temperature)) values (6000, (null, 22))");
+        "insert into root.t1.wf01.wt01(time, status, temperature) aligned values (4000, true, 17.1)");
+    st0.execute("insert into root.t1.wf01.wt01(time, status) aligned values (5000, true)");
+    st0.execute("insert into root.t1.wf01.wt01(time, temperature) aligned values (5000, 20.1)");
+    st0.execute("insert into root.t1.wf01.wt01(time, temperature) aligned values (6000, 22)");
     st0.close();
 
     Statement st1 = connection.createStatement();
@@ -164,7 +157,7 @@ public class IOTDBInsertAlignedValuesIT {
     rs1.next();
     Assert.assertEquals(null, rs1.getObject(2));
 
-    ResultSet rs2 = st1.executeQuery("select * from root.t1.wf01.wt01");
+    ResultSet rs2 = st1.executeQuery("select status, temperature from root.t1.wf01.wt01");
     rs2.next();
     Assert.assertEquals(4000, rs2.getLong(1));
     Assert.assertEquals(true, rs2.getBoolean(2));
@@ -189,7 +182,7 @@ public class IOTDBInsertAlignedValuesIT {
     rs3.next();
     Assert.assertEquals(null, rs3.getObject(2));
 
-    ResultSet rs4 = st1.executeQuery("select * from root.t1.wf01.wt01");
+    ResultSet rs4 = st1.executeQuery("select status, temperature from root.t1.wf01.wt01");
     rs4.next();
     Assert.assertEquals(4000, rs4.getLong(1));
     Assert.assertEquals(true, rs4.getBoolean(2));
@@ -210,13 +203,140 @@ public class IOTDBInsertAlignedValuesIT {
   @Test(expected = Exception.class)
   public void testInsertWithWrongMeasurementNum1() throws SQLException {
     Statement st1 = connection.createStatement();
-    st1.execute("insert into root.t1.wf01.wt01(time, (status, temperature)) values(11000, 100)");
+    st1.execute(
+        "insert into root.t1.wf01.wt01(time, status, temperature) aligned values(11000, 100)");
   }
 
   @Test(expected = Exception.class)
   public void testInsertWithWrongMeasurementNum2() throws SQLException {
     Statement st1 = connection.createStatement();
     st1.execute(
-        "insert into root.t1.wf01.wt01(time, (status, temperature)) values(11000, (100, 300, 400))");
+        "insert into root.t1.wf01.wt01(time, status, temperature) aligned values(11000, 100, 300, 400)");
+  }
+
+  @Test
+  public void testInsertWithWrongType() throws SQLException {
+    try (Statement st1 = connection.createStatement()) {
+      st1.execute(
+          "CREATE ALIGNED TIMESERIES root.lz.dev.GPS(latitude INT32 encoding=PLAIN compressor=SNAPPY, longitude INT32 encoding=PLAIN compressor=SNAPPY) ");
+      st1.execute("insert into root.lz.dev.GPS(time,latitude,longitude) aligned values(1,1.3,6.7)");
+      Assert.fail();
+    } catch (IoTDBSQLException e) {
+      Assert.assertEquals(313, e.getErrorCode());
+    }
+  }
+
+  @Test
+  public void testInsertAlignedWithEmptyPage() throws SQLException {
+    TSFileDescriptor.getInstance().getConfig().setMaxNumberOfPointsInPage(2);
+    try (Statement st1 = connection.createStatement()) {
+      st1.execute(
+          "CREATE ALIGNED TIMESERIES root.lz.dev.GPS(S1 INT32 encoding=PLAIN compressor=SNAPPY, S2 INT32 encoding=PLAIN compressor=SNAPPY, S3 INT32 encoding=PLAIN compressor=SNAPPY) ");
+      for (int i = 0; i < 100; i++) {
+        if (i == 99) {
+          st1.execute(
+              "insert into root.lz.dev.GPS(time,S1,S3) aligned values("
+                  + i
+                  + ","
+                  + i
+                  + ","
+                  + i
+                  + ")");
+        } else {
+          st1.execute(
+              "insert into root.lz.dev.GPS(time,S1,S2) aligned values("
+                  + i
+                  + ","
+                  + i
+                  + ","
+                  + i
+                  + ")");
+        }
+      }
+      st1.execute("flush");
+    }
+    try (Statement st2 = connection.createStatement()) {
+      ResultSet rs1 = st2.executeQuery("select S3 from root.lz.dev.GPS");
+      int rowCount = 0;
+      while (rs1.next()) {
+        Assert.assertEquals(99, rs1.getInt(2));
+        rowCount++;
+      }
+      Assert.assertEquals(1, rowCount);
+
+      rs1 = st2.executeQuery("select S2 from root.lz.dev.GPS");
+      rowCount = 0;
+      while (rs1.next()) {
+        Assert.assertEquals(rowCount, rs1.getInt(2));
+        rowCount++;
+      }
+      Assert.assertEquals(99, rowCount);
+
+      rs1 = st2.executeQuery("select S1 from root.lz.dev.GPS");
+      rowCount = 0;
+      while (rs1.next()) {
+        Assert.assertEquals(rowCount, rs1.getInt(2));
+        rowCount++;
+      }
+      Assert.assertEquals(100, rowCount);
+    }
+  }
+
+  @Test
+  public void testInsertAlignedWithEmptyPage2() throws SQLException {
+    TSFileDescriptor.getInstance().getConfig().setMaxNumberOfPointsInPage(4);
+    try (Statement st1 = connection.createStatement()) {
+      st1.execute(
+          "CREATE ALIGNED TIMESERIES root.lz.dev.GPS(S1 INT32 encoding=PLAIN compressor=SNAPPY, S2 INT32 encoding=PLAIN compressor=SNAPPY, S3 INT32 encoding=PLAIN compressor=SNAPPY) ");
+      for (int i = 0; i < 100; i++) {
+        if (i >= 49) {
+          st1.execute(
+              "insert into root.lz.dev.GPS(time,S1,S2,S3) aligned values("
+                  + i
+                  + ","
+                  + i
+                  + ","
+                  + i
+                  + ","
+                  + i
+                  + ")");
+        } else {
+          st1.execute(
+              "insert into root.lz.dev.GPS(time,S1,S2) aligned values("
+                  + i
+                  + ","
+                  + i
+                  + ","
+                  + i
+                  + ")");
+        }
+      }
+      st1.execute("flush");
+    }
+    try (Statement st2 = connection.createStatement()) {
+      ResultSet rs1 = st2.executeQuery("select S3 from root.lz.dev.GPS");
+      int rowCount = 0;
+      while (rs1.next()) {
+        Assert.assertEquals(rowCount + 49, rs1.getInt(2));
+        rowCount++;
+      }
+      Assert.assertEquals(51, rowCount);
+
+      rs1 = st2.executeQuery("select S2 from root.lz.dev.GPS");
+      rowCount = 0;
+      while (rs1.next()) {
+        Assert.assertEquals(rowCount, rs1.getInt(2));
+        rowCount++;
+      }
+      Assert.assertEquals(100, rowCount);
+
+      rs1 = st2.executeQuery("select S1 from root.lz.dev.GPS");
+      rowCount = 0;
+      while (rs1.next()) {
+        Assert.assertEquals(rowCount, rs1.getInt(2));
+        rowCount++;
+      }
+      Assert.assertEquals(100, rowCount);
+    }
   }
 }
