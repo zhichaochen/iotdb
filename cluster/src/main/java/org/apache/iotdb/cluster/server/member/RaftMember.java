@@ -1433,7 +1433,7 @@ public abstract class RaftMember implements RaftMemberMBean {
     try {
       return clientManager.borrowSyncClient(node, getClientCategory());
     } catch (IOException e) {
-      logger.error("borrow sync client fail", e);
+      logger.error("borrow sync client fail node {}", node, e);
       return null;
     }
   }
