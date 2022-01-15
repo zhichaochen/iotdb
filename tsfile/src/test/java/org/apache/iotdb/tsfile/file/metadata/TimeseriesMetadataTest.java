@@ -69,7 +69,7 @@ public class TimeseriesMetadataTest {
       ByteBuffer buffer = ByteBuffer.allocate((int) fch.size());
       fch.read(buffer);
       buffer.flip();
-      metaData = TimeseriesMetadata.deserializeFrom(buffer, true);
+      metaData = TimeseriesMetadata.deserializeFrom(buffer, true, null);
       metaData.setChunkMetadataListBuffer(new PublicBAOS());
       return metaData;
     } catch (IOException e) {

@@ -146,6 +146,9 @@ public class TSFileConfig implements Serializable {
   /** The amount of data iterate each time */
   private int batchSize = 1000;
 
+  /** whether we should remove stat */
+  private boolean removeStat = true;
+
   public TSFileConfig() {}
 
   public int getGroupSizeInByte() {
@@ -410,5 +413,13 @@ public class TSFileConfig implements Serializable {
 
   public void setBatchSize(int batchSize) {
     this.batchSize = batchSize;
+  }
+
+  public boolean isRemoveStat() {
+    return removeStat;
+  }
+
+  public void setRemoveStat(boolean removeStat) {
+    this.removeStat = removeStat;
   }
 }

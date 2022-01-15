@@ -19,19 +19,20 @@
 
 package org.apache.iotdb.tsfile.file.metadata;
 
-import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
-import org.apache.iotdb.tsfile.file.metadata.statistics.Statistics;
-import org.apache.iotdb.tsfile.read.controller.IChunkMetadataLoader;
-import org.apache.iotdb.tsfile.utils.PublicBAOS;
-import org.apache.iotdb.tsfile.utils.ReadWriteForEncodingUtils;
-import org.apache.iotdb.tsfile.utils.ReadWriteIOUtils;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.iotdb.tsfile.common.conf.TSFileDescriptor;
+import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
+import org.apache.iotdb.tsfile.file.metadata.statistics.Statistics;
+import org.apache.iotdb.tsfile.read.TsFileSequenceReader;
+import org.apache.iotdb.tsfile.read.controller.IChunkMetadataLoader;
+import org.apache.iotdb.tsfile.utils.PublicBAOS;
+import org.apache.iotdb.tsfile.utils.ReadWriteForEncodingUtils;
+import org.apache.iotdb.tsfile.utils.ReadWriteIOUtils;
 
 public class TimeseriesMetadata implements ITimeSeriesMetadata {
 
@@ -72,6 +73,8 @@ public class TimeseriesMetadata implements ITimeSeriesMetadata {
 
   private ArrayList<IChunkMetadata> chunkMetadataList;
 
+  private static boolean removeStat = TSFileDescriptor.getInstance().getConfig().isRemoveStat();
+
   public TimeseriesMetadata() {}
 
   public TimeseriesMetadata(
@@ -99,15 +102,18 @@ public class TimeseriesMetadata implements ITimeSeriesMetadata {
     this.chunkMetadataList = new ArrayList<>(timeseriesMetadata.chunkMetadataList);
   }
 
-  public static TimeseriesMetadata deserializeFrom(ByteBuffer buffer, boolean needChunkMetadata) {
+  public static TimeseriesMetadata deserializeFrom(
+      ByteBuffer buffer, boolean needChunkMetadata, TsFileSequenceReader reader) {
     TimeseriesMetadata timeseriesMetaData = new TimeseriesMetadata();
     timeseriesMetaData.setTimeSeriesMetadataType(ReadWriteIOUtils.readByte(buffer));
     timeseriesMetaData.setMeasurementId(ReadWriteIOUtils.readVarIntString(buffer));
     timeseriesMetaData.setTSDataType(ReadWriteIOUtils.readDataType(buffer));
     int chunkMetaDataListDataSize = ReadWriteForEncodingUtils.readUnsignedVarInt(buffer);
     timeseriesMetaData.setDataSizeOfChunkMetaDataList(chunkMetaDataListDataSize);
-    timeseriesMetaData.setStatistics(Statistics.deserialize(buffer, timeseriesMetaData.dataType));
-    if (needChunkMetadata) {
+    timeseriesMetaData.setStatistics(
+        TimeseriesMetadataStatisticsLoader.getStatistics(timeseriesMetaData, buffer, reader));
+    // loader may already read chunk metadata list
+    if (needChunkMetadata && timeseriesMetaData.getChunkMetadataList() == null) {
       ByteBuffer byteBuffer = buffer.slice();
       byteBuffer.limit(chunkMetaDataListDataSize);
       timeseriesMetaData.chunkMetadataList = new ArrayList<>();
@@ -119,6 +125,7 @@ public class TimeseriesMetadata implements ITimeSeriesMetadata {
       timeseriesMetaData.chunkMetadataList.trimToSize();
     }
     buffer.position(buffer.position() + chunkMetaDataListDataSize);
+
     return timeseriesMetaData;
   }
 
@@ -136,9 +143,16 @@ public class TimeseriesMetadata implements ITimeSeriesMetadata {
     byteLen += ReadWriteIOUtils.write(dataType, outputStream);
     byteLen +=
         ReadWriteForEncodingUtils.writeUnsignedVarInt(chunkMetaDataListDataSize, outputStream);
-    byteLen += statistics.serialize(outputStream);
+
+    // only one chunk and we config remove statistics, we will skip following statistic save
+    // currently aligned timeseries also hold statistics
+    if (!removeStat || timeSeriesMetadataType != 0) {
+      byteLen += statistics.serialize(outputStream);
+    }
+
     chunkMetadataListBuffer.writeTo(outputStream);
     byteLen += chunkMetadataListBuffer.size();
+
     return byteLen;
   }
 

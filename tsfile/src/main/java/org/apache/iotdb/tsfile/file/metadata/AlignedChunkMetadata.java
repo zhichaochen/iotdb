@@ -24,6 +24,7 @@ import org.apache.iotdb.tsfile.read.common.TimeRange;
 import org.apache.iotdb.tsfile.read.controller.IChunkLoader;
 
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.util.List;
 
 public class AlignedChunkMetadata implements IChunkMetadata {
@@ -47,6 +48,15 @@ public class AlignedChunkMetadata implements IChunkMetadata {
     return valueChunkMetadataList.size() == 1 && valueChunkMetadataList.get(0) != null
         ? valueChunkMetadataList.get(0).getStatistics()
         : timeChunkMetadata.getStatistics();
+  }
+
+  @Override
+  public void setStatistics(Statistics<? extends Serializable> statistics) {
+    if (valueChunkMetadataList.size() == 1 && valueChunkMetadataList.get(0) != null) {
+      valueChunkMetadataList.get(0).setStatistics(statistics);
+    } else {
+      timeChunkMetadata.setStatistics(statistics);
+    }
   }
 
   public Statistics getStatistics(int index) {

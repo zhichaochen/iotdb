@@ -362,7 +362,7 @@ public class TsFileSequenceReader implements AutoCloseable {
     buffer = readData(metadataIndexPair.left.getOffset(), metadataIndexPair.right);
     while (buffer.hasRemaining()) {
       try {
-        timeseriesMetadataList.add(TimeseriesMetadata.deserializeFrom(buffer, true));
+        timeseriesMetadataList.add(TimeseriesMetadata.deserializeFrom(buffer, true, this));
       } catch (BufferOverflowException e) {
         logger.error(
             "Something error happened while deserializing TimeseriesMetadata of file {}", file);
@@ -409,7 +409,7 @@ public class TsFileSequenceReader implements AutoCloseable {
     buffer = readData(metadataIndexPair.left.getOffset(), metadataIndexPair.right);
     while (buffer.hasRemaining()) {
       try {
-        timeseriesMetadataList.add(TimeseriesMetadata.deserializeFrom(buffer, true));
+        timeseriesMetadataList.add(TimeseriesMetadata.deserializeFrom(buffer, true, this));
       } catch (BufferOverflowException e) {
         logger.error(
             "Something error happened while deserializing TimeseriesMetadata of file {}", file);
@@ -445,7 +445,7 @@ public class TsFileSequenceReader implements AutoCloseable {
     while (buffer.hasRemaining()) {
       TimeseriesMetadata timeseriesMetadata;
       try {
-        timeseriesMetadata = TimeseriesMetadata.deserializeFrom(buffer, true);
+        timeseriesMetadata = TimeseriesMetadata.deserializeFrom(buffer, true, this);
       } catch (BufferOverflowException e) {
         logger.error(
             "Something error happened while deserializing TimeseriesMetadata of file {}", file);
@@ -530,7 +530,7 @@ public class TsFileSequenceReader implements AutoCloseable {
               measurementMetadataIndexPair.left.getOffset(), measurementMetadataIndexPair.right);
       while (buffer.hasRemaining()) {
         try {
-          timeseriesMetadataList.add(TimeseriesMetadata.deserializeFrom(buffer, true));
+          timeseriesMetadataList.add(TimeseriesMetadata.deserializeFrom(buffer, true, this));
         } catch (BufferOverflowException e) {
           logger.error(
               "Something error happened while deserializing TimeseriesMetadata of file {}", file);
@@ -735,7 +735,8 @@ public class TsFileSequenceReader implements AutoCloseable {
             paths.add(
                 new Path(
                     startEndPair.left,
-                    TimeseriesMetadata.deserializeFrom(nextBuffer, false).getMeasurementId()));
+                    TimeseriesMetadata.deserializeFrom(nextBuffer, false, TsFileSequenceReader.this)
+                        .getMeasurementId()));
           }
           return paths;
         } catch (IOException e) {
@@ -804,7 +805,7 @@ public class TsFileSequenceReader implements AutoCloseable {
             readData(
                 measurementNode.getChildren().get(0).getOffset(), measurementNode.getEndOffset());
       }
-      return TimeseriesMetadata.deserializeFrom(buffer, true);
+      return TimeseriesMetadata.deserializeFrom(buffer, true, this);
     } else if (measurementNode.getNodeType().equals(MetadataIndexNodeType.INTERNAL_MEASUREMENT)) {
       ByteBuffer buffer =
           readData(
@@ -837,7 +838,8 @@ public class TsFileSequenceReader implements AutoCloseable {
       if (type.equals(MetadataIndexNodeType.LEAF_MEASUREMENT)) {
         List<TimeseriesMetadata> timeseriesMetadataList = new ArrayList<>();
         while (buffer.hasRemaining()) {
-          timeseriesMetadataList.add(TimeseriesMetadata.deserializeFrom(buffer, needChunkMetadata));
+          timeseriesMetadataList.add(
+              TimeseriesMetadata.deserializeFrom(buffer, needChunkMetadata, this));
         }
         timeseriesMetadataMap
             .computeIfAbsent(deviceId, k -> new ArrayList<>())
@@ -1475,7 +1477,7 @@ public class TsFileSequenceReader implements AutoCloseable {
       if (metadataIndexNode.getNodeType().equals(MetadataIndexNodeType.LEAF_MEASUREMENT)) {
         List<TimeseriesMetadata> timeseriesMetadataList = new ArrayList<>();
         while (buffer.hasRemaining()) {
-          timeseriesMetadataList.add(TimeseriesMetadata.deserializeFrom(buffer, true));
+          timeseriesMetadataList.add(TimeseriesMetadata.deserializeFrom(buffer, true, this));
         }
         timeseriesMetadataMap
             .computeIfAbsent(device, k -> new ArrayList<>())
@@ -1691,7 +1693,8 @@ public class TsFileSequenceReader implements AutoCloseable {
           List<TimeseriesMetadata> timeseriesMetadataList = new ArrayList<>();
           ByteBuffer nextBuffer = readData(startEndPair.left, startEndPair.right);
           while (nextBuffer.hasRemaining()) {
-            timeseriesMetadataList.add(TimeseriesMetadata.deserializeFrom(nextBuffer, true));
+            timeseriesMetadataList.add(
+                TimeseriesMetadata.deserializeFrom(nextBuffer, true, TsFileSequenceReader.this));
           }
           for (TimeseriesMetadata timeseriesMetadata : timeseriesMetadataList) {
             List<ChunkMetadata> list =

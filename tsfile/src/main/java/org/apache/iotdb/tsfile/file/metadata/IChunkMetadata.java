@@ -33,6 +33,8 @@ public interface IChunkMetadata {
 
   Statistics<? extends Serializable> getStatistics();
 
+  void setStatistics(Statistics<? extends Serializable> statistics);
+
   boolean isModified();
 
   void setModified(boolean modified);

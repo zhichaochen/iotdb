@@ -336,4 +336,8 @@ public class ChunkMetadata implements IChunkMetadata {
   public void setMask(byte mask) {
     this.mask = mask;
   }
+
+  public void setStatistics(Statistics<? extends Serializable> statistics) {
+    this.statistics = statistics;
+  }
 }
