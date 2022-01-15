@@ -802,6 +802,15 @@ The permission definitions are in ${IOTDB\_CONF}/conf/jmx.access.
 |Default| false |
 |Effective|After restart system|
 
+* remove\_statistics
+
+|Name| remove\_statistics |
+|:---:|:---|
+|Description| remove statistics for saving disk space. This may slow down query. Currently will take effect only when one timeseries has only one page of data |
+|Type| bool |
+|Default| false |
+|Effective|Only allowed to be modified in first start up|
+
 ## Enable GC log
 GC log is off by default.
 For performance tuning, you may want to collect the GC info. 

@@ -18,12 +18,11 @@
  */
 package org.apache.iotdb.tsfile.common.conf;
 
+import java.io.Serializable;
+import java.nio.charset.Charset;
 import org.apache.iotdb.tsfile.file.metadata.enums.CompressionType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.fileSystem.FSType;
-
-import java.io.Serializable;
-import java.nio.charset.Charset;
 
 /** TSFileConfig is a configure class. Every variables is public and has default value. */
 public class TSFileConfig implements Serializable {
@@ -145,9 +144,8 @@ public class TSFileConfig implements Serializable {
   private double bloomFilterErrorRate = 0.05;
   /** The amount of data iterate each time */
   private int batchSize = 1000;
-
   /** whether we should remove stat */
-  private boolean removeStat = true;
+  private boolean removeStat = false;
 
   public TSFileConfig() {}
 
