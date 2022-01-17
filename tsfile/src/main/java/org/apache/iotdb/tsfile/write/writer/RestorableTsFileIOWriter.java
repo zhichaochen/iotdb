@@ -34,9 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -161,37 +158,6 @@ public class RestorableTsFileIOWriter extends TsFileIOWriter {
         }
       }
     }
-  }
-
-  /**
-   * Given a TsFile, generate a writable RestorableTsFileIOWriter. That is, for a complete TsFile,
-   * the function erases all FileMetadata and supports writing new data; For a incomplete TsFile,
-   * the function supports writing new data directly. However, it is more efficient using the
-   * construction function of RestorableTsFileIOWriter, if the tsfile is incomplete.
-   *
-   * @param file a TsFile
-   * @return a writable RestorableTsFileIOWriter
-   */
-  public static RestorableTsFileIOWriter getWriterForAppendingDataOnCompletedTsFile(File file)
-      throws IOException {
-    long position = file.length();
-
-    try (TsFileSequenceReader reader = new TsFileSequenceReader(file.getAbsolutePath(), false)) {
-      // this tsfile is complete
-      if (reader.isComplete()) {
-        reader.loadMetadataSize();
-        position = reader.getFileMetadataPos();
-      }
-    }
-
-    if (position != file.length()) {
-      // if the file is complete, we will remove all file metadatas
-      try (FileChannel channel =
-          FileChannel.open(Paths.get(file.getAbsolutePath()), StandardOpenOption.WRITE)) {
-        channel.truncate(position - 1); // remove the last marker.
-      }
-    }
-    return new RestorableTsFileIOWriter(file);
   }
 
   long getTruncatedSize() {

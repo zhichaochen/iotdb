@@ -99,11 +99,12 @@ public class TsFileMetadata {
     // metadataIndex
     if (metadataIndex != null) {
       byteLen += metadataIndex.serializeTo(outputStream);
-      // metaOffset
-      byteLen += ReadWriteIOUtils.write(metaOffset, outputStream);
     } else {
       byteLen += ReadWriteIOUtils.write(0, outputStream);
     }
+
+    // metaOffset
+    byteLen += ReadWriteIOUtils.write(metaOffset, outputStream);
     return byteLen;
   }
 

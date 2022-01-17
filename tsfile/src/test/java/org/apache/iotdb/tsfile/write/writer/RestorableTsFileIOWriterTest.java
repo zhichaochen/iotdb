@@ -445,30 +445,4 @@ public class RestorableTsFileIOWriterTest {
     assertNotNull(chunkMetadataList);
     reader.close();
   }
-
-  @Test
-  public void testAppendDataOnCompletedFile() throws Exception {
-    TsFileWriter writer = new TsFileWriter(file);
-    writer.registerTimeseries(
-        new Path("d1"), new MeasurementSchema("s1", TSDataType.FLOAT, TSEncoding.RLE));
-    writer.registerTimeseries(
-        new Path("d1"), new MeasurementSchema("s2", TSDataType.FLOAT, TSEncoding.RLE));
-    writer.write(
-        new TSRecord(1, "d1")
-            .addTuple(new FloatDataPoint("s1", 5))
-            .addTuple(new FloatDataPoint("s2", 4)));
-    writer.write(
-        new TSRecord(2, "d1")
-            .addTuple(new FloatDataPoint("s1", 5))
-            .addTuple(new FloatDataPoint("s2", 4)));
-    writer.close();
-
-    long size = file.length();
-    RestorableTsFileIOWriter rWriter =
-        RestorableTsFileIOWriter.getWriterForAppendingDataOnCompletedTsFile(file);
-    TsFileWriter write = new TsFileWriter(rWriter);
-    write.close();
-    rWriter.close();
-    assertEquals(size, file.length());
-  }
 }
