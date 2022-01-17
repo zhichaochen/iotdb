@@ -828,11 +828,12 @@ public class TsFileSequenceReader implements AutoCloseable {
     for (Map.Entry<String, List<TimeseriesMetadata>> entry :
         getAllTimeseriesMetadata(true).entrySet()) {
       for (TimeseriesMetadata timeseriesMetadata : entry.getValue()) {
-        deviceChunkMetadataMap.put(
-            entry.getKey(),
-            timeseriesMetadata.getChunkMetadataList().stream()
-                .map(chunkMetadata -> ((ChunkMetadata) chunkMetadata))
-                .collect(Collectors.toList()));
+        deviceChunkMetadataMap
+            .computeIfAbsent(entry.getKey(), k -> new ArrayList<>())
+            .addAll(
+                timeseriesMetadata.getChunkMetadataList().stream()
+                    .map(chunkMetadata -> ((ChunkMetadata) chunkMetadata))
+                    .collect(Collectors.toList()));
       }
     }
     return deviceChunkMetadataMap;
