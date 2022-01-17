@@ -125,7 +125,7 @@ public class TsFileSelfCheckTool {
           while (buffer.hasRemaining()) {
             long pos = startOffset + buffer.position();
             TimeseriesMetadata timeseriesMetadata =
-                TimeseriesMetadata.deserializeFrom(buffer, needChunkMetadata);
+                TimeseriesMetadata.deserializeFrom(buffer, needChunkMetadata, this);
             timeseriesMetadataMap.put(
                 pos,
                 new Pair<>(
