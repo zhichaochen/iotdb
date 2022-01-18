@@ -71,6 +71,8 @@ public class MemTableFlushTask {
   private volatile long memSerializeTime = 0L;
   private volatile long ioTime = 0L;
 
+  private long totalCostTime = 0L;
+
   /**
    * @param memTable the memTable to flush
    * @param writer the writer where memTable will be flushed to (current tsfile writer or vm writer)
@@ -166,11 +168,15 @@ public class MemTableFlushTask {
               "flush");
     }
 
+    long costTime = System.currentTimeMillis() - start;
     LOGGER.info(
         "Storage group {} memtable {} flushing a memtable has finished! Time consumption: {}ms",
         storageGroup,
         memTable,
-        System.currentTimeMillis() - start);
+            costTime);
+
+    totalCostTime += costTime;
+    LOGGER.info("Cumulative flush cost time: {}", totalCostTime);
   }
 
   /** encoding task (second task of pipeline) */
