@@ -21,7 +21,6 @@ package org.apache.iotdb;
 
 import org.apache.iotdb.rpc.IoTDBConnectionException;
 import org.apache.iotdb.rpc.StatementExecutionException;
-import org.apache.iotdb.rpc.TSStatusCode;
 import org.apache.iotdb.session.Session;
 import org.apache.iotdb.session.SessionDataSet;
 import org.apache.iotdb.session.SessionDataSet.DataIterator;
@@ -63,26 +62,38 @@ public class SessionExample {
     // set session fetchSize
     session.setFetchSize(10000);
 
-    try {
-      session.setStorageGroup("root.sg1");
-    } catch (StatementExecutionException e) {
-      if (e.getStatusCode() != TSStatusCode.PATH_ALREADY_EXIST_ERROR.getStatusCode()) {
-        throw e;
-      }
+    //    try {
+    //      session.setStorageGroup("root.sg1");
+    //    } catch (StatementExecutionException e) {
+    //      if (e.getStatusCode() != TSStatusCode.PATH_ALREADY_EXIST_ERROR.getStatusCode()) {
+    //        throw e;
+    //      }
+    //    }
+
+    if ("aligned".equals(args[0])) {
+      long totalRowNum = Long.parseLong(args[1]);
+      insertTablet(totalRowNum);
+    } else if ("nonAligned".equals(args[0])) {
+      long totalRowNum = Long.parseLong(args[1]);
+      insertAlignedTablet(totalRowNum);
+    } else {
+      String sql = args[1];
+      query(sql);
     }
 
     // createTemplate();
-    createTimeseries();
-    createMultiTimeseries();
-    insertRecord();
-    insertTablet();
+    //    createTimeseries();
+    //    createMultiTimeseries();
+    //    insertRecord();
+    //    insertTablet();
+    //    insertAlignedTablet();
     //    insertTabletWithNullValues();
     //    insertTablets();
     //    insertRecords();
     //    selectInto();
     //    createAndDropContinuousQueries();
     //    nonQuery();
-    //    query();
+    //        query();
     //    queryWithTimeout();
     //    rawDataQuery();
     //    lastDataQuery();
@@ -91,16 +102,16 @@ public class SessionExample {
     //    deleteTimeseries();
     //    setTimeout();
 
-    sessionEnableRedirect = new Session(LOCAL_HOST, 6667, "root", "root");
-    sessionEnableRedirect.setEnableQueryRedirection(true);
-    sessionEnableRedirect.open(false);
-
-    // set session fetchSize
-    sessionEnableRedirect.setFetchSize(10000);
-
-    insertRecord4Redirect();
-    query4Redirect();
-    sessionEnableRedirect.close();
+    //    sessionEnableRedirect = new Session(LOCAL_HOST, 6667, "root", "root");
+    //    sessionEnableRedirect.setEnableQueryRedirection(true);
+    //    sessionEnableRedirect.open(false);
+    //
+    //    // set session fetchSize
+    //    sessionEnableRedirect.setFetchSize(10000);
+    //
+    //    insertRecord4Redirect();
+    //    query4Redirect();
+    //    sessionEnableRedirect.close();
     session.close();
   }
 
@@ -361,7 +372,8 @@ public class SessionExample {
    *
    * <p>Users need to control the count of Tablet and write a batch when it reaches the maxBatchSize
    */
-  private static void insertTablet() throws IoTDBConnectionException, StatementExecutionException {
+  private static void insertTablet(long totalRowNum)
+      throws IoTDBConnectionException, StatementExecutionException {
     /*
      * A Tablet example:
      *      device1
@@ -373,25 +385,26 @@ public class SessionExample {
     // The schema of measurements of one device
     // only measurementId and data type in MeasurementSchema take effects in Tablet
     List<MeasurementSchema> schemaList = new ArrayList<>();
-    schemaList.add(new MeasurementSchema("s1", TSDataType.INT64));
-    schemaList.add(new MeasurementSchema("s2", TSDataType.INT64));
-    schemaList.add(new MeasurementSchema("s3", TSDataType.INT64));
+    for (int i = 0; i < 10; i++) {
+      schemaList.add(new MeasurementSchema("s" + i, TSDataType.INT64));
+    }
 
-    Tablet tablet = new Tablet(ROOT_SG1_D1, schemaList, 100);
+    Tablet tablet = new Tablet(ROOT_SG1_D1, schemaList, 10000);
 
     // Method 1 to add tablet data
-    long timestamp = System.currentTimeMillis();
-
-    for (long row = 0; row < 100; row++) {
+    long timestamp = 0;
+    Random random = new Random(123456);
+    for (long row = 0; row < totalRowNum; row++) {
       int rowIndex = tablet.rowSize++;
       tablet.addTimestamp(rowIndex, timestamp);
-      for (int s = 0; s < 3; s++) {
-        long value = new Random().nextLong();
+      for (int s = 0; s < 10; s++) {
+        long value = random.nextLong();
         tablet.addValue(schemaList.get(s).getMeasurementId(), rowIndex, value);
       }
       if (tablet.rowSize == tablet.getMaxRowNumber()) {
         session.insertTablet(tablet, true);
         tablet.reset();
+        System.out.println("already insert: " + row + " rows.");
       }
       timestamp++;
     }
@@ -400,26 +413,47 @@ public class SessionExample {
       session.insertTablet(tablet);
       tablet.reset();
     }
+  }
 
-    // Method 2 to add tablet data
-    long[] timestamps = tablet.timestamps;
-    Object[] values = tablet.values;
+  private static void insertAlignedTablet(long totalRowNum)
+      throws IoTDBConnectionException, StatementExecutionException {
+    /*
+     * A Tablet example:
+     *      device1
+     * time s1, s2, s3
+     * 1,   1,  1,  1
+     * 2,   2,  2,  2
+     * 3,   3,  3,  3
+     */
+    // The schema of measurements of one device
+    // only measurementId and data type in MeasurementSchema take effects in Tablet
+    List<MeasurementSchema> schemaList = new ArrayList<>();
+    for (int i = 0; i < 10; i++) {
+      schemaList.add(new MeasurementSchema("s" + i, TSDataType.INT64));
+    }
 
-    for (long time = 0; time < 100; time++) {
-      int row = tablet.rowSize++;
-      timestamps[row] = time;
-      for (int i = 0; i < 3; i++) {
-        long[] sensor = (long[]) values[i];
-        sensor[row] = i;
+    Tablet tablet = new Tablet(ROOT_SG1_D1, schemaList, 1000);
+
+    // Method 1 to add tablet data
+    long timestamp = 0;
+    Random random = new Random(123456);
+    for (long row = 0; row < totalRowNum; row++) {
+      int rowIndex = tablet.rowSize++;
+      tablet.addTimestamp(rowIndex, timestamp);
+      for (int s = 0; s < 10; s++) {
+        long value = random.nextLong();
+        tablet.addValue(schemaList.get(s).getMeasurementId(), rowIndex, value);
       }
       if (tablet.rowSize == tablet.getMaxRowNumber()) {
-        session.insertTablet(tablet, true);
+        session.insertAlignedTablet(tablet, true);
         tablet.reset();
+        System.out.println("already insert: " + row + " rows.");
       }
+      timestamp++;
     }
 
     if (tablet.rowSize != 0) {
-      session.insertTablet(tablet);
+      session.insertAlignedTablet(tablet);
       tablet.reset();
     }
   }
@@ -621,14 +655,15 @@ public class SessionExample {
     session.deleteTimeseries(paths);
   }
 
-  private static void query() throws IoTDBConnectionException, StatementExecutionException {
-    try (SessionDataSet dataSet = session.executeQueryStatement("select * from root.sg1.d1")) {
-      System.out.println(dataSet.getColumnNames());
-      dataSet.setFetchSize(1024); // default is 10000
+  private static void query(String sql) throws IoTDBConnectionException, StatementExecutionException {
+    long startTime = System.currentTimeMillis();
+    try (SessionDataSet dataSet = session.executeQueryStatement(sql)) {
+      dataSet.setFetchSize(10000); // default is 10000
       while (dataSet.hasNext()) {
-        System.out.println(dataSet.next());
+        dataSet.next();
       }
     }
+    System.out.println("cost: " + (System.currentTimeMillis() - startTime) + "ms");
   }
 
   private static void query4Redirect()
