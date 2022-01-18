@@ -173,7 +173,7 @@ public class MemTableFlushTask {
         "Storage group {} memtable {} flushing a memtable has finished! Time consumption: {}ms",
         storageGroup,
         memTable,
-            costTime);
+        costTime);
 
     totalCostTime += costTime;
     LOGGER.info("Cumulative flush cost time: {}", totalCostTime);
