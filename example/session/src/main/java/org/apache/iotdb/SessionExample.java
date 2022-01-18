@@ -655,7 +655,8 @@ public class SessionExample {
     session.deleteTimeseries(paths);
   }
 
-  private static void query(String sql) throws IoTDBConnectionException, StatementExecutionException {
+  private static void query(String sql)
+      throws IoTDBConnectionException, StatementExecutionException {
     long startTime = System.currentTimeMillis();
     try (SessionDataSet dataSet = session.executeQueryStatement(sql)) {
       dataSet.setFetchSize(10000); // default is 10000
