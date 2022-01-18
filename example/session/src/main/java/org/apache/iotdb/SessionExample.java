@@ -62,56 +62,33 @@ public class SessionExample {
     // set session fetchSize
     session.setFetchSize(10000);
 
-    //    try {
-    //      session.setStorageGroup("root.sg1");
-    //    } catch (StatementExecutionException e) {
-    //      if (e.getStatusCode() != TSStatusCode.PATH_ALREADY_EXIST_ERROR.getStatusCode()) {
-    //        throw e;
-    //      }
-    //    }
-
-    if ("aligned".equals(args[0])) {
-      long totalRowNum = Long.parseLong(args[1]);
-      insertTablet(totalRowNum);
-    } else if ("nonAligned".equals(args[0])) {
-      long totalRowNum = Long.parseLong(args[1]);
-      insertAlignedTablet(totalRowNum);
-    } else {
+    if ("query".equals(args[0])) {
       String sql = args[1];
       query(sql);
+    } else {
+      long totalRowNum = Long.parseLong(args[1]);
+      int sensorNum = Integer.parseInt(args[2]);
+      long startTime = System.currentTimeMillis();
+      if ("aligned".equals(args[0])) {
+        insertAlignedTablet(totalRowNum, sensorNum);
+        System.out.println(
+            "Insert aligned "
+                + totalRowNum
+                + " rows cost: "
+                + (System.currentTimeMillis() - startTime)
+                + "ms.");
+      } else if ("nonAligned".equals(args[0])) {
+        insertTablet(totalRowNum, sensorNum);
+        System.out.println(
+            "Insert nonAligned "
+                + totalRowNum
+                + " rows cost: "
+                + (System.currentTimeMillis() - startTime)
+                + "ms.");
+      } else {
+        throw new IllegalArgumentException("unknown command: " + args[0]);
+      }
     }
-
-    // createTemplate();
-    //    createTimeseries();
-    //    createMultiTimeseries();
-    //    insertRecord();
-    //    insertTablet();
-    //    insertAlignedTablet();
-    //    insertTabletWithNullValues();
-    //    insertTablets();
-    //    insertRecords();
-    //    selectInto();
-    //    createAndDropContinuousQueries();
-    //    nonQuery();
-    //        query();
-    //    queryWithTimeout();
-    //    rawDataQuery();
-    //    lastDataQuery();
-    //    queryByIterator();
-    //    deleteData();
-    //    deleteTimeseries();
-    //    setTimeout();
-
-    //    sessionEnableRedirect = new Session(LOCAL_HOST, 6667, "root", "root");
-    //    sessionEnableRedirect.setEnableQueryRedirection(true);
-    //    sessionEnableRedirect.open(false);
-    //
-    //    // set session fetchSize
-    //    sessionEnableRedirect.setFetchSize(10000);
-    //
-    //    insertRecord4Redirect();
-    //    query4Redirect();
-    //    sessionEnableRedirect.close();
     session.close();
   }
 
@@ -372,7 +349,7 @@ public class SessionExample {
    *
    * <p>Users need to control the count of Tablet and write a batch when it reaches the maxBatchSize
    */
-  private static void insertTablet(long totalRowNum)
+  private static void insertTablet(long totalRowNum, int sensorNum)
       throws IoTDBConnectionException, StatementExecutionException {
     /*
      * A Tablet example:
@@ -385,8 +362,8 @@ public class SessionExample {
     // The schema of measurements of one device
     // only measurementId and data type in MeasurementSchema take effects in Tablet
     List<MeasurementSchema> schemaList = new ArrayList<>();
-    for (int i = 0; i < 10; i++) {
-      schemaList.add(new MeasurementSchema("s" + i, TSDataType.INT64));
+    for (int i = 0; i < sensorNum; i++) {
+      schemaList.add(new MeasurementSchema("s" + i, TSDataType.FLOAT));
     }
 
     Tablet tablet = new Tablet(ROOT_SG1_D1, schemaList, 10000);
@@ -397,8 +374,8 @@ public class SessionExample {
     for (long row = 0; row < totalRowNum; row++) {
       int rowIndex = tablet.rowSize++;
       tablet.addTimestamp(rowIndex, timestamp);
-      for (int s = 0; s < 10; s++) {
-        long value = random.nextLong();
+      for (int s = 0; s < sensorNum; s++) {
+        float value = random.nextFloat();
         tablet.addValue(schemaList.get(s).getMeasurementId(), rowIndex, value);
       }
       if (tablet.rowSize == tablet.getMaxRowNumber()) {
@@ -415,7 +392,7 @@ public class SessionExample {
     }
   }
 
-  private static void insertAlignedTablet(long totalRowNum)
+  private static void insertAlignedTablet(long totalRowNum, int sensorNum)
       throws IoTDBConnectionException, StatementExecutionException {
     /*
      * A Tablet example:
@@ -428,20 +405,19 @@ public class SessionExample {
     // The schema of measurements of one device
     // only measurementId and data type in MeasurementSchema take effects in Tablet
     List<MeasurementSchema> schemaList = new ArrayList<>();
-    for (int i = 0; i < 10; i++) {
-      schemaList.add(new MeasurementSchema("s" + i, TSDataType.INT64));
+    for (int i = 0; i < sensorNum; i++) {
+      schemaList.add(new MeasurementSchema("s" + i, TSDataType.FLOAT));
     }
 
-    Tablet tablet = new Tablet(ROOT_SG1_D1, schemaList, 1000);
+    Tablet tablet = new Tablet(ROOT_SG1_D1, schemaList, 10000);
 
-    // Method 1 to add tablet data
     long timestamp = 0;
     Random random = new Random(123456);
     for (long row = 0; row < totalRowNum; row++) {
       int rowIndex = tablet.rowSize++;
       tablet.addTimestamp(rowIndex, timestamp);
-      for (int s = 0; s < 10; s++) {
-        long value = random.nextLong();
+      for (int s = 0; s < sensorNum; s++) {
+        float value = random.nextFloat();
         tablet.addValue(schemaList.get(s).getMeasurementId(), rowIndex, value);
       }
       if (tablet.rowSize == tablet.getMaxRowNumber()) {
