@@ -44,11 +44,7 @@ public class TsFileProcessorInfo {
     if (MetricConfigDescriptor.getInstance().getMetricConfig().getEnableMetric()) {
       MetricsService.getInstance()
           .getMetricManager()
-          .getOrCreateGauge(
-              Metric.MEM.toString(),
-              Tag.NAME.toString(),
-              "chunkMetaData_"
-                  + storageGroupInfo.getVirtualStorageGroupProcessor().getLogicalStorageGroupName())
+          .getOrCreateGauge(Metric.MEM.toString(), Tag.NAME.toString(), "chunkMetaData")
           .incr(cost);
     }
   }
@@ -60,11 +56,7 @@ public class TsFileProcessorInfo {
     if (MetricConfigDescriptor.getInstance().getMetricConfig().getEnableMetric()) {
       MetricsService.getInstance()
           .getMetricManager()
-          .getOrCreateGauge(
-              Metric.MEM.toString(),
-              Tag.NAME.toString(),
-              "chunkMetaData_"
-                  + storageGroupInfo.getVirtualStorageGroupProcessor().getLogicalStorageGroupName())
+          .getOrCreateGauge(Metric.MEM.toString(), Tag.NAME.toString(), "chunkMetaData")
           .decr(cost);
     }
   }
@@ -72,16 +64,12 @@ public class TsFileProcessorInfo {
   /** called when closing TSP */
   public void clear() {
     storageGroupInfo.releaseStorageGroupMemCost(memCost);
+    memCost = 0L;
     if (MetricConfigDescriptor.getInstance().getMetricConfig().getEnableMetric()) {
       MetricsService.getInstance()
           .getMetricManager()
-          .getOrCreateGauge(
-              Metric.MEM.toString(),
-              Tag.NAME.toString(),
-              "chunkMetaData_"
-                  + storageGroupInfo.getVirtualStorageGroupProcessor().getLogicalStorageGroupName())
+          .getOrCreateGauge(Metric.MEM.toString(), Tag.NAME.toString(), "chunkMetaData")
           .decr(memCost);
     }
-    memCost = 0L;
   }
 }

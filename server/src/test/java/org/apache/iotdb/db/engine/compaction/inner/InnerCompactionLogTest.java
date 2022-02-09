@@ -21,7 +21,6 @@ package org.apache.iotdb.db.engine.compaction.inner;
 
 import org.apache.iotdb.db.constant.TestConstant;
 import org.apache.iotdb.db.engine.compaction.CompactionScheduler;
-import org.apache.iotdb.db.engine.compaction.CompactionTaskManager;
 import org.apache.iotdb.db.engine.storagegroup.TsFileManager;
 import org.apache.iotdb.db.exception.StorageEngineException;
 import org.apache.iotdb.tsfile.fileSystem.FSFactoryProducer;
@@ -67,13 +66,7 @@ public class InnerCompactionLogTest extends InnerCompactionTest {
     tsFileManager.addAll(seqResources, true);
     tsFileManager.addAll(unseqResources, false);
     CompactionScheduler.scheduleCompaction(tsFileManager, 0);
-    CompactionTaskManager.getInstance().submitTaskFromTaskQueue();
-    try {
-      Thread.sleep(1000);
-    } catch (Exception e) {
-
-    }
-    while (CompactionTaskManager.getInstance().getExecutingTaskCount() > 0) {
+    while (CompactionScheduler.isPartitionCompacting(COMPACTION_TEST_SG, 0)) {
       // wait
     }
     File logFile =

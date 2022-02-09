@@ -29,21 +29,19 @@ import java.util.List;
 
 public class CompositeReporter {
   private static final Logger LOGGER = LoggerFactory.getLogger(CompositeReporter.class);
-  private List<Reporter> reporters = new ArrayList<>();
+  private static List<Reporter> reporters = new ArrayList<>();
 
   /** Start all reporter */
   public boolean startAll() {
-    boolean result = true;
     for (Reporter reporter : reporters) {
       if (!reporter.start()) {
         LOGGER.warn("Failed to init {} reporter.", reporter.getReporterType());
-        result = false;
       }
     }
-    return result;
+    return true;
   }
 
-  /** Start reporter by name values in jmx, prometheus, iotdb */
+  /** Start reporter by name name values in jmx, prometheus, iotdb, internal */
   public boolean start(ReporterType reporterType) {
     for (Reporter reporter : reporters) {
       if (reporter.getReporterType() == reporterType) {
@@ -56,17 +54,16 @@ public class CompositeReporter {
 
   /** Stop all reporter */
   public boolean stopAll() {
-    boolean result = true;
     for (Reporter reporter : reporters) {
       if (!reporter.stop()) {
         LOGGER.error("Failed to stop {} reporter.", reporter.getReporterType());
-        result = false;
+        return false;
       }
     }
-    return result;
+    return true;
   }
 
-  /** Stop reporter by name, values in jmx, prometheus, iotdb */
+  /** Stop reporter by name, values in jmx, prometheus, internal */
   public boolean stop(ReporterType reporterType) {
     for (Reporter reporter : reporters) {
       if (reporter.getReporterType() == reporterType) {
@@ -75,11 +72,6 @@ public class CompositeReporter {
     }
     LOGGER.error("Failed to stop reporter: {}", reporterType.name());
     return true;
-  }
-
-  public boolean restartAll() {
-    LOGGER.info("Restart all reporter.");
-    return stopAll() & startAll();
   }
 
   /** Add reporter */

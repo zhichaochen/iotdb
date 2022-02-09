@@ -19,7 +19,6 @@
 
 package org.apache.iotdb.db.engine.compaction.inner;
 
-import org.apache.iotdb.db.conf.IoTDBConstant;
 import org.apache.iotdb.db.engine.compaction.task.AbstractCompactionTask;
 import org.apache.iotdb.db.engine.storagegroup.TsFileNameGenerator;
 import org.apache.iotdb.db.engine.storagegroup.TsFileResource;
@@ -32,8 +31,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class AbstractInnerSpaceCompactionTask extends AbstractCompactionTask {
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(IoTDBConstant.COMPACTION_LOGGER_NAME);
+  private static final Logger LOGGER = LoggerFactory.getLogger("COMPACTION");
 
   protected List<TsFileResource> selectedTsFileResourceList;
   protected boolean sequence;
@@ -103,13 +101,13 @@ public abstract class AbstractInnerSpaceCompactionTask extends AbstractCompactio
   @Override
   public boolean checkValidAndSetMerging() {
     for (TsFileResource resource : selectedTsFileResourceList) {
-      if (resource.isCompacting() | !resource.isClosed() || !resource.getTsFile().exists()) {
+      if (resource.isMerging() | !resource.isClosed() || !resource.getTsFile().exists()) {
         return false;
       }
     }
 
     for (TsFileResource resource : selectedTsFileResourceList) {
-      resource.setCompacting(true);
+      resource.setMerging(true);
     }
     return true;
   }
@@ -127,10 +125,5 @@ public abstract class AbstractInnerSpaceCompactionTask extends AbstractCompactio
         .append(", total compaction count is ")
         .append(sumOfCompactionCount)
         .toString();
-  }
-
-  @Override
-  public void resetCompactionCandidateStatusForAllSourceFiles() {
-    selectedTsFileResourceList.forEach(x -> x.setCompactionCandidate(false));
   }
 }

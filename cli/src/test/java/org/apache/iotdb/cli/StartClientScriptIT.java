@@ -29,6 +29,7 @@ public class StartClientScriptIT extends AbstractScript {
 
   @Before
   public void setUp() {
+    EnvironmentUtils.closeStatMonitor();
     EnvironmentUtils.envSetUp();
   }
 

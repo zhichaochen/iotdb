@@ -23,7 +23,6 @@ import org.apache.iotdb.tsfile.read.expression.IExpression;
 import org.apache.iotdb.tsfile.read.expression.impl.BinaryExpression;
 import org.apache.iotdb.tsfile.read.expression.impl.SingleSeriesExpression;
 import org.apache.iotdb.tsfile.read.filter.TimeFilter;
-import org.apache.iotdb.tsfile.read.filter.basic.Filter;
 import org.apache.iotdb.tsfile.read.filter.factory.FilterFactory;
 import org.apache.iotdb.tsfile.read.query.timegenerator.TimeGenerator;
 
@@ -60,11 +59,6 @@ public class FakedTimeGenerator extends TimeGenerator {
   @Override
   protected boolean isAscending() {
     return true;
-  }
-
-  @Override
-  public Filter getTimeFilter() {
-    return null;
   }
 
   @Test

@@ -97,11 +97,9 @@ public class TimeSeriesMetadataCache {
                                 + RamUsageEstimator.shallowSizeOf(value)
                                 + RamUsageEstimator.sizeOf(value.getMeasurementId())
                                 + RamUsageEstimator.shallowSizeOf(value.getStatistics())
-                                + (value.getChunkMetadataList().get(0) == null
-                                        ? 0
-                                        : ((ChunkMetadata) value.getChunkMetadataList().get(0))
-                                                .calculateRamSize()
-                                            + RamUsageEstimator.NUM_BYTES_OBJECT_REF)
+                                + (((ChunkMetadata) value.getChunkMetadataList().get(0))
+                                            .calculateRamSize()
+                                        + RamUsageEstimator.NUM_BYTES_OBJECT_REF)
                                     * value.getChunkMetadataList().size()
                                 + RamUsageEstimator.shallowSizeOf(value.getChunkMetadataList())))
             .recordStats()
@@ -155,9 +153,7 @@ public class TimeSeriesMetadataCache {
           && !bloomFilter.contains(key.device + IoTDBConstant.PATH_SEPARATOR + key.measurement)) {
         return null;
       }
-      TimeseriesMetadata timeseriesMetadata =
-          reader.readTimeseriesMetadata(new Path(key.device, key.measurement), false);
-      return timeseriesMetadata.getStatistics().getCount() == 0 ? null : timeseriesMetadata;
+      return reader.readTimeseriesMetadata(new Path(key.device, key.measurement), false);
     }
 
     TimeseriesMetadata timeseriesMetadata = lruCache.getIfPresent(key);
@@ -197,11 +193,9 @@ public class TimeSeriesMetadataCache {
             TimeSeriesMetadataCacheKey k =
                 new TimeSeriesMetadataCacheKey(
                     key.filePath, key.device, metadata.getMeasurementId());
-            if (metadata.getStatistics().getCount() != 0) {
-              lruCache.put(k, metadata);
-            }
+            lruCache.put(k, metadata);
             if (metadata.getMeasurementId().equals(key.measurement)) {
-              timeseriesMetadata = metadata.getStatistics().getCount() == 0 ? null : metadata;
+              timeseriesMetadata = metadata;
             }
           }
         }

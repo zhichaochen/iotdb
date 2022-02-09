@@ -349,9 +349,9 @@ public abstract class AbstractMemTable implements IMemTable {
   }
 
   @Override
-  public long getCurrentTVListSize(IDeviceID deviceId, String measurement) {
+  public long getCurrentChunkPointNum(IDeviceID deviceId, String measurement) {
     IWritableMemChunkGroup memChunkGroup = memTableMap.get(deviceId);
-    return memChunkGroup.getCurrentTVListSize(measurement);
+    return memChunkGroup.getCurrentChunkPointNum(measurement);
   }
 
   @Override

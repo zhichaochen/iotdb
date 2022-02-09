@@ -19,13 +19,10 @@
 
 package org.apache.iotdb.metrics.dropwizard;
 
-import org.apache.iotdb.metrics.DoNothingMetricService;
 import org.apache.iotdb.metrics.MetricManager;
 import org.apache.iotdb.metrics.MetricService;
-import org.apache.iotdb.metrics.config.MetricConfig;
-import org.apache.iotdb.metrics.config.MetricConfigDescriptor;
 import org.apache.iotdb.metrics.type.*;
-import org.apache.iotdb.metrics.utils.MonitorType;
+import org.apache.iotdb.metrics.utils.PredefinedMetric;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -39,17 +36,15 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.*;
 
 public class DropwizardMetricManagerTest {
-  static MetricConfig metricConfig = MetricConfigDescriptor.getInstance().getMetricConfig();
-  static MetricService metricService = new DoNothingMetricService();
   static MetricManager metricManager;
 
   @BeforeClass
   public static void init() {
-    metricConfig.setEnableMetric(true);
-    metricConfig.setMonitorType(MonitorType.dropwizard);
-    metricConfig.setPredefinedMetrics(new ArrayList<>());
-    metricService.startService();
-    metricManager = metricService.getMetricManager();
+    System.setProperty("line.separator", "\n");
+    // set up path of yml
+    System.setProperty("IOTDB_CONF", "src/test/resources");
+    MetricService.init();
+    metricManager = MetricService.getMetricManager();
   }
 
   @Test
@@ -174,11 +169,6 @@ public class DropwizardMetricManagerTest {
     metricManager.timer(2L, TimeUnit.MINUTES, "timer_mark", "tag1", "tag2");
     metricManager.timer(4L, TimeUnit.MINUTES, "timer_" + "mark", "tag1", "tag2");
     metricManager.timer(6L, TimeUnit.MINUTES, "timer_mark", "tag1", "tag2");
-    try {
-      Thread.sleep(1000);
-    } catch (Exception e) {
-      // do nothing
-    }
     metricManager.timer(8L, TimeUnit.MINUTES, "timer_mark", "tag1", "tag2");
     metricManager.timer(10L, TimeUnit.MINUTES, "timer_mark", "tag1", "tag2");
     assertEquals(5, timer.getImmutableRate().getCount());
@@ -287,6 +277,11 @@ public class DropwizardMetricManagerTest {
   @Test
   public void isEnable() {
     assertTrue(metricManager.isEnable());
+  }
+
+  @Test
+  public void enablePredefinedMetric() {
+    metricManager.enablePredefinedMetric(PredefinedMetric.JVM);
   }
 
   @AfterClass

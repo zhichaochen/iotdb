@@ -20,28 +20,21 @@
 # whether enable the module
 enableMetric: false
 
-# Multiple reporter, options: [jmx, prometheus, iotdb], iotdb is off by default
+# can be multiple reporter, e.g., jmx, prometheus
 metricReporterList:
   - jmx
   - prometheus
 
-# Type of monitor frame, options: [micrometer, dropwizard]
+# you can check choose one type of monitor frame, such as dropwizard, micrometer
 monitorType: micrometer
 
-# Predefined metric, options: [jvm, logback], logback are not supported in dropwizard
-predefinedMetrics:
-  - jvm
-  - logback
-
-# Period time of push, only valid for dropwizard
+# you can set the period time of push
 pushPeriodInSecond: 5
 
 ########################################################
 #                                                      #
 # if the reporter is prometheus,                       #
-# then the following must be set.                      #
-# if you use dropwizard, all below                     #
-# should be the config of pushgateway                  #
+# then the following must be set                       #
 #                                                      #
 ########################################################
 prometheusReporterConfig:

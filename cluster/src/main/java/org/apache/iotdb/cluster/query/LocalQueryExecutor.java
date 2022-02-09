@@ -65,7 +65,6 @@ import org.apache.iotdb.db.query.factory.AggregateResultFactory;
 import org.apache.iotdb.db.query.reader.series.IReaderByTimestamp;
 import org.apache.iotdb.db.service.IoTDB;
 import org.apache.iotdb.db.utils.SerializeUtils;
-import org.apache.iotdb.rpc.TSStatusCode;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.read.TimeValuePair;
 import org.apache.iotdb.tsfile.read.common.BatchData;
@@ -750,8 +749,7 @@ public class LocalQueryExecutor {
         dataType,
         ascResults,
         descResults,
-        new SlotTsFileFilter(nodeSlots),
-        ascending);
+        new SlotTsFileFilter(nodeSlots));
     return results;
   }
 
@@ -868,14 +866,7 @@ public class LocalQueryExecutor {
             aggregationTypeOrdinals,
             queryContext,
             ascending);
-    boolean isEmpty;
-    try {
-      isEmpty = executor.isEmpty();
-    } catch (IOException e) {
-      logger.error("Something wrong happened", e);
-      throw new QueryProcessException(e, TSStatusCode.INTERNAL_SERVER_ERROR.ordinal());
-    }
-    if (!isEmpty) {
+    if (!executor.isEmpty()) {
       long executorId = queryManager.registerGroupByExecutor(executor);
       logger.debug(
           "{}: Build a GroupByExecutor of {} for {}, executorId: {}",
@@ -1030,16 +1021,14 @@ public class LocalQueryExecutor {
   @SuppressWarnings("java:S1135") // ignore todos
   public ByteBuffer last(LastQueryRequest request)
       throws CheckConsistencyException, QueryProcessException, IOException, StorageEngineException,
-          MetadataException {
+          IllegalPathException {
     dataGroupMember.syncLeaderWithConsistencyCheck(false);
 
     RemoteQueryContext queryContext =
         queryManager.getQueryContext(request.getRequestor(), request.getQueryId());
-    List<PartialPath> seriesPaths = new ArrayList<>();
+    List<PartialPath> partialPaths = new ArrayList<>();
     for (String path : request.getPaths()) {
-      PartialPath partialPath = new PartialPath(path);
-      seriesPaths.add(
-          new MeasurementPath(partialPath, IoTDB.metaManager.getSeriesSchema(partialPath)));
+      partialPaths.add(new MeasurementPath(path));
     }
     List<TSDataType> dataTypes = new ArrayList<>(request.dataTypeOrdinals.size());
     for (Integer dataTypeOrdinal : request.dataTypeOrdinals) {
@@ -1054,7 +1043,7 @@ public class LocalQueryExecutor {
 
     List<Pair<Boolean, TimeValuePair>> timeValuePairs =
         LastQueryExecutor.calculateLastPairForSeriesLocally(
-            seriesPaths, dataTypes, queryContext, expression, request.getDeviceMeasurements());
+            partialPaths, dataTypes, queryContext, expression, request.getDeviceMeasurements());
     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
     DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream);
     for (Pair<Boolean, TimeValuePair> timeValuePair : timeValuePairs) {

@@ -18,7 +18,6 @@
  */
 package org.apache.iotdb.db.qp;
 
-import org.apache.iotdb.db.conf.IoTDBConstant;
 import org.apache.iotdb.db.exception.metadata.IllegalPathException;
 import org.apache.iotdb.db.exception.query.QueryProcessException;
 import org.apache.iotdb.db.exception.runtime.SQLParserException;
@@ -251,8 +250,7 @@ public class PlannerTest {
     tsRawDataQueryReq.setEndTime(100);
     tsRawDataQueryReq.setFetchSize(1000);
     PhysicalPlan physicalPlan =
-        processor.rawDataQueryReqToPhysicalPlan(
-            tsRawDataQueryReq, ZoneId.of("Asia/Shanghai"), IoTDBConstant.ClientVersion.V_0_13);
+        processor.rawDataQueryReqToPhysicalPlan(tsRawDataQueryReq, ZoneId.of("Asia/Shanghai"));
     assertEquals(OperatorType.QUERY, physicalPlan.getOperatorType());
     assertEquals(paths.get(0), physicalPlan.getPaths().get(0).getFullPath());
     assertEquals(paths.get(1), physicalPlan.getPaths().get(1).getFullPath());
@@ -268,8 +266,7 @@ public class PlannerTest {
     tsLastDataQueryReq.setTime(0);
     tsLastDataQueryReq.setFetchSize(1000);
     PhysicalPlan physicalPlan =
-        processor.lastDataQueryReqToPhysicalPlan(
-            tsLastDataQueryReq, ZoneId.of("Asia/Shanghai"), IoTDBConstant.ClientVersion.V_0_13);
+        processor.lastDataQueryReqToPhysicalPlan(tsLastDataQueryReq, ZoneId.of("Asia/Shanghai"));
     assertEquals(OperatorType.LAST, physicalPlan.getOperatorType());
     assertEquals(paths.get(0), physicalPlan.getPaths().get(0).getFullPath());
   }

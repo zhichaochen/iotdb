@@ -66,7 +66,7 @@ public class LocalGroupByExecutor implements GroupByExecutor {
       boolean ascending)
       throws StorageEngineException, QueryProcessException {
     queryDataSource =
-        QueryResourceManager.getInstance().getQueryDataSource(path, context, timeFilter, ascending);
+        QueryResourceManager.getInstance().getQueryDataSource(path, context, timeFilter);
     // update filter by TTL
     timeFilter = queryDataSource.updateFilterUsingTTL(timeFilter);
     // init SeriesAggregateReader for non-aligned series
@@ -88,8 +88,9 @@ public class LocalGroupByExecutor implements GroupByExecutor {
     this.ascending = ascending;
   }
 
-  public boolean isEmpty() throws IOException {
-    return !reader.hasNextFile();
+  public boolean isEmpty() {
+    return queryDataSource.getSeqResources().isEmpty()
+        && queryDataSource.getUnseqResources().isEmpty();
   }
 
   @Override

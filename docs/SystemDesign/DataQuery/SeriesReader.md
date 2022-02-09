@@ -165,47 +165,50 @@ First introduce some important fields in SeriesReader
 /*
  * File layer
  */
-protected final QueryDataSource dataSource;
-	The QueryDataSource contains all the seq and unseq TsFileResources for one timeseries in one query
+private final List<TsFileResource> seqFileResource;
+	Sequential file list, because the sequential file itself is guaranteed to be ordered, and the timestamps do not overlap each other, just use List to store
+	
+private final PriorityQueue<TsFileResource> unseqFileResource;
+	Out-of-order file list, because out-of-order files do not guarantee order between each other, and may overlap
 	
 /*
  * chunk layer
  * 
  * The data between the three fields is never duplicated, and first is always the first (minimum start time)
  */
-protected IChunkMetadata firstChunkMetadata;
+private ChunkMetaData firstChunkMetaData;
 	This field is filled first when filling the chunk layer to ensure that this chunk has the current minimum start time
 	
-protected final PriorityQueue<IChunkMetadata> cachedChunkMetadata;
-	ChunkMetaData obtained after files are stored is stored here, there may be overlap between each other, in order to ensure order, priority queue is used for storage
+private final List<ChunkMetaData> seqChunkMetadatas;
+	The ChunkMetaData obtained after the sequential files are unpacked is stored here. It is ordered and does not overlap with each other, so the List is used for storage.
+
+private final PriorityQueue<ChunkMetaData> unseqChunkMetadatas;
+	ChunkMetaData obtained after unordered files are stored is stored here, there may be overlap between each other, in order to ensure order, priority queue is used for storage
 	
 /*
  * page layer
  *
  * The data between the two fields is never duplicated, and first is always the first (minimum start time)
  */ 
-protected VersionPageReader firstPageReader;
+private VersionPageReader firstPageReader;
 	Page reader with the smallest start time
 	
-protected final List<VersionPageReader> seqPageReaders = new LinkedList<>();
-	The page reader obtained after the sequential chunk are unpacked is stored here. It is ordered and does not overlap with each other, so the List is used for storage.
-
-protected final PriorityQueue<VersionPageReader> unSeqPageReaders;
-	page reader obtained after unordered chunk are stored is stored here, there may be overlap between each other, in order to ensure order, priority queue is used for storage
+private PriorityQueue<VersionPageReader> cachedPageReaders;
+	All page readers currently acquired, sorted by the start time of each page
 	
 /*
  * Intersecting data point layer
  */ 
-protected final PriorityMergeReader mergeReader;
+private PriorityMergeReader mergeReader;
 	Essentially, there are multiple pages with priority, and the data points are output from low to high according to the timestamp. When the timestamps are the same, the high priority page is retained.
 
 /*
  * Caching of results from intersecting data points
  */ 
-protected boolean hasCachedNextOverlappedPage;
+private boolean hasCachedNextOverlappedPage;
 	Whether the next batch is cached
 	
-protected BatchData cachedBatchData;
+private BatchData cachedBatchData;
 	Cached reference to the next batch
 ```
 

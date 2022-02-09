@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.concurrent.ScheduledExecutorService;
@@ -160,7 +161,8 @@ public class PrometheusReporter extends ScheduledReporter {
         RATE_UNIT,
         DURATION_UNIT,
         executor,
-        shutdownExecutorOnStop);
+        shutdownExecutorOnStop,
+        Collections.<MetricAttribute>emptySet());
     this.prometheus = prometheus;
     this.prefix = prefix;
   }

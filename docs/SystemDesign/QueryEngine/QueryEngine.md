@@ -29,7 +29,7 @@ The query engine is responsible for parsing all user commands, generating plans,
 
 ## Related classes
 
-*  org.apache.iotdb.db.service.thrift.impl.TSServiceImpl.java 
+* org.apache.iotdb.db.service.TSServiceImpl
 
   IoTDB server-side RPC implementation, which directly interacts with the client.
 

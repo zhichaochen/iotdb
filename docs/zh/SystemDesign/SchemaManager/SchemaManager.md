@@ -7,9 +7,9 @@
     to you under the Apache License, Version 2.0 (the
     "License"); you may not use this file except in compliance
     with the License.  You may obtain a copy of the License at
-    
+
         http://www.apache.org/licenses/LICENSE-2.0
-    
+
     Unless required by applicable law or agreed to in writing,
     software distributed under the License is distributed on an
     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -29,7 +29,7 @@ IoTDB 的元数据统一由 MManger 管理，包括以下几个部分：
 
 ## MManager
 
-* 维护 tag 倒排索引：`Map<String, Map<String, Set<IMeasurementMNode>>> tagIndex`
+* 维护 tag 倒排索引：`Map<String, Map<String, Set<LeafMNode>>> tagIndex`
 
 	> tag key -> tag value -> timeseries LeafMNode
 
@@ -61,6 +61,7 @@ IoTDB 的元数据统一由 MManger 管理，包括以下几个部分：
 		* 将所删除的时间序列信息记录到 mlog 中
 		* 目前并不会删除 tlog 中关于此时间序列的标签/属性信息。
 	
+
 * 设置存储组
 	* 在 MTree 中创建存储组
 	* 如果开启动态参数，检查内存是否满足
@@ -137,13 +138,13 @@ IoTDB 的元数据统一由 MManger 管理，包括以下几个部分：
 
 * org.apache.iotdb.db.metadata.mtree.MTree
 
-树中包括三种节点：StorageGroupMNode、InternalMNode（非叶子节点）、IMeasurementMNode（叶子节点），他们都是 MNode 的子类。
+树中包括三种节点：StorageGroupMNode、InternalMNode（非叶子节点）、LeafMNode（叶子节点），他们都是 MNode 的子类。
 
-每个 InternalMNode 中都有一个读写锁，查询元数据信息时，需要获得路径上每一个 InternalMNode 的读锁，修改元数据信息时，如果修改的是 IMeasurementMNode，需要获得其父节点的写锁，若修改的是 InternalMNode，则只需获得本身的写锁。若该 InternalMNode 位于 Device 层，则还包含了一个`Map<String, MNode> aliasChildren`，用于存储别名信息。
+每个 InternalMNode 中都有一个读写锁，查询元数据信息时，需要获得路径上每一个 InternalMNode 的读锁，修改元数据信息时，如果修改的是 LeafMNode，需要获得其父节点的写锁，若修改的是 InternalMNode，则只需获得本身的写锁。若该 InternalMNode 位于 Device 层，则还包含了一个`Map<String, MNode> aliasChildren`，用于存储别名信息。
 
 StorageGroupMNode 继承 InternalMNode，包含存储组的元数据信息，如 TTL。
 
-IMeasurementMNode中包含了对应时间序列的 Schema 信息，其别名（若没有别名，则为 null) 以及该时间序列的标签/属性信息在 tlog 文件中的 offset（若没有标签/属性，则为-1)
+LeafMNode 中包含了对应时间序列的 Schema 信息，其别名（若没有别名，则为 null) 以及该时间序列的标签/属性信息在 tlog 文件中的 offset（若没有标签/属性，则为-1)
 
 示例：
 
@@ -175,7 +176,7 @@ IoTDB 的元数据管理采用目录树的形式，倒数第二层为设备层�
 1. 后台线程检查自动创建：每隔 10 分钟，后台线程检查 MTree 的最后修改时间，需要同时满足
   * 用户超过 1 小时（可配置）没修改 MTree，即`mlog.bin` 文件超过 1 小时没有修改
   * `mlog.bin` 中积累了 100000 行日志（可配置）
-
+  
 2. 手动创建：使用`create snapshot for schema`命令手动触发创建 MTree 快照
 
 ### 创建过程
@@ -187,7 +188,7 @@ IoTDB 的元数据管理采用目录树的形式，倒数第二层为设备层�
   * 普通节点：0, 名字，子节点个数
   * 存储组节点：1, 名字，TTL, 子节点个数
   * 传感器节点：2, 名字，别名，数据类型，编码，压缩方式，属性，偏移量，子节点个数
-
+  
 3. 序列化结束后，将临时文件重命名为正式文件（`mtree.snapshot`），防止在序列化过程中出现服务器人为或意外关闭，导致序列化失败的情况。
 4. 调用`MLogWriter.clear()`方法，清空 `mlog.bin`：
   * 关闭 BufferedWriter，删除`mlog.bin`文件；
@@ -241,7 +242,7 @@ mlog.bin 存储二进制编码。我们可以使用 [MlogParser Tool](https://io
 * 给 root.turbine 设置时间为 10 秒的 ttl
 	
 	> mlog: 10,root.turbine,10
-	
+		
 	> 格式：10,path,ttl
 
 * alter timeseries root.turbine.d1.s1 add tags(tag1=v1)
@@ -252,7 +253,7 @@ mlog.bin 存储二进制编码。我们可以使用 [MlogParser Tool](https://io
 	> 格式：10,path,[change offset]
 
 * alter timeseries root.turbine.d1.s1 UPSERT ALIAS=newAlias
-  
+   
    > mlog: 13,root.turbine.d1.s1,newAlias
    
    > 格式：13,path,[new alias]
@@ -261,27 +262,27 @@ mlog.bin 存储二进制编码。我们可以使用 [MlogParser Tool](https://io
   s1 INT32 with encoding=Gorilla and compression SNAPPY,
   s2 FLOAT with encoding=RLE and compression=SNAPPY
 )
-  
+   
    > mlog:5,temp1,0,s1,1,8,1
-  
+   
    > mlog:5,temp1,0,s2,3,2,1
-  
+   
    > 格式： 5,template name,is Aligned Timeseries,measurementId,TSDataType,TSEncoding,CompressionType
 
 * 在某前缀路径上设置元数据模版 set schema template temp1 to root.turbine
-
+ 
     > mlog: 6,temp1,root.turbine
    
     > 格式：6,template name,path
 
 * 自动创建设备 （应用场景为在某个前缀路径上设置模版之后，写入时会自动创建设备）
-
+ 
     > mlog: 4,root.turbine.d1
    
     > 格式：4,path
 
 * 设置某设备正在使用模版 （应用场景为在某个设备路径上设置模版之后，表示该设备正在应用模版）
-
+ 
     > mlog: 61,root.turbine.d1
    
     > 格式：61,path
@@ -323,7 +324,7 @@ mlog.bin 存储二进制编码。我们可以使用 [MlogParser Tool](https://io
 
 ### 带过滤条件的元数据查询
 
-目前仅支持以 tag 为索引条件。如果过滤条件中的 tag 不存在，则会返回空结果集。
+这里的过滤条件只能是 tag 属性，否则抛异常。
 
 通过在 MManager 中维护的 tag 的倒排索引，获得所有满足索引条件的`MeasurementMNode`。
 

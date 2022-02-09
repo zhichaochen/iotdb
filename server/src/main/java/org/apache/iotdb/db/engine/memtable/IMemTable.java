@@ -155,7 +155,7 @@ public interface IMemTable {
   boolean checkIfChunkDoesNotExist(IDeviceID deviceId, String measurement);
 
   /** only used when mem control enabled */
-  long getCurrentTVListSize(IDeviceID deviceId, String measurement);
+  long getCurrentChunkPointNum(IDeviceID deviceId, String measurement);
 
   /** only used when mem control enabled */
   void addTextDataSize(long textDataIncrement);

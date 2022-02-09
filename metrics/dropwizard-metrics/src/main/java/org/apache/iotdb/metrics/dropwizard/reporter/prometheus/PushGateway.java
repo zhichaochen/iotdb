@@ -67,14 +67,13 @@ public class PushGateway implements PrometheusSender {
       this.writer = null;
       this.exporter = null;
     }
-    if (this.connection != null) {
-      int response = connection.getResponseCode();
-      if (response != HttpURLConnection.HTTP_ACCEPTED) {
-        throw new IOException("Response code from " + url + " was " + response);
-      }
-      connection.disconnect();
-      this.connection = null;
+
+    int response = connection.getResponseCode();
+    if (response != HttpURLConnection.HTTP_ACCEPTED) {
+      throw new IOException("Response code from " + url + " was " + response);
     }
+    connection.disconnect();
+    this.connection = null;
   }
 
   @Override

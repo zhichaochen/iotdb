@@ -154,11 +154,6 @@ public class ResultColumn {
   }
 
   @Override
-  public String toString() {
-    return "ResultColumn{" + "expression=" + expression + ", alias='" + alias + '\'' + '}';
-  }
-
-  @Override
   public final int hashCode() {
     return alias == null ? getResultColumnName().hashCode() : alias.hashCode();
   }

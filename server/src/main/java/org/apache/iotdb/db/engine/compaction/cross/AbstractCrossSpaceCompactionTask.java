@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class AbstractCrossSpaceCompactionTask extends AbstractCompactionTask {
+
   List<TsFileResource> selectedSequenceFiles;
   List<TsFileResource> selectedUnsequenceFiles;
 
@@ -58,23 +59,23 @@ public abstract class AbstractCrossSpaceCompactionTask extends AbstractCompactio
   @Override
   public boolean checkValidAndSetMerging() {
     for (TsFileResource resource : selectedSequenceFiles) {
-      if (resource.isCompacting() || !resource.isClosed() || !resource.getTsFile().exists()) {
+      if (resource.isMerging() || !resource.isClosed() || !resource.getTsFile().exists()) {
         return false;
       }
     }
 
     for (TsFileResource resource : selectedUnsequenceFiles) {
-      if (resource.isCompacting() || !resource.isClosed() || !resource.getTsFile().exists()) {
+      if (resource.isMerging() || !resource.isClosed() || !resource.getTsFile().exists()) {
         return false;
       }
     }
 
     for (TsFileResource resource : selectedSequenceFiles) {
-      resource.setCompacting(true);
+      resource.setMerging(true);
     }
 
     for (TsFileResource resource : selectedUnsequenceFiles) {
-      resource.setCompacting(true);
+      resource.setMerging(true);
     }
 
     return true;
@@ -91,11 +92,5 @@ public abstract class AbstractCrossSpaceCompactionTask extends AbstractCompactio
         .append(" , unseq file num is ")
         .append(selectedUnsequenceFiles.size())
         .toString();
-  }
-
-  @Override
-  public void resetCompactionCandidateStatusForAllSourceFiles() {
-    selectedSequenceFiles.forEach(x -> x.setCompactionCandidate(false));
-    selectedUnsequenceFiles.forEach(x -> x.setCompactionCandidate(false));
   }
 }

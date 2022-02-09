@@ -22,7 +22,7 @@ import org.apache.iotdb.tsfile.exception.write.UnSupportedDataTypeException;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.utils.Binary;
 import org.apache.iotdb.tsfile.utils.BitMap;
-import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
+import org.apache.iotdb.tsfile.write.schema.IMeasurementSchema;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,7 +37,7 @@ import java.util.Map;
  *
  * <p>time, m1, m2, m3 1, 1, 2, 3 2, 1, 2, 3 3, 1, 2, 3
  *
- * <p>Notice: The tablet should not have empty cell, please use BitMap to denote null value
+ * <p>Notice: The tablet should not have empty cell
  */
 public class Tablet {
 
@@ -48,7 +48,7 @@ public class Tablet {
   public String prefixPath;
 
   /** the list of measurement schemas for creating the tablet */
-  private List<MeasurementSchema> schemas;
+  private List<IMeasurementSchema> schemas;
 
   /** measurementId->indexOf(measurementSchema) */
   private Map<String, Integer> measurementIndex;
@@ -74,7 +74,7 @@ public class Tablet {
    * @param schemas the list of measurement schemas for creating the tablet, only measurementId and
    *     type take effects
    */
-  public Tablet(String prefixPath, List<MeasurementSchema> schemas) {
+  public Tablet(String prefixPath, List<IMeasurementSchema> schemas) {
     this(prefixPath, schemas, DEFAULT_SIZE);
   }
 
@@ -87,14 +87,14 @@ public class Tablet {
    *     and type take effects
    * @param maxRowNumber the maximum number of rows for this tablet
    */
-  public Tablet(String prefixPath, List<MeasurementSchema> schemas, int maxRowNumber) {
+  public Tablet(String prefixPath, List<IMeasurementSchema> schemas, int maxRowNumber) {
     this.prefixPath = prefixPath;
     this.schemas = new ArrayList<>(schemas);
     this.maxRowNumber = maxRowNumber;
     measurementIndex = new HashMap<>();
 
     int indexInSchema = 0;
-    for (MeasurementSchema schema : schemas) {
+    for (IMeasurementSchema schema : schemas) {
       if (schema.getType() == TSDataType.VECTOR) {
         for (String measurementId : schema.getSubMeasurementsList()) {
           measurementIndex.put(measurementId, indexInSchema);
@@ -114,7 +114,7 @@ public class Tablet {
     this.prefixPath = prefixPath;
   }
 
-  public void setSchemas(List<MeasurementSchema> schemas) {
+  public void setSchemas(List<IMeasurementSchema> schemas) {
     this.schemas = schemas;
   }
 
@@ -124,7 +124,7 @@ public class Tablet {
 
   public void addValue(String measurementId, int rowIndex, Object value) {
     int indexOfSchema = measurementIndex.get(measurementId);
-    MeasurementSchema measurementSchema = schemas.get(indexOfSchema);
+    IMeasurementSchema measurementSchema = schemas.get(indexOfSchema);
     addValueOfDataType(measurementSchema.getType(), rowIndex, indexOfSchema, value);
   }
 
@@ -184,7 +184,7 @@ public class Tablet {
     }
   }
 
-  public List<MeasurementSchema> getSchemas() {
+  public List<IMeasurementSchema> getSchemas() {
     return schemas;
   }
 
@@ -215,7 +215,7 @@ public class Tablet {
     // value column
     values = new Object[valueColumnsSize];
     int columnIndex = 0;
-    for (MeasurementSchema schema : schemas) {
+    for (IMeasurementSchema schema : schemas) {
       TSDataType dataType = schema.getType();
       values[columnIndex] = createValueColumnOfDataType(dataType);
       columnIndex++;
@@ -258,7 +258,7 @@ public class Tablet {
   public int getTotalValueOccupation() {
     int valueOccupation = 0;
     int columnIndex = 0;
-    for (MeasurementSchema schema : schemas) {
+    for (IMeasurementSchema schema : schemas) {
       valueOccupation += calOccupationOfOneColumn(schema.getType(), columnIndex);
       columnIndex++;
     }

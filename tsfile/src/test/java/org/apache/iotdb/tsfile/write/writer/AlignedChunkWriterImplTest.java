@@ -65,7 +65,8 @@ public class AlignedChunkWriterImplTest {
       PublicBAOS publicBAOS = testTsFileOutput.publicBAOS;
       ByteBuffer buffer = ByteBuffer.wrap(publicBAOS.getBuf(), 0, publicBAOS.size());
       // time chunk
-      assertEquals(MetaMarker.ONLY_ONE_PAGE_TIME_CHUNK_HEADER, ReadWriteIOUtils.readByte(buffer));
+      assertEquals(
+          (byte) (0x80 | MetaMarker.ONLY_ONE_PAGE_CHUNK_HEADER), ReadWriteIOUtils.readByte(buffer));
       assertEquals("", ReadWriteIOUtils.readVarIntString(buffer));
       assertEquals(164, ReadWriteForEncodingUtils.readUnsignedVarInt(buffer));
       assertEquals(TSDataType.VECTOR.serialize(), ReadWriteIOUtils.readByte(buffer));
@@ -74,7 +75,7 @@ public class AlignedChunkWriterImplTest {
       buffer.position(buffer.position() + 164);
 
       // value chunk 1
-      assertEquals(MetaMarker.ONLY_ONE_PAGE_VALUE_CHUNK_HEADER, ReadWriteIOUtils.readByte(buffer));
+      assertEquals(0x40 | MetaMarker.ONLY_ONE_PAGE_CHUNK_HEADER, ReadWriteIOUtils.readByte(buffer));
       assertEquals("s1", ReadWriteIOUtils.readVarIntString(buffer));
       assertEquals(89, ReadWriteForEncodingUtils.readUnsignedVarInt(buffer));
       assertEquals(TSDataType.FLOAT.serialize(), ReadWriteIOUtils.readByte(buffer));
@@ -83,7 +84,7 @@ public class AlignedChunkWriterImplTest {
       buffer.position(buffer.position() + 89);
 
       // value chunk 2
-      assertEquals(MetaMarker.ONLY_ONE_PAGE_VALUE_CHUNK_HEADER, ReadWriteIOUtils.readByte(buffer));
+      assertEquals(0x40 | MetaMarker.ONLY_ONE_PAGE_CHUNK_HEADER, ReadWriteIOUtils.readByte(buffer));
       assertEquals("s2", ReadWriteIOUtils.readVarIntString(buffer));
       assertEquals(29, ReadWriteForEncodingUtils.readUnsignedVarInt(buffer));
       assertEquals(TSDataType.INT32.serialize(), ReadWriteIOUtils.readByte(buffer));
@@ -92,7 +93,7 @@ public class AlignedChunkWriterImplTest {
       buffer.position(buffer.position() + 29);
 
       // value chunk 2
-      assertEquals(MetaMarker.ONLY_ONE_PAGE_VALUE_CHUNK_HEADER, ReadWriteIOUtils.readByte(buffer));
+      assertEquals(0x40 | MetaMarker.ONLY_ONE_PAGE_CHUNK_HEADER, ReadWriteIOUtils.readByte(buffer));
       assertEquals("s3", ReadWriteIOUtils.readVarIntString(buffer));
       assertEquals(171, ReadWriteForEncodingUtils.readUnsignedVarInt(buffer));
       assertEquals(TSDataType.DOUBLE.serialize(), ReadWriteIOUtils.readByte(buffer));
@@ -138,7 +139,7 @@ public class AlignedChunkWriterImplTest {
       PublicBAOS publicBAOS = testTsFileOutput.publicBAOS;
       ByteBuffer buffer = ByteBuffer.wrap(publicBAOS.getBuf(), 0, publicBAOS.size());
       // time chunk
-      assertEquals(MetaMarker.TIME_CHUNK_HEADER, ReadWriteIOUtils.readByte(buffer));
+      assertEquals((byte) (0x80 | MetaMarker.CHUNK_HEADER), ReadWriteIOUtils.readByte(buffer));
       assertEquals("", ReadWriteIOUtils.readVarIntString(buffer));
       assertEquals(362, ReadWriteForEncodingUtils.readUnsignedVarInt(buffer));
       assertEquals(TSDataType.VECTOR.serialize(), ReadWriteIOUtils.readByte(buffer));
@@ -147,7 +148,7 @@ public class AlignedChunkWriterImplTest {
       buffer.position(buffer.position() + 362);
 
       // value chunk 1
-      assertEquals(MetaMarker.VALUE_CHUNK_HEADER, ReadWriteIOUtils.readByte(buffer));
+      assertEquals(0x40 | MetaMarker.CHUNK_HEADER, ReadWriteIOUtils.readByte(buffer));
       assertEquals("s1", ReadWriteIOUtils.readVarIntString(buffer));
       assertEquals(260, ReadWriteForEncodingUtils.readUnsignedVarInt(buffer));
       assertEquals(TSDataType.FLOAT.serialize(), ReadWriteIOUtils.readByte(buffer));
@@ -156,7 +157,7 @@ public class AlignedChunkWriterImplTest {
       buffer.position(buffer.position() + 260);
 
       // value chunk 2
-      assertEquals(MetaMarker.VALUE_CHUNK_HEADER, ReadWriteIOUtils.readByte(buffer));
+      assertEquals(0x40 | MetaMarker.CHUNK_HEADER, ReadWriteIOUtils.readByte(buffer));
       assertEquals("s2", ReadWriteIOUtils.readVarIntString(buffer));
       assertEquals(140, ReadWriteForEncodingUtils.readUnsignedVarInt(buffer));
       assertEquals(TSDataType.INT32.serialize(), ReadWriteIOUtils.readByte(buffer));
@@ -165,7 +166,7 @@ public class AlignedChunkWriterImplTest {
       buffer.position(buffer.position() + 140);
 
       // value chunk 2
-      assertEquals(MetaMarker.VALUE_CHUNK_HEADER, ReadWriteIOUtils.readByte(buffer));
+      assertEquals(0x40 | MetaMarker.CHUNK_HEADER, ReadWriteIOUtils.readByte(buffer));
       assertEquals("s3", ReadWriteIOUtils.readVarIntString(buffer));
       assertEquals(456, ReadWriteForEncodingUtils.readUnsignedVarInt(buffer));
       assertEquals(TSDataType.DOUBLE.serialize(), ReadWriteIOUtils.readByte(buffer));

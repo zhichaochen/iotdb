@@ -67,8 +67,6 @@ public class TsFileManager {
   }
 
   public List<TsFileResource> getTsFileList(boolean sequence) {
-    // the iteration of ConcurrentSkipListMap is not concurrent secure
-    // so we must add read lock here
     readLock();
     try {
       List<TsFileResource> allResources = new ArrayList<>();
@@ -100,7 +98,7 @@ public class TsFileManager {
   }
 
   public void remove(TsFileResource tsFileResource, boolean sequence) {
-    readLock();
+    writeLock("remove");
     try {
       Map<Long, TsFileResourceList> selectedMap = sequence ? sequenceFiles : unsequenceFiles;
       for (Map.Entry<Long, TsFileResourceList> entry : selectedMap.entrySet()) {
@@ -111,7 +109,7 @@ public class TsFileManager {
         }
       }
     } finally {
-      readUnlock();
+      writeUnlock();
     }
   }
 

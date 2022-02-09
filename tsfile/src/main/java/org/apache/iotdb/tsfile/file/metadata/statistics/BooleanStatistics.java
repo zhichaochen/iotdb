@@ -20,13 +20,13 @@ package org.apache.iotdb.tsfile.file.metadata.statistics;
 
 import org.apache.iotdb.tsfile.exception.filter.StatisticsClassException;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
+import org.apache.iotdb.tsfile.utils.BytesUtils;
 import org.apache.iotdb.tsfile.utils.ReadWriteIOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 
 public class BooleanStatistics extends Statistics<Boolean> {
 
@@ -41,10 +41,6 @@ public class BooleanStatistics extends Statistics<Boolean> {
     return TSDataType.BOOLEAN;
   }
 
-  /**
-   * The output of this method should be identical to the method "serializeStats(OutputStream
-   * outputStream)"
-   */
   @Override
   public int getStatsSize() {
     return 10;
@@ -104,15 +100,16 @@ public class BooleanStatistics extends Statistics<Boolean> {
   }
 
   @Override
+  public void setMinMaxFromBytes(byte[] minBytes, byte[] maxBytes) {}
+
+  @Override
   public Boolean getMinValue() {
-    throw new StatisticsClassException(
-        String.format(STATS_UNSUPPORTED_MSG, TSDataType.BOOLEAN, "min"));
+    throw new StatisticsClassException("Boolean statistics does not support: min");
   }
 
   @Override
   public Boolean getMaxValue() {
-    throw new StatisticsClassException(
-        String.format(STATS_UNSUPPORTED_MSG, TSDataType.BOOLEAN, "max"));
+    throw new StatisticsClassException("Boolean statistics does not support: max");
   }
 
   @Override
@@ -127,13 +124,37 @@ public class BooleanStatistics extends Statistics<Boolean> {
 
   @Override
   public double getSumDoubleValue() {
-    throw new StatisticsClassException(
-        String.format(STATS_UNSUPPORTED_MSG, TSDataType.BOOLEAN, "double sum"));
+    throw new StatisticsClassException("Boolean statistics does not support: double sum");
   }
 
   @Override
   public long getSumLongValue() {
     return sumValue;
+  }
+
+  @Override
+  public ByteBuffer getMinValueBuffer() {
+    throw new StatisticsClassException("Boolean statistics do not support: min");
+  }
+
+  @Override
+  public ByteBuffer getMaxValueBuffer() {
+    throw new StatisticsClassException("Boolean statistics do not support: max");
+  }
+
+  @Override
+  public ByteBuffer getFirstValueBuffer() {
+    return ReadWriteIOUtils.getByteBuffer(firstValue);
+  }
+
+  @Override
+  public ByteBuffer getLastValueBuffer() {
+    return ReadWriteIOUtils.getByteBuffer(lastValue);
+  }
+
+  @Override
+  public ByteBuffer getSumValueBuffer() {
+    return ReadWriteIOUtils.getByteBuffer(sumValue);
   }
 
   @Override
@@ -150,6 +171,31 @@ public class BooleanStatistics extends Statistics<Boolean> {
           stats.getEndTime(),
           boolStats.sumValue);
     }
+  }
+
+  @Override
+  public byte[] getMinValueBytes() {
+    throw new StatisticsClassException("Boolean statistics does not support: min");
+  }
+
+  @Override
+  public byte[] getMaxValueBytes() {
+    throw new StatisticsClassException("Boolean statistics does not support: max");
+  }
+
+  @Override
+  public byte[] getFirstValueBytes() {
+    return BytesUtils.boolToBytes(firstValue);
+  }
+
+  @Override
+  public byte[] getLastValueBytes() {
+    return BytesUtils.boolToBytes(lastValue);
+  }
+
+  @Override
+  public byte[] getSumValueBytes() {
+    return BytesUtils.longToBytes(sumValue);
   }
 
   @Override
@@ -173,22 +219,6 @@ public class BooleanStatistics extends Statistics<Boolean> {
     this.firstValue = ReadWriteIOUtils.readBool(byteBuffer);
     this.lastValue = ReadWriteIOUtils.readBool(byteBuffer);
     this.sumValue = ReadWriteIOUtils.readLong(byteBuffer);
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-    BooleanStatistics that = (BooleanStatistics) o;
-    return firstValue == that.firstValue
-        && lastValue == that.lastValue
-        && sumValue == that.sumValue;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), firstValue, lastValue, sumValue);
   }
 
   @Override

@@ -29,12 +29,10 @@ import org.apache.iotdb.service.rpc.thrift.TSCreateMultiTimeseriesReq;
 import org.apache.iotdb.service.rpc.thrift.TSCreateSchemaTemplateReq;
 import org.apache.iotdb.service.rpc.thrift.TSCreateTimeseriesReq;
 import org.apache.iotdb.service.rpc.thrift.TSDeleteDataReq;
-import org.apache.iotdb.service.rpc.thrift.TSDropSchemaTemplateReq;
 import org.apache.iotdb.service.rpc.thrift.TSInsertRecordReq;
 import org.apache.iotdb.service.rpc.thrift.TSInsertRecordsOfOneDeviceReq;
 import org.apache.iotdb.service.rpc.thrift.TSInsertRecordsReq;
 import org.apache.iotdb.service.rpc.thrift.TSInsertStringRecordReq;
-import org.apache.iotdb.service.rpc.thrift.TSInsertStringRecordsOfOneDeviceReq;
 import org.apache.iotdb.service.rpc.thrift.TSInsertStringRecordsReq;
 import org.apache.iotdb.service.rpc.thrift.TSInsertTabletReq;
 import org.apache.iotdb.service.rpc.thrift.TSInsertTabletsReq;
@@ -44,12 +42,10 @@ import org.apache.iotdb.service.rpc.thrift.TSQueryTemplateReq;
 import org.apache.iotdb.service.rpc.thrift.TSQueryTemplateResp;
 import org.apache.iotdb.service.rpc.thrift.TSSetSchemaTemplateReq;
 import org.apache.iotdb.service.rpc.thrift.TSUnsetSchemaTemplateReq;
-import org.apache.iotdb.session.template.MeasurementNode;
 import org.apache.iotdb.session.template.Template;
 import org.apache.iotdb.session.template.TemplateQueryType;
 import org.apache.iotdb.session.util.SessionUtils;
 import org.apache.iotdb.session.util.ThreadUtils;
-import org.apache.iotdb.session.util.Version;
 import org.apache.iotdb.tsfile.exception.write.UnSupportedDataTypeException;
 import org.apache.iotdb.tsfile.file.metadata.enums.CompressionType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
@@ -58,7 +54,7 @@ import org.apache.iotdb.tsfile.utils.Binary;
 import org.apache.iotdb.tsfile.utils.BitMap;
 import org.apache.iotdb.tsfile.write.record.Tablet;
 import org.apache.iotdb.tsfile.write.schema.IMeasurementSchema;
-import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
+import org.apache.iotdb.tsfile.write.schema.UnaryMeasurementSchema;
 
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
@@ -133,9 +129,6 @@ public class Session {
 
   protected boolean enableQueryRedirection = false;
 
-  // The version number of the client which used for compatibility in the server
-  protected Version version;
-
   public Session(String host, int rpcPort) {
     this(
         host,
@@ -146,8 +139,7 @@ public class Session {
         null,
         Config.DEFAULT_INITIAL_BUFFER_CAPACITY,
         Config.DEFAULT_MAX_FRAME_SIZE,
-        Config.DEFAULT_CACHE_LEADER_MODE,
-        Config.DEFAULT_VERSION);
+        Config.DEFAULT_CACHE_LEADER_MODE);
   }
 
   public Session(String host, String rpcPort, String username, String password) {
@@ -160,8 +152,7 @@ public class Session {
         null,
         Config.DEFAULT_INITIAL_BUFFER_CAPACITY,
         Config.DEFAULT_MAX_FRAME_SIZE,
-        Config.DEFAULT_CACHE_LEADER_MODE,
-        Config.DEFAULT_VERSION);
+        Config.DEFAULT_CACHE_LEADER_MODE);
   }
 
   public Session(String host, int rpcPort, String username, String password) {
@@ -174,8 +165,7 @@ public class Session {
         null,
         Config.DEFAULT_INITIAL_BUFFER_CAPACITY,
         Config.DEFAULT_MAX_FRAME_SIZE,
-        Config.DEFAULT_CACHE_LEADER_MODE,
-        Config.DEFAULT_VERSION);
+        Config.DEFAULT_CACHE_LEADER_MODE);
   }
 
   public Session(String host, int rpcPort, String username, String password, int fetchSize) {
@@ -188,8 +178,7 @@ public class Session {
         null,
         Config.DEFAULT_INITIAL_BUFFER_CAPACITY,
         Config.DEFAULT_MAX_FRAME_SIZE,
-        Config.DEFAULT_CACHE_LEADER_MODE,
-        Config.DEFAULT_VERSION);
+        Config.DEFAULT_CACHE_LEADER_MODE);
   }
 
   public Session(
@@ -208,8 +197,7 @@ public class Session {
         null,
         Config.DEFAULT_INITIAL_BUFFER_CAPACITY,
         Config.DEFAULT_MAX_FRAME_SIZE,
-        Config.DEFAULT_CACHE_LEADER_MODE,
-        Config.DEFAULT_VERSION);
+        Config.DEFAULT_CACHE_LEADER_MODE);
     this.queryTimeoutInMs = queryTimeoutInMs;
   }
 
@@ -223,8 +211,7 @@ public class Session {
         zoneId,
         Config.DEFAULT_INITIAL_BUFFER_CAPACITY,
         Config.DEFAULT_MAX_FRAME_SIZE,
-        Config.DEFAULT_CACHE_LEADER_MODE,
-        Config.DEFAULT_VERSION);
+        Config.DEFAULT_CACHE_LEADER_MODE);
   }
 
   public Session(
@@ -238,8 +225,7 @@ public class Session {
         null,
         Config.DEFAULT_INITIAL_BUFFER_CAPACITY,
         Config.DEFAULT_MAX_FRAME_SIZE,
-        enableCacheLeader,
-        Config.DEFAULT_VERSION);
+        enableCacheLeader);
   }
 
   public Session(
@@ -259,8 +245,7 @@ public class Session {
         zoneId,
         Config.DEFAULT_INITIAL_BUFFER_CAPACITY,
         Config.DEFAULT_MAX_FRAME_SIZE,
-        enableCacheLeader,
-        Config.DEFAULT_VERSION);
+        enableCacheLeader);
   }
 
   @SuppressWarnings("squid:S107")
@@ -273,8 +258,7 @@ public class Session {
       ZoneId zoneId,
       int thriftDefaultBufferSize,
       int thriftMaxFrameSize,
-      boolean enableCacheLeader,
-      Version version) {
+      boolean enableCacheLeader) {
     this.defaultEndPoint = new EndPoint(host, rpcPort);
     this.username = username;
     this.password = password;
@@ -283,7 +267,6 @@ public class Session {
     this.thriftDefaultBufferSize = thriftDefaultBufferSize;
     this.thriftMaxFrameSize = thriftMaxFrameSize;
     this.enableCacheLeader = enableCacheLeader;
-    this.version = version;
   }
 
   public Session(List<String> nodeUrls, String username, String password) {
@@ -295,8 +278,7 @@ public class Session {
         null,
         Config.DEFAULT_INITIAL_BUFFER_CAPACITY,
         Config.DEFAULT_MAX_FRAME_SIZE,
-        Config.DEFAULT_CACHE_LEADER_MODE,
-        Config.DEFAULT_VERSION);
+        Config.DEFAULT_CACHE_LEADER_MODE);
   }
 
   /**
@@ -313,8 +295,7 @@ public class Session {
         null,
         Config.DEFAULT_INITIAL_BUFFER_CAPACITY,
         Config.DEFAULT_MAX_FRAME_SIZE,
-        Config.DEFAULT_CACHE_LEADER_MODE,
-        Config.DEFAULT_VERSION);
+        Config.DEFAULT_CACHE_LEADER_MODE);
   }
 
   public Session(List<String> nodeUrls, String username, String password, ZoneId zoneId) {
@@ -326,8 +307,7 @@ public class Session {
         zoneId,
         Config.DEFAULT_INITIAL_BUFFER_CAPACITY,
         Config.DEFAULT_MAX_FRAME_SIZE,
-        Config.DEFAULT_CACHE_LEADER_MODE,
-        Config.DEFAULT_VERSION);
+        Config.DEFAULT_CACHE_LEADER_MODE);
   }
 
   public Session(
@@ -338,8 +318,7 @@ public class Session {
       ZoneId zoneId,
       int thriftDefaultBufferSize,
       int thriftMaxFrameSize,
-      boolean enableCacheLeader,
-      Version version) {
+      boolean enableCacheLeader) {
     this.nodeUrls = nodeUrls;
     this.username = username;
     this.password = password;
@@ -348,7 +327,6 @@ public class Session {
     this.thriftDefaultBufferSize = thriftDefaultBufferSize;
     this.thriftMaxFrameSize = thriftMaxFrameSize;
     this.enableCacheLeader = enableCacheLeader;
-    this.version = version;
   }
 
   public void setFetchSize(int fetchSize) {
@@ -357,14 +335,6 @@ public class Session {
 
   public int getFetchSize() {
     return this.fetchSize;
-  }
-
-  public Version getVersion() {
-    return version;
-  }
-
-  public void setVersion(Version version) {
-    this.version = version;
   }
 
   public synchronized void open() throws IoTDBConnectionException {
@@ -501,8 +471,8 @@ public class Session {
   }
 
   public void createAlignedTimeseries(
-      String deviceId,
-      List<String> measurements,
+      String multiSeriesId,
+      List<String> multiMeasurementComponents,
       List<TSDataType> dataTypes,
       List<TSEncoding> encodings,
       List<CompressionType> compressors,
@@ -510,7 +480,12 @@ public class Session {
       throws IoTDBConnectionException, StatementExecutionException {
     TSCreateAlignedTimeseriesReq request =
         getTSCreateAlignedTimeseriesReq(
-            deviceId, measurements, dataTypes, encodings, compressors, measurementAliasList);
+            multiSeriesId,
+            multiMeasurementComponents,
+            dataTypes,
+            encodings,
+            compressors,
+            measurementAliasList);
     defaultSessionConnection.createAlignedTimeseries(request);
   }
 
@@ -708,10 +683,10 @@ public class Session {
   }
 
   /**
-   * query e.g. select last data from paths where time >= lastTime
+   * only: select last status from root.ln.d1.s1 where time >= 1621326244168;
    *
    * @param paths timeSeries eg. root.ln.d1.s1,root.ln.d1.s2
-   * @param LastTime get the last data, whose timestamp is greater than or equal LastTime e.g.
+   * @param LastTime get the last data, whose timestamp greater than or equal LastTime eg.
    *     1621326244168
    */
   public SessionDataSet executeLastDataQuery(List<String> paths, long LastTime)
@@ -921,15 +896,15 @@ public class Session {
    * @see Session#insertTablet(Tablet)
    */
   public void insertAlignedRecord(
-      String deviceId,
+      String multiSeriesId,
       long time,
-      List<String> measurements,
+      List<String> multiMeasurementComponents,
       List<TSDataType> types,
       List<Object> values)
       throws IoTDBConnectionException, StatementExecutionException {
     TSInsertRecordReq request =
-        genTSInsertRecordReq(deviceId, time, measurements, types, values, true);
-    insertRecord(deviceId, request);
+        genTSInsertRecordReq(multiSeriesId, time, multiMeasurementComponents, types, values, true);
+    insertRecord(multiSeriesId, request);
   }
 
   private TSInsertRecordReq genTSInsertRecordReq(
@@ -973,11 +948,11 @@ public class Session {
    * @see Session#insertTablet(Tablet)
    */
   public void insertAlignedRecord(
-      String deviceId, long time, List<String> measurements, List<String> values)
+      String multiSeriesId, long time, List<String> multiMeasurementComponents, List<String> values)
       throws IoTDBConnectionException, StatementExecutionException {
     TSInsertStringRecordReq request =
-        genTSInsertStringRecordReq(deviceId, time, measurements, values, true);
-    insertRecord(deviceId, request);
+        genTSInsertStringRecordReq(multiSeriesId, time, multiMeasurementComponents, values, true);
+    insertRecord(multiSeriesId, request);
   }
 
   private TSInsertStringRecordReq genTSInsertStringRecordReq(
@@ -1039,21 +1014,25 @@ public class Session {
    * @see Session#insertTablet(Tablet)
    */
   public void insertAlignedRecords(
-      List<String> deviceIds,
+      List<String> multiSeriesIds,
       List<Long> times,
-      List<List<String>> measurementsList,
+      List<List<String>> multiMeasurementComponentsList,
       List<List<String>> valuesList)
       throws IoTDBConnectionException, StatementExecutionException {
-    int len = deviceIds.size();
-    if (len != times.size() || len != measurementsList.size() || len != valuesList.size()) {
+    int len = multiSeriesIds.size();
+    if (len != times.size()
+        || len != multiMeasurementComponentsList.size()
+        || len != valuesList.size()) {
       throw new IllegalArgumentException(
           "prefixPaths, times, subMeasurementsList and valuesList's size should be equal");
     }
     if (enableCacheLeader) {
-      insertStringRecordsWithLeaderCache(deviceIds, times, measurementsList, valuesList, true);
+      insertStringRecordsWithLeaderCache(
+          multiSeriesIds, times, multiMeasurementComponentsList, valuesList, true);
     } else {
       TSInsertStringRecordsReq request =
-          genTSInsertStringRecordsReq(deviceIds, times, measurementsList, valuesList, true);
+          genTSInsertStringRecordsReq(
+              multiSeriesIds, times, multiMeasurementComponentsList, valuesList, true);
       try {
         defaultSessionConnection.insertRecords(request);
       } catch (RedirectException ignored) {
@@ -1156,22 +1135,26 @@ public class Session {
    * @see Session#insertTablet(Tablet)
    */
   public void insertAlignedRecords(
-      List<String> deviceIds,
+      List<String> multiSeriesIds,
       List<Long> times,
-      List<List<String>> measurementsList,
+      List<List<String>> multiMeasurementComponentsList,
       List<List<TSDataType>> typesList,
       List<List<Object>> valuesList)
       throws IoTDBConnectionException, StatementExecutionException {
-    int len = deviceIds.size();
-    if (len != times.size() || len != measurementsList.size() || len != valuesList.size()) {
+    int len = multiSeriesIds.size();
+    if (len != times.size()
+        || len != multiMeasurementComponentsList.size()
+        || len != valuesList.size()) {
       throw new IllegalArgumentException(
           "prefixPaths, times, subMeasurementsList and valuesList's size should be equal");
     }
     if (enableCacheLeader) {
-      insertRecordsWithLeaderCache(deviceIds, times, measurementsList, typesList, valuesList, true);
+      insertRecordsWithLeaderCache(
+          multiSeriesIds, times, multiMeasurementComponentsList, typesList, valuesList, true);
     } else {
       TSInsertRecordsReq request =
-          genTSInsertRecordsReq(deviceIds, times, measurementsList, typesList, valuesList, true);
+          genTSInsertRecordsReq(
+              multiSeriesIds, times, multiMeasurementComponentsList, typesList, valuesList, true);
       try {
         defaultSessionConnection.insertRecords(request);
       } catch (RedirectException ignored) {
@@ -1233,55 +1216,6 @@ public class Session {
   }
 
   /**
-   * Insert multiple rows with String format data, which can reduce the overhead of network. This
-   * method is just like jdbc executeBatch, we pack some insert request in batch and send them to
-   * server. If you want improve your performance, please see insertTablet method
-   *
-   * <p>Each row could have same deviceId but different time, number of measurements, number of
-   * values as String
-   *
-   * @param haveSorted deprecated, whether the times have been sorted
-   */
-  public void insertStringRecordsOfOneDevice(
-      String deviceId,
-      List<Long> times,
-      List<List<String>> measurementsList,
-      List<List<String>> valuesList,
-      boolean haveSorted)
-      throws IoTDBConnectionException, StatementExecutionException {
-    int len = times.size();
-    if (len != measurementsList.size() || len != valuesList.size()) {
-      throw new IllegalArgumentException(
-          "times, measurementsList and valuesList's size should be equal");
-    }
-    TSInsertStringRecordsOfOneDeviceReq req =
-        genTSInsertStringRecordsOfOneDeviceReq(
-            deviceId, times, measurementsList, valuesList, haveSorted, false);
-    try {
-      getSessionConnection(deviceId).insertStringRecordsOfOneDevice(req);
-    } catch (RedirectException e) {
-      handleRedirection(deviceId, e.getEndPoint());
-    }
-  }
-
-  /**
-   * Insert multiple rows with String format data, which can reduce the overhead of network. This
-   * method is just like jdbc executeBatch, we pack some insert request in batch and send them to
-   * server. If you want improve your performance, please see insertTablet method
-   *
-   * <p>Each row could have same deviceId but different time, number of measurements, number of
-   * values as String
-   */
-  public void insertStringRecordsOfOneDevice(
-      String deviceId,
-      List<Long> times,
-      List<List<String>> measurementsList,
-      List<List<String>> valuesList)
-      throws IoTDBConnectionException, StatementExecutionException {
-    insertStringRecordsOfOneDevice(deviceId, times, measurementsList, valuesList, false);
-  }
-
-  /**
    * Insert aligned multiple rows, which can reduce the overhead of network. This method is just
    * like jdbc executeBatch, we pack some insert request in batch and send them to server. If you
    * want improve your performance, please see insertTablet method
@@ -1291,14 +1225,14 @@ public class Session {
    * @see Session#insertTablet(Tablet)
    */
   public void insertAlignedRecordsOfOneDevice(
-      String deviceId,
+      String multiSeriesId,
       List<Long> times,
-      List<List<String>> measurementsList,
+      List<List<String>> multiMeasurementComponentsList,
       List<List<TSDataType>> typesList,
       List<List<Object>> valuesList)
       throws IoTDBConnectionException, StatementExecutionException {
     insertAlignedRecordsOfOneDevice(
-        deviceId, times, measurementsList, typesList, valuesList, false);
+        multiSeriesId, times, multiMeasurementComponentsList, typesList, valuesList, false);
   }
 
   /**
@@ -1312,77 +1246,32 @@ public class Session {
    * @see Session#insertTablet(Tablet)
    */
   public void insertAlignedRecordsOfOneDevice(
-      String deviceId,
+      String multiSeriesId,
       List<Long> times,
-      List<List<String>> measurementsList,
+      List<List<String>> multiMeasurementComponentsList,
       List<List<TSDataType>> typesList,
       List<List<Object>> valuesList,
       boolean haveSorted)
       throws IoTDBConnectionException, StatementExecutionException {
     int len = times.size();
-    if (len != measurementsList.size() || len != valuesList.size()) {
+    if (len != multiMeasurementComponentsList.size() || len != valuesList.size()) {
       throw new IllegalArgumentException(
           "times, subMeasurementsList and valuesList's size should be equal");
     }
     TSInsertRecordsOfOneDeviceReq request =
         genTSInsertRecordsOfOneDeviceReq(
-            deviceId, times, measurementsList, typesList, valuesList, haveSorted, true);
+            multiSeriesId,
+            times,
+            multiMeasurementComponentsList,
+            typesList,
+            valuesList,
+            haveSorted,
+            true);
     try {
-      getSessionConnection(deviceId).insertRecordsOfOneDevice(request);
+      getSessionConnection(multiSeriesId).insertRecordsOfOneDevice(request);
     } catch (RedirectException e) {
-      handleRedirection(deviceId, e.getEndPoint());
+      handleRedirection(multiSeriesId, e.getEndPoint());
     }
-  }
-
-  /**
-   * Insert multiple rows with String format data, which can reduce the overhead of network. This
-   * method is just like jdbc executeBatch, we pack some insert request in batch and send them to
-   * server. If you want improve your performance, please see insertTablet method
-   *
-   * <p>Each row could have same deviceId but different time, number of measurements, number of
-   * values as String
-   *
-   * @param haveSorted deprecated, whether the times have been sorted
-   */
-  public void insertAlignedStringRecordsOfOneDevice(
-      String deviceId,
-      List<Long> times,
-      List<List<String>> measurementsList,
-      List<List<String>> valuesList,
-      boolean haveSorted)
-      throws IoTDBConnectionException, StatementExecutionException {
-    int len = times.size();
-    if (len != measurementsList.size() || len != valuesList.size()) {
-      throw new IllegalArgumentException(
-          "times, measurementsList and valuesList's size should be equal");
-    }
-    TSInsertStringRecordsOfOneDeviceReq req =
-        genTSInsertStringRecordsOfOneDeviceReq(
-            deviceId, times, measurementsList, valuesList, haveSorted, true);
-    try {
-      getSessionConnection(deviceId).insertStringRecordsOfOneDevice(req);
-    } catch (RedirectException e) {
-      handleRedirection(deviceId, e.getEndPoint());
-    }
-  }
-
-  /**
-   * Insert aligned multiple rows with String format data, which can reduce the overhead of network.
-   * This method is just like jdbc executeBatch, we pack some insert request in batch and send them
-   * to server. If you want improve your performance, please see insertTablet method
-   *
-   * <p>Each row could have same prefixPath but different time, number of measurements, number of
-   * values as String
-   *
-   * @see Session#insertTablet(Tablet)
-   */
-  public void insertAlignedStringRecordsOfOneDevice(
-      String deviceId,
-      List<Long> times,
-      List<List<String>> measurementsList,
-      List<List<String>> valuesList)
-      throws IoTDBConnectionException, StatementExecutionException {
-    insertAlignedStringRecordsOfOneDevice(deviceId, times, measurementsList, valuesList, false);
   }
 
   private TSInsertRecordsOfOneDeviceReq genTSInsertRecordsOfOneDeviceReq(
@@ -1425,42 +1314,6 @@ public class Session {
     request.setValuesList(buffersList);
     request.setIsAligned(isAligned);
     return request;
-  }
-
-  private TSInsertStringRecordsOfOneDeviceReq genTSInsertStringRecordsOfOneDeviceReq(
-      String prefixPath,
-      List<Long> times,
-      List<List<String>> measurementsList,
-      List<List<String>> valuesList,
-      boolean haveSorted,
-      boolean isAligned) {
-    // check params size
-    int len = times.size();
-    if (len != measurementsList.size() || len != valuesList.size()) {
-      throw new IllegalArgumentException(
-          "times, measurementsList and valuesList's size should be equal");
-    }
-
-    if (!checkSorted(times)) {
-      Integer[] index = new Integer[times.size()];
-      for (int i = 0; i < index.length; i++) {
-        index[i] = i;
-      }
-      Arrays.sort(index, Comparator.comparingLong(times::get));
-      times.sort(Long::compareTo);
-      // sort measurementsList
-      measurementsList = sortList(measurementsList, index);
-      // sort valuesList
-      valuesList = sortList(valuesList, index);
-    }
-
-    TSInsertStringRecordsOfOneDeviceReq req = new TSInsertStringRecordsOfOneDeviceReq();
-    req.setPrefixPath(prefixPath);
-    req.setTimestamps(times);
-    req.setMeasurementsList(measurementsList);
-    req.setValuesList(valuesList);
-    req.setIsAligned(isAligned);
-    return req;
   }
 
   /**
@@ -1946,7 +1799,7 @@ public class Session {
     int columnIndex = 0;
     for (int i = 0; i < tablet.getSchemas().size(); i++) {
       IMeasurementSchema schema = tablet.getSchemas().get(i);
-      if (schema instanceof MeasurementSchema) {
+      if (schema instanceof UnaryMeasurementSchema) {
         tablet.values[columnIndex] = sortList(tablet.values[columnIndex], schema.getType(), index);
         if (tablet.bitMaps != null && tablet.bitMaps[columnIndex] != null) {
           tablet.bitMaps[columnIndex] = sortBitMap(tablet.bitMaps[columnIndex], index);
@@ -2052,15 +1905,6 @@ public class Session {
   /**
    * Construct Template at session and create it at server.
    *
-   * <p>The template instance constructed within session is SUGGESTED to be a flat measurement
-   * template, which has no internal nodes inside a template.
-   *
-   * <p>For example, template(s1, s2, s3) is a flat measurement template, while template2(GPS.x,
-   * GPS.y, s1) is not.
-   *
-   * <p>Tree-structured template, which is contrary to flat measurement template, may not be
-   * supported in further version of IoTDB
-   *
    * @see Template
    */
   public void createSchemaTemplate(Template template)
@@ -2072,84 +1916,6 @@ public class Session {
     req.setSerializedTemplate(baos.toByteArray());
     baos.close();
     defaultSessionConnection.createSchemaTemplate(req);
-  }
-
-  /**
-   * Create a template with flat measurements, not tree structured. Need to specify datatype,
-   * encoding and compressor of each measurement, and alignment of these measurements at once.
-   *
-   * @oaram templateName name of template to create
-   * @param measurements flat measurements of the template, cannot contain character dot
-   * @param dataTypes datatype of each measurement in the template
-   * @param encodings encodings of each measurement in the template
-   * @param compressors compression type of each measurement in the template
-   * @param isAligned specify whether these flat measurements are aligned
-   */
-  public void createSchemaTemplate(
-      String templateName,
-      List<String> measurements,
-      List<TSDataType> dataTypes,
-      List<TSEncoding> encodings,
-      List<CompressionType> compressors,
-      boolean isAligned)
-      throws IOException, IoTDBConnectionException, StatementExecutionException {
-    Template temp = new Template(templateName, isAligned);
-    int len = measurements.size();
-    if (len != dataTypes.size() || len != encodings.size() || len != compressors.size()) {
-      throw new StatementExecutionException(
-          "Different length of measurements, datatypes, encodings "
-              + "or compressors when create schema tempalte.");
-    }
-    for (int idx = 0; idx < measurements.size(); idx++) {
-      MeasurementNode mNode =
-          new MeasurementNode(
-              measurements.get(idx), dataTypes.get(idx), encodings.get(idx), compressors.get(idx));
-      temp.addToTemplate(mNode);
-    }
-    createSchemaTemplate(temp);
-  }
-
-  /**
-   * Compatible for rel/0.12, this method will create an unaligned flat template as a result. Notice
-   * that there is no aligned concept in 0.12, so only the first measurement in each nested list
-   * matters.
-   *
-   * @param name name of the template
-   * @param schemaNames it works as a virtual layer inside template in 0.12, and makes no difference
-   *     after 0.13
-   * @param measurements the first measurement in each nested list will constitute the final flat
-   *     template
-   * @param dataTypes the data type of each measurement, only the first one in each nested list
-   *     matters as above
-   * @param encodings the encoding of each measurement, only the first one in each nested list
-   *     matters as above
-   * @param compressors the compressor of each measurement
-   * @throws IoTDBConnectionException
-   * @throws StatementExecutionException
-   */
-  @Deprecated
-  public void createSchemaTemplate(
-      String name,
-      List<String> schemaNames,
-      List<List<String>> measurements,
-      List<List<TSDataType>> dataTypes,
-      List<List<TSEncoding>> encodings,
-      List<CompressionType> compressors)
-      throws IoTDBConnectionException, StatementExecutionException {
-    List<String> flatMeasurements = new ArrayList<>();
-    List<TSDataType> flatDataTypes = new ArrayList<>();
-    List<TSEncoding> flatEncodings = new ArrayList<>();
-    for (int idx = 0; idx < measurements.size(); idx++) {
-      flatMeasurements.add(measurements.get(idx).get(0));
-      flatDataTypes.add(dataTypes.get(idx).get(0));
-      flatEncodings.add(encodings.get(idx).get(0));
-    }
-    try {
-      createSchemaTemplate(
-          name, flatMeasurements, flatDataTypes, flatEncodings, compressors, false);
-    } catch (IOException e) {
-      throw new StatementExecutionException(e.getMessage());
-    }
   }
 
   /**
@@ -2309,46 +2075,10 @@ public class Session {
     return resp.getMeasurements();
   }
 
-  /** @return All template names. */
-  public List<String> showAllTemplates()
-      throws StatementExecutionException, IoTDBConnectionException {
-    TSQueryTemplateReq req = new TSQueryTemplateReq();
-    req.setName("");
-    req.setQueryType(TemplateQueryType.SHOW_TEMPLATES.ordinal());
-    TSQueryTemplateResp resp = defaultSessionConnection.querySchemaTemplate(req);
-    return resp.getMeasurements();
-  }
-
-  /** @return All paths have been set to designated template. */
-  public List<String> showPathsTemplateSetOn(String templateName)
-      throws StatementExecutionException, IoTDBConnectionException {
-    TSQueryTemplateReq req = new TSQueryTemplateReq();
-    req.setName(templateName);
-    req.setQueryType(TemplateQueryType.SHOW_SET_TEMPLATES.ordinal());
-    TSQueryTemplateResp resp = defaultSessionConnection.querySchemaTemplate(req);
-    return resp.getMeasurements();
-  }
-
-  /** @return All paths are using designated template. */
-  public List<String> showPathsTemplateUsingOn(String templateName)
-      throws StatementExecutionException, IoTDBConnectionException {
-    TSQueryTemplateReq req = new TSQueryTemplateReq();
-    req.setName(templateName);
-    req.setQueryType(TemplateQueryType.SHOW_USING_TEMPLATES.ordinal());
-    TSQueryTemplateResp resp = defaultSessionConnection.querySchemaTemplate(req);
-    return resp.getMeasurements();
-  }
-
   public void unsetSchemaTemplate(String prefixPath, String templateName)
       throws IoTDBConnectionException, StatementExecutionException {
     TSUnsetSchemaTemplateReq request = getTSUnsetSchemaTemplateReq(prefixPath, templateName);
     defaultSessionConnection.unsetSchemaTemplate(request);
-  }
-
-  public void dropSchemaTemplate(String templateName)
-      throws IoTDBConnectionException, StatementExecutionException {
-    TSDropSchemaTemplateReq request = getTSDropSchemaTemplateReq(templateName);
-    defaultSessionConnection.dropSchemaTemplate(request);
   }
 
   private TSSetSchemaTemplateReq getTSSetSchemaTemplateReq(String templateName, String prefixPath) {
@@ -2362,12 +2092,6 @@ public class Session {
       String prefixPath, String templateName) {
     TSUnsetSchemaTemplateReq request = new TSUnsetSchemaTemplateReq();
     request.setPrefixPath(prefixPath);
-    request.setTemplateName(templateName);
-    return request;
-  }
-
-  private TSDropSchemaTemplateReq getTSDropSchemaTemplateReq(String templateName) {
-    TSDropSchemaTemplateReq request = new TSDropSchemaTemplateReq();
     request.setTemplateName(templateName);
     return request;
   }
@@ -2464,8 +2188,6 @@ public class Session {
     private int thriftDefaultBufferSize = Config.DEFAULT_INITIAL_BUFFER_CAPACITY;
     private int thriftMaxFrameSize = Config.DEFAULT_MAX_FRAME_SIZE;
     private boolean enableCacheLeader = Config.DEFAULT_CACHE_LEADER_MODE;
-    private Version version = Config.DEFAULT_VERSION;
-
     List<String> nodeUrls = null;
 
     public Builder host(String host) {
@@ -2518,11 +2240,6 @@ public class Session {
       return this;
     }
 
-    public Builder version(Version version) {
-      this.version = version;
-      return this;
-    }
-
     public Session build() {
       if (nodeUrls != null
           && (!Config.DEFAULT_HOST.equals(host) || rpcPort != Config.DEFAULT_PORT)) {
@@ -2539,8 +2256,7 @@ public class Session {
             zoneId,
             thriftDefaultBufferSize,
             thriftMaxFrameSize,
-            enableCacheLeader,
-            version);
+            enableCacheLeader);
       }
 
       return new Session(
@@ -2552,8 +2268,7 @@ public class Session {
           zoneId,
           thriftDefaultBufferSize,
           thriftMaxFrameSize,
-          enableCacheLeader,
-          version);
+          enableCacheLeader);
     }
   }
 }

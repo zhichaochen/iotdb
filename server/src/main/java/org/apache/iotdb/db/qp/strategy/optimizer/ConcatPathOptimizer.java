@@ -147,22 +147,17 @@ public class ConcatPathOptimizer implements ILogicalOptimizer {
         concatFilterAndRemoveWildcards(
             queryOperator.getFromComponent().getPrefixPaths(),
             whereComponent.getFilterOperator(),
-            filterPaths,
-            queryOperator.isPrefixMatchPath()));
+            filterPaths));
     whereComponent.getFilterOperator().setPathSet(filterPaths);
   }
 
   private FilterOperator concatFilterAndRemoveWildcards(
-      List<PartialPath> fromPaths,
-      FilterOperator operator,
-      Set<PartialPath> filterPaths,
-      boolean isPrefixMatch)
+      List<PartialPath> fromPaths, FilterOperator operator, Set<PartialPath> filterPaths)
       throws LogicalOptimizeException {
     if (!operator.isLeaf()) {
       List<FilterOperator> newFilterList = new ArrayList<>();
       for (FilterOperator child : operator.getChildren()) {
-        newFilterList.add(
-            concatFilterAndRemoveWildcards(fromPaths, child, filterPaths, isPrefixMatch));
+        newFilterList.add(concatFilterAndRemoveWildcards(fromPaths, child, filterPaths));
       }
       operator.setChildren(newFilterList);
       return operator;
@@ -181,7 +176,7 @@ public class ConcatPathOptimizer implements ILogicalOptimizer {
       fromPaths.forEach(fromPath -> concatPaths.add(fromPath.concatPath(filterPath)));
     }
 
-    List<PartialPath> noStarPaths = removeWildcardsInConcatPaths(concatPaths, isPrefixMatch);
+    List<PartialPath> noStarPaths = removeWildcardsInConcatPaths(concatPaths);
     filterPaths.addAll(noStarPaths);
     if (noStarPaths.size() == 1) {
       // Transform "select s1 from root.car.* where s1 > 10" to
@@ -242,13 +237,13 @@ public class ConcatPathOptimizer implements ILogicalOptimizer {
     return filterBinaryTree;
   }
 
-  private List<PartialPath> removeWildcardsInConcatPaths(
-      List<PartialPath> originalPaths, boolean isPrefixMatch) throws LogicalOptimizeException {
+  private List<PartialPath> removeWildcardsInConcatPaths(List<PartialPath> originalPaths)
+      throws LogicalOptimizeException {
     HashSet<PartialPath> actualPaths = new HashSet<>();
     try {
       for (PartialPath originalPath : originalPaths) {
         List<MeasurementPath> all =
-            IoTDB.metaManager.getMeasurementPathsWithAlias(originalPath, 0, 0, isPrefixMatch).left;
+            IoTDB.metaManager.getMeasurementPathsWithAlias(originalPath, 0, 0).left;
         if (all.isEmpty()) {
           throw new LogicalOptimizeException(
               String.format("Unknown time series %s in `where clause`", originalPath));
