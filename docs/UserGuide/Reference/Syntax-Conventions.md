@@ -43,22 +43,20 @@ Usages of string literals:
 
 There are several ways to include quote characters within a string:
 
- - A `'` inside a string quoted with `'` may be written as `''`.
- - A `"` inside a string quoted with `"` may be written as `""`.
  - Precede the quote character by an escape character (\\).
- - `'` inside a string quoted with `"` needs no special treatment and need not be doubled or escaped. In the same way, `"` inside a string quoted with `'` needs no special treatment. (but escaping still works)
+ - `'` inside a string quoted with `"` needs no special treatment and need not be doubled or escaped. In the same way, `"` inside a string quoted with `'` needs no special treatment.
 
 The following examples demonstrate how quoting and escaping work:
 ```js
 'string'  // string
 '"string"'  // "string"
 '""string""'  // ""string""
-'str''ing'  // str'ing
+'str\'ing'  // str'ing
 '\'string'  // 'string
 "string" // string
 "'string'"  // 'string'
 "''string''"  // ''string''
-"str""ing"  // str"ing
+"str\"ing"  // str"ing
 "\"string"  // "string
 ```
 
@@ -98,7 +96,7 @@ Certain objects within IoTDB, including `TRIGGER`, `FUNCTION`(UDF), `CONTINUOUS 
 What you need to know about identifiers:
 
 - Permitted characters in unquoted identifiers:
-  - [0-9,a-z,A-Z,_:@#${}] (letters, digits, some special characters)
+  - [0-9 a-z A-Z _ : @ # $ { }] (letters, digits, some special characters)
   - ['\u2E80'..'\u9FFF'] (UNICODE Chinese characters)
 - Identifiers may begin with a digit and consist solely of digits, **which is not recommended!**
 - Identifiers are case sensitive.
@@ -116,11 +114,7 @@ _id  // parsed as _id
 ab!  // invalid
 `ab!`  // parsed as ab!
 `"ab"`  // parsed as "ab"
-```
-
-Identifier quote characters can be included within an identifier if you quote the identifier. If the character to be included within the identifier is the same as that used to quote the identifier itself, then you need to double the character.
-```sql
-`a``b`  // parsed as a`b
+`a`b`  // invalid
 `a\`b`  // parsed as a`b
 ```
 
@@ -132,6 +126,7 @@ The constraints of node names are almost the same as the identifiers, but you sh
 
 - `root` is a reserved word, and it is only allowed to appear at the beginning layer of the time series. If `root` appears in other layers, it cannot be parsed and an error will be reported.
 - Character `.` is not permitted in unquoted or quoted node names. If you must do it (even if it is not recommended), you can enclose it within either single quote (`'`) or double quote (`"`). In this case, quotes are recognized as part of the node name to avoid ambiguity.
+- Among the node name enclosed in the reverse quota, single quotes and double quotes need to use a backslash to escape.
 - In particular, if the system is deployed on a Windows machine, the storage group layer name will be **case-insensitive**. For example, creating both `root.ln` and `root.LN` at the same time is not allowed.
 
 Examples:
@@ -160,6 +155,14 @@ CREATE TIMESERIES root.a.b."s1.s2".c WITH DATATYPE=INT32, ENCODING=RLE
 // root.a.b."s1.s2".c will be parsed as Path[root, a, b, "s1.s2", c]
 ```
 
+```sql
+CREATE TIMESERIES root.a.b.`s1"s2`.c WITH DATATYPE=INT32, ENCODING=RLE
+// invalid!
+
+CREATE TIMESERIES root.a.b.`s1\"s2`.c WITH DATATYPE=INT32, ENCODING=RLE
+// root.a.b.`s1\"s2`.c be parsed as Path[root, a, b, s1\"s2, c]
+```
+
 ## Keywords and Reserved Words
 
 Keywords are words that have significance in SQL require special treatment for use as identifiers and node names, and need to be escaped with backticks.
@@ -171,13 +174,44 @@ Certain keywords, such as TIME and ROOT, are reserved and cannot use as identifi
 
 IoTDB supports the execution of arbitrary nested expressions consisting of numbers, time series, arithmetic expressions, and time series generating functions (including user-defined functions) in the `select` clause.
 
-Note: Node names that consist solely of digits in an expression must be enclosed in backticks (`).
+Note: Node names that consist solely of digits, `'` and `"` in an expression must be enclosed in backticks (`).
 ```sql
-// There is a time series: root.sg.d.0
-select 0 from root.sg.d  // ambiguity exists, parsing failed
-select `0` from root.sg.d  // query from root.sg.d.0
-select `0` + 0 from root.sg.d  // valid expression
+-- There exists timeseries: root.sg.d.0, root.sg.d.'a' and root.sg."d".b
+select 0 from root.sg.d  -- ambiguity exists, parsing failed
+select 'a' from root.sg.d -- ambiguity exists, parsing failed
+select "d".b from root.sg -- ambiguity exists, parsing failed
+select `0` from root.sg.d  -- query from root.sg.d.0
+select `0` + 0 from root.sg.d -- valid expression, add number 0 to each point of root.sg.d.0
+select myudf(`'a'`, 'x') from root.sg.d -- valid expression, call function myudf with timeseries root.sg.d.'a' as the 1st parameter, and a string constant 'x' as the 2nd parameter
 ```
+
+## Quote Symbol
+
+### Double quotes ("), single quotes (')
+
+Double quotes and single quotes are used in the following scenarios:
+
+1. String literals are represented by strings enclosed in single or double quotes.
+2. If you want to use the path separator (`.`) in the path node name, you need to enclose the node name in single or double quotes. In this case, to avoid ambiguity, the quotes are treated as part of the node name by the system.
+
+### Backticks (\`)
+
+Backticks are used in the following scenarios:
+
+1. When using special characters in an identifier, the identifier needs to be enclosed in backticks.
+2. When using special characters other than path separators in the path node name, the path node name needs to be enclosed in backticks. In this case, the backticks are not considered part of the node name by the system.
+
+### Backslash (\\)
+
+backslashes are used in the following scenarios:
+
+- In string literals, double or single quote should be escaped with a backslash.
+  - e.g. "str\\"ing" is parsed as str"ing, 'str\\'ing' is parsed as str'ing.
+- In an identifier, backtick should be escaped with a backslash.
+  - e.g. \`na\\\`me\` is parsed as na\`me.
+- In path node names, double or single quote should be escaped with a backslash. To avoid ambiguity, backslashes are recognized as part of the node name.
+  - e.g. root.sg1.d1."a\\"b" is parsed as Path[root, sg1, d1, "a\\"b"], root.sg1.d1.'a\\'b' is parsed as Path[ root, sg1, d1, 'a\\'b'], root.sg1.d1.\`a\\"b\` is parsed as Path[root, sg1, d1, a\\"b], root.sg1.d1.\`a\\'b\` is parsed as Path[root, sg1, d1, a\\'b].
+  
 
 ## Learn More
 

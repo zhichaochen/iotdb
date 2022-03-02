@@ -42,11 +42,12 @@ import java.util.Objects;
 @Category({LocalStandaloneTest.class})
 public class IOTDBInsertAlignedValuesIT {
   private static Connection connection;
+  private static final int oldTsFileGroupSizeInByte =
+      TSFileDescriptor.getInstance().getConfig().getGroupSizeInByte();
   private int numOfPointsPerPage;
 
   @Before
   public void setUp() throws Exception {
-    EnvironmentUtils.closeStatMonitor();
     EnvironmentUtils.envSetUp();
     IoTDBDescriptor.getInstance().getConfig().setAutoCreateSchemaEnabled(true);
     Class.forName(Config.JDBC_DRIVER_NAME);
@@ -60,6 +61,7 @@ public class IOTDBInsertAlignedValuesIT {
     close();
     TSFileDescriptor.getInstance().getConfig().setMaxNumberOfPointsInPage(numOfPointsPerPage);
     EnvironmentUtils.cleanEnv();
+    TSFileDescriptor.getInstance().getConfig().setGroupSizeInByte(oldTsFileGroupSizeInByte);
   }
 
   private static void close() {
@@ -355,5 +357,16 @@ public class IOTDBInsertAlignedValuesIT {
     rs.next();
     Assert.assertEquals(true, rs.getBoolean(2));
     st1.close();
+  }
+
+  @Test
+  public void testInsertWithDuplicatedMeasurements() {
+    try (Statement st1 = connection.createStatement()) {
+      st1.execute(
+          "insert into root.t1.wf01.wt01(time, s3, status, status) aligned values(100, true, 20.1, 20.2)");
+      Assert.fail();
+    } catch (SQLException e) {
+      Assert.assertEquals("411: Insertion contains duplicated measurement: status", e.getMessage());
+    }
   }
 }
