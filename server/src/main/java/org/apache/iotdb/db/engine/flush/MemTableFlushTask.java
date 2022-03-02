@@ -78,7 +78,6 @@ public class MemTableFlushTask {
 
   private static final AtomicLong totalIOTime = new AtomicLong(0);
 
-
   /**
    * @param memTable the memTable to flush
    * @param writer the writer where memTable will be flushed to (current tsfile writer or vm writer)
@@ -184,7 +183,12 @@ public class MemTableFlushTask {
     totalCostTime.addAndGet(costTime);
     totalEncodingTime.addAndGet(memSerializeTime);
     totalIOTime.addAndGet(ioTime);
-    LOGGER.info("Cumulative sort cost time: {}, encoding cost time: {}, io cost time: {}, flush cost time: {}", totalCostTime.get() - totalEncodingTime.get() - totalIOTime.get(), totalEncodingTime.get(), totalIOTime.get(), totalCostTime.get());
+    LOGGER.info(
+        "Cumulative sort cost time: {}, encoding cost time: {}, io cost time: {}, flush cost time: {}",
+        totalCostTime.get() - totalEncodingTime.get() - totalIOTime.get(),
+        totalEncodingTime.get(),
+        totalIOTime.get(),
+        totalCostTime.get());
   }
 
   /** encoding task (second task of pipeline) */
