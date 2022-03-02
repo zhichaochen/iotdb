@@ -43,6 +43,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * flush task to flush one memtable using a pipeline model to flush, which is sort memtable ->
@@ -71,7 +72,12 @@ public class MemTableFlushTask {
   private volatile long memSerializeTime = 0L;
   private volatile long ioTime = 0L;
 
-  private long totalCostTime = 0L;
+  private static final AtomicLong totalCostTime = new AtomicLong(0);
+
+  private static final AtomicLong totalEncodingTime = new AtomicLong(0);
+
+  private static final AtomicLong totalIOTime = new AtomicLong(0);
+
 
   /**
    * @param memTable the memTable to flush
@@ -175,8 +181,10 @@ public class MemTableFlushTask {
         memTable,
         costTime);
 
-    totalCostTime += costTime;
-    LOGGER.info("Cumulative flush cost time: {}", totalCostTime);
+    totalCostTime.addAndGet(costTime);
+    totalEncodingTime.addAndGet(memSerializeTime);
+    totalIOTime.addAndGet(ioTime);
+    LOGGER.info("Cumulative sort cost time: {}, encoding cost time: {}, io cost time: {}, flush cost time: {}", totalCostTime.get() - totalEncodingTime.get() - totalIOTime.get(), totalEncodingTime.get(), totalIOTime.get(), totalCostTime.get());
   }
 
   /** encoding task (second task of pipeline) */
