@@ -369,13 +369,13 @@ public class SessionExample {
     Tablet tablet = new Tablet(ROOT_SG1_D1, schemaList, 10000);
 
     // Method 1 to add tablet data
-    long timestamp = 0;
+    long timestamp = 1646134492000L;
     Random random = new Random(123456);
     for (long row = 0; row < totalRowNum; row++) {
       int rowIndex = tablet.rowSize++;
       tablet.addTimestamp(rowIndex, timestamp);
       for (int s = 0; s < sensorNum; s++) {
-        float value = random.nextFloat();
+        float value = -100.0f + 200.0f * random.nextFloat();
         tablet.addValue(schemaList.get(s).getMeasurementId(), rowIndex, value);
       }
       if (tablet.rowSize == tablet.getMaxRowNumber()) {
@@ -411,13 +411,13 @@ public class SessionExample {
 
     Tablet tablet = new Tablet(ROOT_SG1_D1, schemaList, 10000);
 
-    long timestamp = 0;
+    long timestamp = 1646134492000L;
     Random random = new Random(123456);
     for (long row = 0; row < totalRowNum; row++) {
       int rowIndex = tablet.rowSize++;
       tablet.addTimestamp(rowIndex, timestamp);
       for (int s = 0; s < sensorNum; s++) {
-        float value = random.nextFloat();
+        float value = -100.0f + 200.0f * random.nextFloat();
         tablet.addValue(schemaList.get(s).getMeasurementId(), rowIndex, value);
       }
       if (tablet.rowSize == tablet.getMaxRowNumber()) {
