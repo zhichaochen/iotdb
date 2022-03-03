@@ -120,9 +120,9 @@ public class SessionExample {
         for (int s = 0; s < sensorNum; s++) {
           float value = -100.0f + 200.0f * random.nextFloat();
           if (random.nextFloat() < nullRatio) {
-            tablet.addValue(schemaList.get(s).getMeasurementId(), rowIndex, timestamp + i);
-          } else {
             tablet.addValue(schemaList.get(s).getMeasurementId(), rowIndex, null);
+          } else {
+            tablet.addValue(schemaList.get(s).getMeasurementId(), rowIndex, timestamp + i);
           }
         }
         if (tablet.rowSize == tablet.getMaxRowNumber()) {
