@@ -66,9 +66,10 @@ public class SessionExample {
     } else {
       long totalRowNum = Long.parseLong(args[1]);
       int sensorNum = Integer.parseInt(args[2]);
+      float nullRatio = Float.parseFloat(args[3]);
       long startTime = System.currentTimeMillis();
       if ("aligned".equals(args[0])) {
-        insertTablet(totalRowNum, sensorNum, true);
+        insertTablet(totalRowNum, sensorNum, true, nullRatio);
         System.out.println(
             "Insert aligned "
                 + totalRowNum
@@ -76,7 +77,7 @@ public class SessionExample {
                 + (System.currentTimeMillis() - startTime)
                 + "ms.");
       } else if ("nonAligned".equals(args[0])) {
-        insertTablet(totalRowNum, sensorNum, false);
+        insertTablet(totalRowNum, sensorNum, false, nullRatio);
         System.out.println(
             "Insert nonAligned "
                 + totalRowNum
@@ -90,7 +91,8 @@ public class SessionExample {
     session.close();
   }
 
-  private static void insertTablet(long totalRowNum, int sensorNum, boolean isAligned)
+  private static void insertTablet(
+      long totalRowNum, int sensorNum, boolean isAligned, float nullRatio)
       throws IoTDBConnectionException, StatementExecutionException {
     /*
      * A Tablet example:
@@ -104,7 +106,7 @@ public class SessionExample {
     // only measurementId and data type in MeasurementSchema take effects in Tablet
     List<MeasurementSchema> schemaList = new ArrayList<>();
     for (int i = 0; i < sensorNum; i++) {
-      schemaList.add(new MeasurementSchema("s" + i, TSDataType.FLOAT));
+      schemaList.add(new MeasurementSchema("s" + i, TSDataType.INT64));
     }
 
     Tablet tablet = new Tablet(ROOT_SG1_D1, schemaList, 1000);
@@ -117,7 +119,11 @@ public class SessionExample {
         tablet.addTimestamp(rowIndex, timestamp + i);
         for (int s = 0; s < sensorNum; s++) {
           float value = -100.0f + 200.0f * random.nextFloat();
-          tablet.addValue(schemaList.get(s).getMeasurementId(), rowIndex, value);
+          if (random.nextFloat() < nullRatio) {
+            tablet.addValue(schemaList.get(s).getMeasurementId(), rowIndex, timestamp + i);
+          } else {
+            tablet.addValue(schemaList.get(s).getMeasurementId(), rowIndex, null);
+          }
         }
         if (tablet.rowSize == tablet.getMaxRowNumber()) {
           if (isAligned) {
