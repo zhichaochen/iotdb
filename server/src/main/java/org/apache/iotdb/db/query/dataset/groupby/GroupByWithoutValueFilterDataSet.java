@@ -91,10 +91,7 @@ public class GroupByWithoutValueFilterDataSet extends GroupByEngineDataSet {
 
     List<StorageGroupProcessor> list =
         StorageEngine.getInstance()
-            .mergeLockAndInitQueryDataSource(
-                paths.stream().map(p -> (PartialPath) p).collect(Collectors.toList()),
-                context,
-                timeFilter);
+            .mergeLock(paths.stream().map(p -> (PartialPath) p).collect(Collectors.toList()));
     try {
       // init resultIndexes, group result indexes by path
       for (int i = 0; i < paths.size(); i++) {

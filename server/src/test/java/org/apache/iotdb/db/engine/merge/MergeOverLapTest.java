@@ -42,7 +42,6 @@ import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -62,10 +61,8 @@ public class MergeOverLapTest extends MergeTest {
   public void setUp() throws IOException, WriteProcessException, MetadataException {
     ptNum = 1000;
     super.setUp();
-    tempSGDir = new File(TestConstant.OUTPUT_DATA_DIR);
-    if (!tempSGDir.exists()) {
-      Assert.assertTrue(tempSGDir.mkdirs());
-    }
+    tempSGDir = new File(TestConstant.BASE_OUTPUT_PATH.concat("tempSG"));
+    tempSGDir.mkdirs();
   }
 
   @Override
@@ -80,7 +77,7 @@ public class MergeOverLapTest extends MergeTest {
     for (int i = 0; i < seqFileNum; i++) {
       File file =
           new File(
-              TestConstant.OUTPUT_DATA_DIR.concat(
+              TestConstant.BASE_OUTPUT_PATH.concat(
                   i
                       + IoTDBConstant.FILE_NAME_SEPARATOR
                       + i
@@ -99,7 +96,7 @@ public class MergeOverLapTest extends MergeTest {
     for (int i = 0; i < unseqFileNum; i++) {
       File file =
           new File(
-              TestConstant.OUTPUT_DATA_DIR.concat(
+              TestConstant.BASE_OUTPUT_PATH.concat(
                   (10000 + i)
                       + IoTDBConstant.FILE_NAME_SEPARATOR
                       + (10000 + i)
@@ -117,7 +114,7 @@ public class MergeOverLapTest extends MergeTest {
     }
     File file =
         new File(
-            TestConstant.OUTPUT_DATA_DIR.concat(
+            TestConstant.BASE_OUTPUT_PATH.concat(
                 unseqFileNum
                     + IoTDBConstant.FILE_NAME_SEPARATOR
                     + unseqFileNum

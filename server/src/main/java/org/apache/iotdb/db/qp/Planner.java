@@ -39,6 +39,7 @@ import org.apache.iotdb.db.qp.strategy.optimizer.ConcatPathOptimizer;
 import org.apache.iotdb.db.qp.strategy.optimizer.DnfFilterOptimizer;
 import org.apache.iotdb.db.qp.strategy.optimizer.MergeSingleFilterOptimizer;
 import org.apache.iotdb.db.qp.strategy.optimizer.RemoveNotOptimizer;
+import org.apache.iotdb.db.query.control.QueryResourceManager;
 import org.apache.iotdb.db.utils.TestOnly;
 import org.apache.iotdb.service.rpc.thrift.TSRawDataQueryReq;
 
@@ -67,7 +68,16 @@ public class Planner {
   public PhysicalPlan parseSQLToPhysicalPlan(String sqlStr, ZoneId zoneId, int fetchSize)
       throws QueryProcessException {
     Operator operator = logicalGenerator.generate(sqlStr, zoneId);
-    operator = logicalOptimize(operator);
+    int maxDeduplicatedPathNum =
+        QueryResourceManager.getInstance().getMaxDeduplicatedPathNum(fetchSize);
+    if (operator instanceof SFWOperator && ((SFWOperator) operator).isLastQuery()) {
+      // Dataset of last query actually has only three columns, so we shouldn't limit the path num
+      // while constructing logical plan
+      // To avoid overflowing because logicalOptimize function may do maxDeduplicatedPathNum + 1, we
+      // set it to Integer.MAX_VALUE - 1
+      maxDeduplicatedPathNum = Integer.MAX_VALUE - 1;
+    }
+    operator = logicalOptimize(operator, maxDeduplicatedPathNum);
     PhysicalGenerator physicalGenerator = new PhysicalGenerator();
     return physicalGenerator.transformToPhysicalPlan(operator, fetchSize);
   }
@@ -114,7 +124,16 @@ public class Planner {
 
     queryOp.setFilterOperator(filterOp);
 
-    SFWOperator op = (SFWOperator) logicalOptimize(queryOp);
+    int maxDeduplicatedPathNum =
+        QueryResourceManager.getInstance().getMaxDeduplicatedPathNum(rawDataQueryReq.fetchSize);
+    if (queryOp.isLastQuery()) {
+      // Dataset of last query actually has only three columns, so we shouldn't limit the path num
+      // while constructing logical plan
+      // To avoid overflowing because logicalOptimize function may do maxDeduplicatedPathNum + 1, we
+      // set it to Integer.MAX_VALUE - 1
+      maxDeduplicatedPathNum = Integer.MAX_VALUE - 1;
+    }
+    SFWOperator op = (SFWOperator) logicalOptimize(queryOp, maxDeduplicatedPathNum);
 
     PhysicalGenerator physicalGenerator = new PhysicalGenerator();
     return physicalGenerator.transformToPhysicalPlan(op, rawDataQueryReq.fetchSize);
@@ -127,7 +146,7 @@ public class Planner {
    * @return optimized logical operator
    * @throws LogicalOptimizeException exception in logical optimizing
    */
-  protected Operator logicalOptimize(Operator operator)
+  protected Operator logicalOptimize(Operator operator, int maxDeduplicatedPathNum)
       throws LogicalOperatorException, PathNumOverLimitException {
     switch (operator.getType()) {
       case AUTHOR:
@@ -150,7 +169,6 @@ public class Planner {
       case FLUSH:
       case MERGE:
       case TRACING:
-      case SET_SYSTEM_MODE:
       case CLEAR_CACHE:
       case NULL:
       case SHOW_MERGE_STATUS:
@@ -170,7 +188,7 @@ public class Planner {
       case DROP_INDEX:
       case QUERY_INDEX:
         SFWOperator root = (SFWOperator) operator;
-        return optimizeSFWOperator(root);
+        return optimizeSFWOperator(root, maxDeduplicatedPathNum);
       default:
         throw new LogicalOperatorException(operator.getType().toString(), "");
     }
@@ -183,10 +201,10 @@ public class Planner {
    * @return optimized select-from-where operator
    * @throws LogicalOptimizeException exception in SFW optimizing
    */
-  private SFWOperator optimizeSFWOperator(SFWOperator root)
+  private SFWOperator optimizeSFWOperator(SFWOperator root, int maxDeduplicatedPathNum)
       throws LogicalOperatorException, PathNumOverLimitException {
     ConcatPathOptimizer concatPathOptimizer = getConcatPathOptimizer();
-    root = (SFWOperator) concatPathOptimizer.transform(root);
+    root = (SFWOperator) concatPathOptimizer.transform(root, maxDeduplicatedPathNum);
     FilterOperator filter = root.getFilterOperator();
     if (filter == null) {
       return root;

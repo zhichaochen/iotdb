@@ -75,7 +75,7 @@ public class BaseMember {
 
   public static AtomicLong dummyResponse = new AtomicLong(Response.RESPONSE_AGREE);
 
-  protected Map<Node, DataGroupMember> dataGroupMemberMap;
+  Map<Node, DataGroupMember> dataGroupMemberMap;
   private Map<Node, MetaGroupMember> metaGroupMemberMap;
   PartitionGroup allNodes;
   protected MetaGroupMember testMetaMember;

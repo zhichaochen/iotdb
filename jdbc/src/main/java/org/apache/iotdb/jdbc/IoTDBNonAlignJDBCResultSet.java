@@ -81,7 +81,6 @@ public class IoTDBNonAlignJDBCResultSet extends AbstractIoTDBJDBCResultSet {
     times = new byte[columnNameList.size()][Long.BYTES];
 
     ioTDBRpcDataSet.columnNameList = new ArrayList<>();
-    ioTDBRpcDataSet.columnTypeList = new ArrayList<>();
     // deduplicate and map
     ioTDBRpcDataSet.columnOrdinalMap = new HashMap<>();
     ioTDBRpcDataSet.columnOrdinalMap.put(TIMESTAMP_STR, 1);
@@ -94,8 +93,6 @@ public class IoTDBNonAlignJDBCResultSet extends AbstractIoTDBJDBCResultSet {
       String name = columnNameList.get(i);
       ioTDBRpcDataSet.columnNameList.add(TIMESTAMP_STR + name);
       ioTDBRpcDataSet.columnNameList.add(name);
-      ioTDBRpcDataSet.columnTypeList.add(String.valueOf(TSDataType.INT64));
-      ioTDBRpcDataSet.columnTypeList.add(columnTypeList.get(i));
       if (!ioTDBRpcDataSet.columnOrdinalMap.containsKey(name)) {
         int index = columnNameIndex.get(name);
         ioTDBRpcDataSet.columnOrdinalMap.put(name, index + START_INDEX);

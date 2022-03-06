@@ -102,7 +102,7 @@ public class Cli extends AbstractCli {
     } catch (NumberFormatException e) {
       println(
           IOTDB_CLI_PREFIX
-              + "> error format of max print row count, it should be an integer number");
+              + "> error format of max print row count, it should be a number and greater than 0");
       return false;
     }
     return true;
@@ -121,7 +121,6 @@ public class Cli extends AbstractCli {
                 DriverManager.getConnection(
                     Config.IOTDB_URL_PREFIX + host + ":" + port + "/", username, password)) {
           properties = connection.getServerProperties();
-          timestampPrecision = properties.getTimestampPrecision();
           AGGREGRATE_TIME_LIST.addAll(properties.getSupportedTimeAggregationOperations());
           processCommand(execute, connection);
           return;

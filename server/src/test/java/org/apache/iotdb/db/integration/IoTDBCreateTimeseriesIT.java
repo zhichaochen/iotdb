@@ -79,12 +79,10 @@ public class IoTDBCreateTimeseriesIT {
     // ensure that current timeseries in cache is right.
     createTimeSeries1Tool(timeSeriesArray);
 
-    statement.close();
-    connection.close();
     EnvironmentUtils.stopDaemon();
     setUp();
 
-    // ensure timeseries in cache is right after recovered.
+    // ensure timeseries in cache is right after recovering.
     createTimeSeries1Tool(timeSeriesArray);
   }
 
@@ -128,12 +126,10 @@ public class IoTDBCreateTimeseriesIT {
     // ensure that current storage group in cache is right.
     createTimeSeries2Tool(storageGroup);
 
-    statement.close();
-    connection.close();
     EnvironmentUtils.stopDaemon();
     setUp();
 
-    // ensure storage group in cache is right after recovered.
+    // ensure storage group in cache is right after recovering.
     createTimeSeries2Tool(storageGroup);
   }
 

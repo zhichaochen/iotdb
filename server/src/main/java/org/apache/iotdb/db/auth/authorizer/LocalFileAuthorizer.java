@@ -22,6 +22,7 @@ import org.apache.iotdb.db.auth.AuthException;
 import org.apache.iotdb.db.auth.role.LocalFileRoleManager;
 import org.apache.iotdb.db.auth.user.LocalFileUserManager;
 import org.apache.iotdb.db.conf.IoTDBConfig;
+import org.apache.iotdb.db.conf.IoTDBConstant;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 
 import java.io.File;
@@ -38,6 +39,6 @@ public class LocalFileAuthorizer extends BasicAuthorizer {
 
   @Override
   boolean isAdmin(String username) {
-    return config.getAdminName().equals(username);
+    return IoTDBConstant.ADMIN_NAME.equals(username);
   }
 }

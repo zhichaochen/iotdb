@@ -20,7 +20,6 @@
 package org.apache.iotdb.db.tools;
 
 import org.apache.iotdb.tsfile.common.conf.TSFileConfig;
-import org.apache.iotdb.tsfile.file.MetaMarker;
 import org.apache.iotdb.tsfile.file.header.ChunkGroupHeader;
 import org.apache.iotdb.tsfile.file.metadata.ChunkGroupMetadata;
 import org.apache.iotdb.tsfile.file.metadata.ChunkMetadata;
@@ -61,7 +60,7 @@ public class TsFileSketchTool {
       try (TsFileSequenceReader reader = new TsFileSequenceReader(filename)) {
         TsFileMetadata tsFileMetaData = reader.readFileMetadata();
         List<ChunkGroupMetadata> allChunkGroupMetadata = new ArrayList<>();
-        reader.selfCheck(null, allChunkGroupMetadata, false, false);
+        reader.selfCheck(null, allChunkGroupMetadata, false);
 
         // begin print
         StringBuilder str1 = new StringBuilder();
@@ -123,18 +122,8 @@ public class TsFileSketchTool {
             nextChunkGroupHeaderPos =
                 chunkMetadata.getOffsetOfChunkHeader()
                     + chunk.getHeader().getSerializedSize()
-                    + chunk.getHeader().getDataSize();
-          }
-          reader.position(nextChunkGroupHeaderPos);
-          byte marker = reader.readMarker();
-          switch (marker) {
-            case MetaMarker.CHUNK_GROUP_HEADER:
-              // do nothing
-              break;
-            case MetaMarker.OPERATION_INDEX_RANGE:
-              // skip the PlanIndex
-              nextChunkGroupHeaderPos += 16;
-              break;
+                    + chunk.getHeader().getDataSize()
+                    + 17; // skip the PlanIndex
           }
 
           printlnBoth(pw, str1 + "\t[Chunk Group] of " + chunkGroupMetadata.getDevice() + " ends");

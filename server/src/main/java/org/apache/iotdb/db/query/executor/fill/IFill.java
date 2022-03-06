@@ -48,8 +48,7 @@ public abstract class IFill {
       TSDataType dataType,
       long queryTime,
       Set<String> deviceMeasurements,
-      QueryContext context)
-      throws QueryProcessException, StorageEngineException;
+      QueryContext context);
 
   public abstract TimeValuePair getFillResult()
       throws IOException, QueryProcessException, StorageEngineException;

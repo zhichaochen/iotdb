@@ -27,6 +27,7 @@ import org.apache.iotdb.db.metadata.PartialPath;
 import org.apache.iotdb.db.metadata.mnode.MeasurementMNode;
 import org.apache.iotdb.db.qp.physical.crud.InsertRowPlan;
 import org.apache.iotdb.db.qp.physical.crud.InsertTabletPlan;
+import org.apache.iotdb.db.rescon.TVListAllocator;
 import org.apache.iotdb.db.utils.MemUtils;
 import org.apache.iotdb.db.utils.datastructure.TVList;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
@@ -50,8 +51,11 @@ public abstract class AbstractMemTable implements IMemTable {
   protected boolean disableMemControl = true;
 
   private boolean shouldFlush = false;
-  private int avgSeriesPointNumThreshold =
-      IoTDBDescriptor.getInstance().getConfig().getAvgSeriesPointNumberThreshold();
+  private int avgSeqSeriesPointNumThreshold =
+      IoTDBDescriptor.getInstance().getConfig().getAvgSeqSeriesPointNumberThreshold();
+  private int avgUnseqSeriesPointNumThreshold =
+      IoTDBDescriptor.getInstance().getConfig().getAvgUnseqSeriesPointNumberThreshold();
+
   /** memory size of data points, including TEXT values */
   private long memSize = 0;
   /**
@@ -70,7 +74,7 @@ public abstract class AbstractMemTable implements IMemTable {
 
   private long minPlanIndex = Long.MAX_VALUE;
 
-  private long createdTime = System.currentTimeMillis();
+  protected boolean isSequence = false;
 
   public AbstractMemTable() {
     this.memTableMap = new HashMap<>();
@@ -103,7 +107,11 @@ public abstract class AbstractMemTable implements IMemTable {
         measurement,
         k -> {
           seriesNumber++;
-          totalPointsNumThreshold += avgSeriesPointNumThreshold;
+          if (isSequence) {
+            totalPointsNumThreshold += avgSeqSeriesPointNumThreshold;
+          } else {
+            totalPointsNumThreshold += avgUnseqSeriesPointNumThreshold;
+          }
           return genMemSeries(schema);
         });
   }
@@ -305,23 +313,13 @@ public abstract class AbstractMemTable implements IMemTable {
   }
 
   @Override
-  public void releaseTVListRamCost(long cost) {
-    this.tvListRamCost -= cost;
-  }
-
-  @Override
   public long getTVListsRamCost() {
     return tvListRamCost;
   }
 
   @Override
-  public void addTextDataSize(long textDataSize) {
-    this.memSize += textDataSize;
-  }
-
-  @Override
-  public void releaseTextDataSize(long textDataSize) {
-    this.memSize -= textDataSize;
+  public void addTextDataSize(long testDataSize) {
+    this.memSize += testDataSize;
   }
 
   @Override
@@ -340,7 +338,7 @@ public abstract class AbstractMemTable implements IMemTable {
       for (Entry<String, IWritableMemChunk> subEntry : entry.getValue().entrySet()) {
         TVList list = subEntry.getValue().getTVList();
         if (list.getReferenceCount() == 0) {
-          list.clear();
+          TVListAllocator.getInstance().release(list);
         }
       }
     }
@@ -359,10 +357,5 @@ public abstract class AbstractMemTable implements IMemTable {
   void updatePlanIndexes(long index) {
     maxPlanIndex = Math.max(index, maxPlanIndex);
     minPlanIndex = Math.min(index, minPlanIndex);
-  }
-
-  @Override
-  public long getCreatedTime() {
-    return createdTime;
   }
 }

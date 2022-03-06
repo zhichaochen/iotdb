@@ -50,8 +50,8 @@ import static org.junit.Assert.assertNull;
  */
 public class BaseQueryTest extends BaseMember {
 
-  protected List<PartialPath> pathList;
-  protected List<TSDataType> dataTypes;
+  List<PartialPath> pathList;
+  List<TSDataType> dataTypes;
 
   protected static void checkAggregations(
       List<AggregateResult> aggregationResults, Object[] answer) {

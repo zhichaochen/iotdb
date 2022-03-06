@@ -61,14 +61,19 @@ public class UpgradeTask extends WrappedRunnable {
         logger.info("find upgraded file for {}", upgradeResource.getTsFile());
         upgradedResources = findUpgradedFiles();
       }
-      upgradeResource.setUpgradedResources(upgradedResources);
-      upgradeResource.getUpgradeTsFileResourceCallBack().call(upgradeResource);
-      UpgradeSevice.getTotalUpgradeFileNum().getAndAdd(-1);
+      upgradeResource.writeLock();
+      try {
+        upgradeResource.setUpgradedResources(upgradedResources);
+        upgradeResource.getUpgradeTsFileResourceCallBack().call(upgradeResource);
+      } finally {
+        upgradeResource.writeUnlock();
+      }
+      UpgradeSevice.setCntUpgradeFileNum(UpgradeSevice.getCntUpgradeFileNum() - 1);
       logger.info(
           "Upgrade completes, file path:{} , the remaining upgraded file num: {}",
           oldTsfilePath,
-          UpgradeSevice.getTotalUpgradeFileNum().get());
-      if (UpgradeSevice.getTotalUpgradeFileNum().get() == 0) {
+          UpgradeSevice.getCntUpgradeFileNum());
+      if (UpgradeSevice.getCntUpgradeFileNum() == 0) {
         logger.info("Start delete empty tmp folders");
         clearTmpFolders(DirectoryManager.getInstance().getAllSequenceFileFolders());
         clearTmpFolders(DirectoryManager.getInstance().getAllUnSequenceFileFolders());
@@ -139,13 +144,8 @@ public class UpgradeTask extends WrappedRunnable {
         }
         File virtualStorageGroupDir = fsFactory.getFile(storageGroup, "0");
         File upgradeDir = fsFactory.getFile(virtualStorageGroupDir, "upgrade");
-        if (upgradeDir == null) {
-          continue;
-        }
+
         File[] tmpPartitionDirList = upgradeDir.listFiles();
-        if (tmpPartitionDirList == null) {
-          continue;
-        }
         for (File tmpPartitionDir : tmpPartitionDirList) {
           if (tmpPartitionDir.isDirectory()) {
             try {

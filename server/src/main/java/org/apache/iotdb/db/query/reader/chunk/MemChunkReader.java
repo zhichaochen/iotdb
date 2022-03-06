@@ -90,7 +90,7 @@ public class MemChunkReader implements IChunkReader, IPointReader {
   }
 
   @Override
-  public BatchData nextPageData() throws IOException {
+  public BatchData nextPageData(boolean isCompaction) throws IOException {
     return pageReaderList.remove(0).getAllSatisfiedPageData();
   }
 

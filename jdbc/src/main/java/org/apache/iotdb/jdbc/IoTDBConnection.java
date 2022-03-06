@@ -21,7 +21,6 @@ package org.apache.iotdb.jdbc;
 import org.apache.iotdb.rpc.RpcTransportFactory;
 import org.apache.iotdb.rpc.RpcUtils;
 import org.apache.iotdb.rpc.StatementExecutionException;
-import org.apache.iotdb.rpc.TConfigurationConst;
 import org.apache.iotdb.service.rpc.thrift.ServerProperties;
 import org.apache.iotdb.service.rpc.thrift.TSCloseSessionReq;
 import org.apache.iotdb.service.rpc.thrift.TSIService;
@@ -31,7 +30,6 @@ import org.apache.iotdb.service.rpc.thrift.TSProtocolVersion;
 import org.apache.iotdb.service.rpc.thrift.TSSetTimeZoneReq;
 import org.apache.iotdb.service.rpc.thrift.TSStatus;
 
-import org.apache.thrift.TConfiguration;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TCompactProtocol;
@@ -75,7 +73,6 @@ public class IoTDBConnection implements Connection {
   private boolean isClosed = true;
   private SQLWarning warningChain = null;
   private TTransport transport;
-  private TConfiguration tConfiguration = TConfigurationConst.defaultTConfiguration;
   /**
    * Timeout of query can be set by users. Unit: s If not set, default value 0 will be used, which
    * will use server configuration.
@@ -441,11 +438,7 @@ public class IoTDBConnection implements Connection {
     RpcTransportFactory.setThriftMaxFrameSize(params.getThriftMaxFrameSize());
     transport =
         RpcTransportFactory.INSTANCE.getTransport(
-            new TSocket(
-                tConfiguration,
-                params.getHost(),
-                params.getPort(),
-                Config.DEFAULT_CONNECTION_TIMEOUT_MS));
+            new TSocket(params.getHost(), params.getPort(), Config.DEFAULT_CONNECTION_TIMEOUT_MS));
     if (!transport.isOpen()) {
       transport.open();
     }

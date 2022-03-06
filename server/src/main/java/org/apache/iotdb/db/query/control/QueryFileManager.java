@@ -21,9 +21,11 @@ package org.apache.iotdb.db.query.control;
 import org.apache.iotdb.db.engine.querycontext.QueryDataSource;
 import org.apache.iotdb.db.engine.storagegroup.TsFileResource;
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -34,9 +36,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class QueryFileManager {
 
   /** Map<queryId, Set<filePaths>> */
-  private Map<Long, Map<TsFileResource, TsFileResource>> sealedFilePathsMap;
+  private Map<Long, Set<TsFileResource>> sealedFilePathsMap;
 
-  private Map<Long, Map<TsFileResource, TsFileResource>> unsealedFilePathsMap;
+  private Map<Long, Set<TsFileResource>> unsealedFilePathsMap;
 
   QueryFileManager() {
     sealedFilePathsMap = new ConcurrentHashMap<>();
@@ -48,17 +50,17 @@ public class QueryFileManager {
    * must be invoked.
    */
   void addQueryId(long queryId) {
-    sealedFilePathsMap.computeIfAbsent(queryId, x -> new ConcurrentHashMap<>());
-    unsealedFilePathsMap.computeIfAbsent(queryId, x -> new ConcurrentHashMap<>());
+    sealedFilePathsMap.computeIfAbsent(queryId, x -> new HashSet<>());
+    unsealedFilePathsMap.computeIfAbsent(queryId, x -> new HashSet<>());
   }
 
   /** Add the unique file paths to sealedFilePathsMap and unsealedFilePathsMap. */
   public void addUsedFilesForQuery(long queryId, QueryDataSource dataSource) {
 
-    // closed sequence TsFileResource
+    // sequence data
     addUsedFilesForQuery(queryId, dataSource.getSeqResources());
 
-    // closed unsequence TsFileResource
+    // unsequence data
     addUsedFilesForQuery(queryId, dataSource.getUnseqResources());
   }
 
@@ -71,10 +73,10 @@ public class QueryFileManager {
 
       // this file may be deleted just before we lock it
       if (tsFileResource.isDeleted()) {
-        Map<Long, Map<TsFileResource, TsFileResource>> pathMap =
+        Map<Long, Set<TsFileResource>> pathMap =
             !isClosed ? unsealedFilePathsMap : sealedFilePathsMap;
         // This resource may be removed by other threads of this query.
-        if (pathMap.get(queryId).remove(tsFileResource) != null) {
+        if (pathMap.get(queryId).remove(tsFileResource)) {
           FileReaderManager.getInstance().decreaseFileReaderReference(tsFileResource, isClosed);
         }
         iterator.remove();
@@ -91,7 +93,7 @@ public class QueryFileManager {
     sealedFilePathsMap.computeIfPresent(
         queryId,
         (k, v) -> {
-          for (TsFileResource tsFile : v.keySet()) {
+          for (TsFileResource tsFile : v) {
             FileReaderManager.getInstance().decreaseFileReaderReference(tsFile, true);
           }
           return null;
@@ -99,8 +101,8 @@ public class QueryFileManager {
     unsealedFilePathsMap.computeIfPresent(
         queryId,
         (k, v) -> {
-          for (TsFileResource tsFile : v.keySet()) {
-            FileReaderManager.getInstance().decreaseFileReaderReference(tsFile, false);
+          for (TsFileResource tsFile : v) {
+            FileReaderManager.getInstance().decreaseFileReaderReference(tsFile, true);
           }
           return null;
         });
@@ -113,17 +115,11 @@ public class QueryFileManager {
    * not return null.
    */
   void addFilePathToMap(long queryId, TsFileResource tsFile, boolean isClosed) {
-    Map<Long, Map<TsFileResource, TsFileResource>> pathMap =
-        isClosed ? sealedFilePathsMap : unsealedFilePathsMap;
-    // Although there are no concurrency issues here at the moment, I've implemented thread-safe
-    // code here to avoid leaving holes for future newcomers.
-    pathMap
-        .get(queryId)
-        .computeIfAbsent(
-            tsFile,
-            k -> {
-              FileReaderManager.getInstance().increaseFileReaderReference(tsFile, isClosed);
-              return k;
-            });
+    Map<Long, Set<TsFileResource>> pathMap = isClosed ? sealedFilePathsMap : unsealedFilePathsMap;
+    // TODO this is not an atomic operation, is there concurrent problem?
+    if (!pathMap.get(queryId).contains(tsFile)) {
+      pathMap.get(queryId).add(tsFile);
+      FileReaderManager.getInstance().increaseFileReaderReference(tsFile, isClosed);
+    }
   }
 }

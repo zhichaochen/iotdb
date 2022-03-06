@@ -41,8 +41,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -64,19 +62,17 @@ public class TsFileRecoverPerformer {
   private final String logNodePrefix;
   private final TsFileResource tsFileResource;
   private final boolean sequence;
-  private boolean needsCheckTsFile;
 
-  /** @param needsCheckTsFile whether this TsFile needs to open TsFileIOWriter */
+  /** @param isLastFile whether this TsFile is the last file of its partition */
   public TsFileRecoverPerformer(
       String logNodePrefix,
       TsFileResource currentTsFileResource,
       boolean sequence,
-      boolean needsCheckTsFile) {
+      boolean isLastFile) {
     this.filePath = currentTsFileResource.getTsFilePath();
     this.logNodePrefix = logNodePrefix;
     this.tsFileResource = currentTsFileResource;
     this.sequence = sequence;
-    this.needsCheckTsFile = needsCheckTsFile;
   }
 
   /**
@@ -90,7 +86,7 @@ public class TsFileRecoverPerformer {
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
   public RestorableTsFileIOWriter recover(
       boolean needRedoWal, Supplier<ByteBuffer[]> supplier, Consumer<ByteBuffer[]> consumer)
-      throws StorageGroupProcessorException, IOException {
+      throws StorageGroupProcessorException {
 
     File file = FSFactoryProducer.getFSFactory().getFile(filePath);
     if (!file.exists()) {
@@ -98,16 +94,10 @@ public class TsFileRecoverPerformer {
       return null;
     }
 
-    // if a file doesn't need to check TsFile and tsFileResource Exists, skip checking it
-    if (!needsCheckTsFile && tsFileResource.resourceFileExists()) {
-      // .resource file exists, deserialize it
-      recoverResourceFromFile();
-      return null;
-    }
     // remove corrupted part of the TsFile
     RestorableTsFileIOWriter restorableTsFileIOWriter;
     try {
-      restorableTsFileIOWriter = new RestorableTsFileIOWriter(file, needRedoWal, false);
+      restorableTsFileIOWriter = new RestorableTsFileIOWriter(file);
     } catch (NotCompatibleTsFileException e) {
       boolean result = file.delete();
       logger.warn("TsFile {} is incompatible. Delete it successfully {}", filePath, result);
@@ -166,7 +156,7 @@ public class TsFileRecoverPerformer {
   private void recoverResourceFromFile() throws IOException {
     try {
       tsFileResource.deserialize();
-    } catch (Exception e) {
+    } catch (IOException e) {
       logger.warn(
           "Cannot deserialize TsFileResource {}, construct it using " + "TsFileSequenceReader",
           tsFileResource.getTsFile(),
@@ -198,24 +188,13 @@ public class TsFileRecoverPerformer {
     for (Map.Entry<String, List<ChunkMetadata>> entry : deviceChunkMetaDataMap.entrySet()) {
       String deviceId = entry.getKey();
       List<ChunkMetadata> chunkMetadataList = entry.getValue();
-
-      Map<String, List<ChunkMetadata>> measurementToChunkMetadatas = new HashMap<>();
-      for (ChunkMetadata chunkMetadata : chunkMetadataList) {
-        List<ChunkMetadata> list =
-            measurementToChunkMetadatas.computeIfAbsent(
-                chunkMetadata.getMeasurementUid(), n -> new ArrayList<>());
-        list.add(chunkMetadata);
-      }
-
-      for (List<ChunkMetadata> metadataList : measurementToChunkMetadatas.values()) {
-        TSDataType dataType = metadataList.get(metadataList.size() - 1).getDataType();
-        for (ChunkMetadata chunkMetaData : chunkMetadataList) {
-          if (!chunkMetaData.getDataType().equals(dataType)) {
-            continue;
-          }
-          tsFileResource.updateStartTime(deviceId, chunkMetaData.getStartTime());
-          tsFileResource.updateEndTime(deviceId, chunkMetaData.getEndTime());
+      TSDataType dataType = entry.getValue().get(entry.getValue().size() - 1).getDataType();
+      for (ChunkMetadata chunkMetaData : chunkMetadataList) {
+        if (!chunkMetaData.getDataType().equals(dataType)) {
+          continue;
         }
+        tsFileResource.updateStartTime(deviceId, chunkMetaData.getStartTime());
+        tsFileResource.updateEndTime(deviceId, chunkMetaData.getEndTime());
       }
     }
     tsFileResource.updatePlanIndexes(restorableTsFileIOWriter.getMinPlanIndex());
@@ -225,7 +204,7 @@ public class TsFileRecoverPerformer {
   private void redoLogs(
       RestorableTsFileIOWriter restorableTsFileIOWriter, Supplier<ByteBuffer[]> supplier)
       throws StorageGroupProcessorException {
-    IMemTable recoverMemTable = new PrimitiveMemTable();
+    IMemTable recoverMemTable = new PrimitiveMemTable(sequence);
     LogReplayer logReplayer =
         new LogReplayer(
             logNodePrefix,

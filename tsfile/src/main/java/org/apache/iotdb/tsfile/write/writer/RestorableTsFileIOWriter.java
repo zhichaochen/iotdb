@@ -91,7 +91,7 @@ public class RestorableTsFileIOWriter extends TsFileIOWriter {
     if (file.exists()) {
       try (TsFileSequenceReader reader = new TsFileSequenceReader(file.getAbsolutePath(), false)) {
 
-        truncatedSize = reader.selfCheck(knownSchemas, chunkGroupMetadataList, true, false);
+        truncatedSize = reader.selfCheck(knownSchemas, chunkGroupMetadataList, true);
         minPlanIndex = reader.getMinPlanIndex();
         maxPlanIndex = reader.getMaxPlanIndex();
         if (truncatedSize == TsFileCheckStatus.COMPLETE_FILE) {
@@ -107,50 +107,6 @@ public class RestorableTsFileIOWriter extends TsFileIOWriter {
           canWrite = true;
           // remove broken data
           out.truncate(truncatedSize);
-        }
-      }
-    }
-  }
-
-  public RestorableTsFileIOWriter(File file, boolean truncate, boolean appendLastChunkGroupMetadata)
-      throws IOException {
-    if (logger.isDebugEnabled()) {
-      logger.debug("{} is opened.", file.getName());
-    }
-    this.file = file;
-    this.out = FSFactoryProducer.getFileOutputFactory().getTsFileOutput(file.getPath(), true);
-
-    // file doesn't exist
-    if (file.length() == 0) {
-      startFile();
-      crashed = true;
-      canWrite = true;
-      return;
-    }
-
-    if (file.exists()) {
-      try (TsFileSequenceReader reader = new TsFileSequenceReader(file.getAbsolutePath(), false)) {
-
-        truncatedSize =
-            reader.selfCheck(
-                knownSchemas, chunkGroupMetadataList, true, appendLastChunkGroupMetadata);
-        minPlanIndex = reader.getMinPlanIndex();
-        maxPlanIndex = reader.getMaxPlanIndex();
-        if (truncatedSize == TsFileCheckStatus.COMPLETE_FILE) {
-          crashed = false;
-          canWrite = false;
-          out.close();
-        } else if (truncatedSize == TsFileCheckStatus.INCOMPATIBLE_FILE) {
-          out.close();
-          throw new NotCompatibleTsFileException(
-              String.format("%s is not in TsFile format.", file.getAbsolutePath()));
-        } else {
-          crashed = true;
-          canWrite = true;
-          // remove broken data
-          if (truncate) {
-            out.truncate(truncatedSize);
-          }
         }
       }
     }
@@ -284,13 +240,5 @@ public class RestorableTsFileIOWriter extends TsFileIOWriter {
   @Override
   public long getMaxPlanIndex() {
     return maxPlanIndex;
-  }
-
-  public boolean dropLastChunkGroupMetadata() {
-    if (chunkGroupMetadataList.size() < 1) {
-      return false;
-    }
-    chunkGroupMetadataList.remove(chunkGroupMetadataList.size() - 1);
-    return true;
   }
 }

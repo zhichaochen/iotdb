@@ -55,7 +55,6 @@ import java.util.Collections;
 
 import static org.apache.iotdb.db.conf.IoTDBConstant.PATH_SEPARATOR;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class LevelCompactionMoreDataTest extends LevelCompactionTest {
 
@@ -96,7 +95,7 @@ public class LevelCompactionMoreDataTest extends LevelCompactionTest {
     for (int i = 0; i < seqFileNum; i++) {
       File file =
           new File(
-              TestConstant.OUTPUT_DATA_DIR.concat(
+              TestConstant.BASE_OUTPUT_PATH.concat(
                   i
                       + IoTDBConstant.FILE_NAME_SEPARATOR
                       + i
@@ -114,7 +113,7 @@ public class LevelCompactionMoreDataTest extends LevelCompactionTest {
     for (int i = 0; i < unseqFileNum; i++) {
       File file =
           new File(
-              TestConstant.OUTPUT_DATA_DIR.concat(
+              TestConstant.BASE_OUTPUT_PATH.concat(
                   (10000 + i)
                       + IoTDBConstant.FILE_NAME_SEPARATOR
                       + (10000 + i)
@@ -132,7 +131,7 @@ public class LevelCompactionMoreDataTest extends LevelCompactionTest {
 
     File file =
         new File(
-            TestConstant.OUTPUT_DATA_DIR.concat(
+            TestConstant.BASE_OUTPUT_PATH.concat(
                 unseqFileNum
                     + IoTDBConstant.FILE_NAME_SEPARATOR
                     + unseqFileNum
@@ -181,11 +180,9 @@ public class LevelCompactionMoreDataTest extends LevelCompactionTest {
 
   @Before
   public void setUp() throws IOException, WriteProcessException, MetadataException {
-    tempSGDir = new File(TestConstant.OUTPUT_DATA_DIR);
-    if (!tempSGDir.exists()) {
-      assertTrue(tempSGDir.mkdirs());
-    }
     super.setUp();
+    tempSGDir = new File(TestConstant.BASE_OUTPUT_PATH.concat("tempSG"));
+    tempSGDir.mkdirs();
   }
 
   @After
@@ -198,7 +195,7 @@ public class LevelCompactionMoreDataTest extends LevelCompactionTest {
   @Test
   public void testSensorWithTwoOrThreeNode() throws IllegalPathException, IOException {
     LevelCompactionTsFileManagement levelCompactionTsFileManagement =
-        new LevelCompactionTsFileManagement(COMPACTION_TEST_SG, "0", tempSGDir.getPath());
+        new LevelCompactionTsFileManagement(COMPACTION_TEST_SG, tempSGDir.getPath());
     levelCompactionTsFileManagement.addAll(seqResources, true);
     levelCompactionTsFileManagement.addAll(unseqResources, false);
     levelCompactionTsFileManagement.forkCurrentFileList(0);

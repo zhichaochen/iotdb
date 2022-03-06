@@ -19,26 +19,18 @@
 
 package org.apache.iotdb.db.qp.physical.sys;
 
-import org.apache.iotdb.db.exception.metadata.IllegalPathException;
 import org.apache.iotdb.db.metadata.PartialPath;
 import org.apache.iotdb.db.qp.logical.Operator.OperatorType;
 import org.apache.iotdb.db.qp.physical.PhysicalPlan;
 
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CreateFunctionPlan extends PhysicalPlan {
 
-  private boolean isTemporary;
-  private String udfName;
-  private String className;
-
-  public CreateFunctionPlan() {
-    super(false, OperatorType.CREATE_FUNCTION);
-  }
+  private final boolean isTemporary;
+  private final String udfName;
+  private final String className;
 
   public CreateFunctionPlan(boolean isTemporary, String udfName, String className) {
     super(false, OperatorType.CREATE_FUNCTION);
@@ -59,39 +51,8 @@ public class CreateFunctionPlan extends PhysicalPlan {
     return className;
   }
 
-  public void setTemporary(boolean temporary) {
-    isTemporary = temporary;
-  }
-
-  public void setUdfName(String udfName) {
-    this.udfName = udfName;
-  }
-
-  public void setClassName(String className) {
-    this.className = className;
-  }
-
   @Override
   public List<PartialPath> getPaths() {
     return new ArrayList<>();
-  }
-
-  @Override
-  public void serialize(DataOutputStream outputStream) throws IOException {
-    outputStream.writeByte((byte) PhysicalPlanType.CREATE_FUNCTION.ordinal());
-
-    outputStream.writeBoolean(isTemporary);
-    putString(outputStream, udfName);
-    putString(outputStream, className);
-    outputStream.writeLong(index);
-  }
-
-  @Override
-  public void deserialize(ByteBuffer buffer) throws IllegalPathException {
-
-    isTemporary = buffer.get() == 1;
-    udfName = readString(buffer);
-    className = readString(buffer);
-    this.index = buffer.getLong();
   }
 }

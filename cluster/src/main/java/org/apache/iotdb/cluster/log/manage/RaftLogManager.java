@@ -30,7 +30,6 @@ import org.apache.iotdb.cluster.log.Log;
 import org.apache.iotdb.cluster.log.LogApplier;
 import org.apache.iotdb.cluster.log.Snapshot;
 import org.apache.iotdb.cluster.log.StableEntryManager;
-import org.apache.iotdb.cluster.log.manage.serializable.LogManagerMeta;
 import org.apache.iotdb.cluster.server.monitor.Timer.Statistic;
 import org.apache.iotdb.db.utils.TestOnly;
 import org.apache.iotdb.tsfile.utils.RamUsageEstimator;
@@ -116,8 +115,7 @@ public abstract class RaftLogManager {
   protected RaftLogManager(StableEntryManager stableEntryManager, LogApplier applier, String name) {
     this.logApplier = applier;
     this.name = name;
-    LogManagerMeta meta = stableEntryManager.getMeta();
-    this.setCommittedEntryManager(new CommittedEntryManager(maxNumOfLogsInMem, meta));
+    this.setCommittedEntryManager(new CommittedEntryManager(maxNumOfLogsInMem));
     this.setStableEntryManager(stableEntryManager);
     try {
       this.getCommittedEntryManager().append(stableEntryManager.getAllEntriesAfterAppliedIndex());
@@ -127,8 +125,6 @@ public abstract class RaftLogManager {
     long first = getCommittedEntryManager().getDummyIndex();
     long last = getCommittedEntryManager().getLastIndex();
     this.setUnCommittedEntryManager(new UnCommittedEntryManager(last + 1));
-    this.getUnCommittedEntryManager()
-        .truncateAndAppend(stableEntryManager.getAllEntriesAfterCommittedIndex());
 
     /** must have applied entry [compactIndex,last] to state machine */
     this.commitIndex = last;

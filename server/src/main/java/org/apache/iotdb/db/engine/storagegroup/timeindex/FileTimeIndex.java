@@ -22,8 +22,8 @@ package org.apache.iotdb.db.engine.storagegroup.timeindex;
 import org.apache.iotdb.db.engine.StorageEngine;
 import org.apache.iotdb.db.exception.PartitionViolationException;
 import org.apache.iotdb.db.rescon.CachedStringPool;
+import org.apache.iotdb.db.utils.FilePathUtils;
 import org.apache.iotdb.db.utils.SerializeUtils;
-import org.apache.iotdb.tsfile.utils.FilePathUtils;
 import org.apache.iotdb.tsfile.utils.RamUsageEstimator;
 import org.apache.iotdb.tsfile.utils.ReadWriteIOUtils;
 
@@ -66,16 +66,11 @@ public class FileTimeIndex implements ITimeIndex {
   @Override
   public void serialize(OutputStream outputStream) throws IOException {
     ReadWriteIOUtils.write(devices.size(), outputStream);
-    Set<String> stringMemoryReducedSet = new ConcurrentSet<>();
     for (String device : devices) {
-      // To reduce the String number in memory,
-      // use the deviceId from cached pool
-      stringMemoryReducedSet.add(cachedDevicePool.computeIfAbsent(device, k -> k));
       ReadWriteIOUtils.write(device, outputStream);
     }
     ReadWriteIOUtils.write(startTime, outputStream);
     ReadWriteIOUtils.write(endTime, outputStream);
-    devices = stringMemoryReducedSet;
   }
 
   @Override

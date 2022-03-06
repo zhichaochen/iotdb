@@ -22,7 +22,6 @@ import org.apache.iotdb.db.engine.StorageEngine;
 import org.apache.iotdb.db.engine.querycontext.QueryDataSource;
 import org.apache.iotdb.db.engine.storagegroup.StorageGroupProcessor;
 import org.apache.iotdb.db.exception.StorageEngineException;
-import org.apache.iotdb.db.exception.query.QueryProcessException;
 import org.apache.iotdb.db.metadata.PartialPath;
 import org.apache.iotdb.db.qp.physical.crud.RawDataQueryPlan;
 import org.apache.iotdb.db.query.context.QueryContext;
@@ -65,17 +64,16 @@ public class ServerTimeGenerator extends TimeGenerator {
     this.queryPlan = queryPlan;
     try {
       serverConstructNode(queryPlan.getExpression());
-    } catch (IOException | QueryProcessException e) {
+    } catch (IOException e) {
       throw new StorageEngineException(e);
     }
   }
 
   public void serverConstructNode(IExpression expression)
-      throws IOException, StorageEngineException, QueryProcessException {
+      throws IOException, StorageEngineException {
     List<PartialPath> pathList = new ArrayList<>();
     getPartialPathFromExpression(expression, pathList);
-    List<StorageGroupProcessor> list =
-        StorageEngine.getInstance().mergeLockAndInitQueryDataSource(pathList, context, null);
+    List<StorageGroupProcessor> list = StorageEngine.getInstance().mergeLock(pathList);
     try {
       operatorNode = construct(expression);
     } finally {
@@ -125,7 +123,7 @@ public class ServerTimeGenerator extends TimeGenerator {
   }
 
   /** extract time filter from a value filter */
-  protected Filter getTimeFilter(Filter filter) {
+  private Filter getTimeFilter(Filter filter) {
     if (filter instanceof UnaryFilter
         && ((UnaryFilter) filter).getFilterType() == FilterType.TIME_FILTER) {
       return filter;

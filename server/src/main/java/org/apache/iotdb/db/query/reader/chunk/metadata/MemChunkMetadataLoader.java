@@ -46,11 +46,11 @@ public class MemChunkMetadataLoader implements IChunkMetadataLoader {
 
   @Override
   public List<ChunkMetadata> loadChunkMetadataList(TimeseriesMetadata timeseriesMetadata) {
-    List<ChunkMetadata> chunkMetadataList = resource.getChunkMetadataList(seriesPath);
+    List<ChunkMetadata> chunkMetadataList = resource.getChunkMetadataList();
 
     DiskChunkMetadataLoader.setDiskChunkLoader(chunkMetadataList, resource, seriesPath, context);
 
-    List<ReadOnlyMemChunk> memChunks = resource.getReadOnlyMemChunk(seriesPath);
+    List<ReadOnlyMemChunk> memChunks = resource.getReadOnlyMemChunk();
     if (memChunks != null) {
       for (ReadOnlyMemChunk readOnlyMemChunk : memChunks) {
         if (!memChunks.isEmpty()) {

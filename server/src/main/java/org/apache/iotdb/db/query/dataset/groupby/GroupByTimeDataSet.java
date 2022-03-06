@@ -23,7 +23,7 @@ import org.apache.iotdb.db.exception.query.QueryProcessException;
 import org.apache.iotdb.db.qp.physical.crud.GroupByTimePlan;
 import org.apache.iotdb.db.query.aggregation.AggregateResult;
 import org.apache.iotdb.db.query.context.QueryContext;
-import org.apache.iotdb.db.utils.AggregateUtils;
+import org.apache.iotdb.db.utils.FilePathUtils;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.read.common.RowRecord;
 import org.apache.iotdb.tsfile.read.query.dataset.QueryDataSet;
@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -58,7 +57,7 @@ public class GroupByTimeDataSet extends QueryDataSet {
     this.context = context;
 
     if (logger.isDebugEnabled()) {
-      logger.debug("paths " + this.paths + " level:" + Arrays.toString(plan.getLevels()));
+      logger.debug("paths " + this.paths + " level:" + plan.getLevel());
     }
 
     Map<String, AggregateResult> finalPaths = plan.getAggPathByLevel();
@@ -71,7 +70,7 @@ public class GroupByTimeDataSet extends QueryDataSet {
       RowRecord rawRecord = dataSet.nextWithoutConstraint();
       RowRecord curRecord = new RowRecord(rawRecord.getTimestamp());
       List<AggregateResult> mergedAggResults =
-          AggregateUtils.mergeRecordByPath(plan, rawRecord, finalPaths);
+          FilePathUtils.mergeRecordByPath(plan, rawRecord, finalPaths);
       for (AggregateResult resultData : mergedAggResults) {
         TSDataType dataType = resultData.getResultDataType();
         curRecord.addField(resultData.getResult(), dataType);

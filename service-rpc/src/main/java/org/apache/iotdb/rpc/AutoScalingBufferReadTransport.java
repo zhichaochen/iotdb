@@ -19,7 +19,6 @@
 
 package org.apache.iotdb.rpc;
 
-import org.apache.thrift.TConfiguration;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 
@@ -57,18 +56,6 @@ public class AutoScalingBufferReadTransport extends NonOpenTransport {
   public final void consumeBuffer(int len) {
     pos += len;
   }
-
-  @Override
-  public TConfiguration getConfiguration() {
-    // should never call this method.
-    return null;
-  }
-
-  @Override
-  public void updateKnownMessageSize(long size) throws TTransportException {}
-
-  @Override
-  public void checkReadBytesAvailable(long numBytes) throws TTransportException {}
 
   @Override
   public final byte[] getBuffer() {

@@ -34,7 +34,6 @@ import org.apache.iotdb.cluster.server.handlers.caller.HeartbeatHandler;
 import org.apache.iotdb.cluster.server.member.RaftMember;
 import org.apache.iotdb.cluster.utils.ClientUtils;
 
-import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -195,6 +194,7 @@ public class HeartbeatThread implements Runnable {
   }
 
   void sendHeartbeatSync(Node node) {
+    Client client = localMember.getSyncHeartbeatClient(node);
     HeartbeatHandler heartbeatHandler = new HeartbeatHandler(localMember, node);
     HeartBeatRequest req = new HeartBeatRequest();
     req.setCommitLogTerm(request.commitLogTerm);
@@ -210,12 +210,11 @@ public class HeartbeatThread implements Runnable {
       req.partitionTableBytes = request.partitionTableBytes;
       req.setPartitionTableBytesIsSet(true);
     }
-    localMember
-        .getSerialToParallelPool()
-        .submit(
-            () -> {
-              Client client = localMember.getSyncHeartbeatClient(node);
-              if (client != null) {
+    if (client != null) {
+      localMember
+          .getSerialToParallelPool()
+          .submit(
+              () -> {
                 try {
                   logger.debug("{}: Sending heartbeat to {}", memberName, node);
                   HeartBeatResponse heartBeatResponse = client.sendHeartbeat(req);
@@ -223,15 +222,14 @@ public class HeartbeatThread implements Runnable {
                 } catch (TTransportException e) {
                   logger.warn(
                       "{}: Cannot send heart beat to node {} due to network", memberName, node, e);
-                  // the connection may be broken, close it to avoid it being reused
                   client.getInputProtocol().getTransport().close();
                 } catch (Exception e) {
                   logger.warn("{}: Cannot send heart beat to node {}", memberName, node, e);
                 } finally {
                   ClientUtils.putBackSyncHeartbeatClient(client);
                 }
-              }
-            });
+              });
+    }
   }
 
   /**
@@ -393,27 +391,22 @@ public class HeartbeatThread implements Runnable {
   }
 
   private void requestVoteSync(Node node, ElectionHandler handler, ElectionRequest request) {
-    localMember
-        .getSerialToParallelPool()
-        .submit(
-            () -> {
-              Client client = localMember.getSyncHeartbeatClient(node);
-              if (client != null) {
-                logger.info("{}: Requesting a vote from {}", memberName, node);
+    Client client = localMember.getSyncHeartbeatClient(node);
+    if (client != null) {
+      logger.info("{}: Requesting a vote from {}", memberName, node);
+      localMember
+          .getSerialToParallelPool()
+          .submit(
+              () -> {
                 try {
                   long result = client.startElection(request);
                   handler.onComplete(result);
-                } catch (TException e) {
-                  // the connection may be broken, close it to avoid it being reused
-                  client.getInputProtocol().getTransport().close();
-                  logger.warn("{}: Cannot request a vote from {}", memberName, node, e);
-                  handler.onError(e);
                 } catch (Exception e) {
                   handler.onError(e);
                 } finally {
                   ClientUtils.putBackSyncHeartbeatClient(client);
                 }
-              }
-            });
+              });
+    }
   }
 }

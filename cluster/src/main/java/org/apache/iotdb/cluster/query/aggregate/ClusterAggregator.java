@@ -274,13 +274,8 @@ public class ClusterAggregator {
           metaGroupMember
               .getClientProvider()
               .getSyncDataClient(node, RaftServer.getReadOperationTimeoutMS())) {
-        try {
-          resultBuffers = syncDataClient.getAggrResult(request);
-        } catch (TException e) {
-          // the connection may be broken, close it to avoid it being reused
-          syncDataClient.getInputProtocol().getTransport().close();
-          throw e;
-        }
+
+        resultBuffers = syncDataClient.getAggrResult(request);
       }
     }
     return resultBuffers;

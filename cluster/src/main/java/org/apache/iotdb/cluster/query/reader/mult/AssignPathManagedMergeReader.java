@@ -22,12 +22,12 @@ import org.apache.iotdb.db.query.reader.series.ManagedSeriesReader;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.read.TimeValuePair;
 import org.apache.iotdb.tsfile.read.common.BatchData;
-import org.apache.iotdb.tsfile.read.reader.IPointReader;
 
 import java.io.IOException;
 import java.util.NoSuchElementException;
 
-public class AssignPathManagedMergeReader implements ManagedSeriesReader, IPointReader {
+public class AssignPathManagedMergeReader extends AssignPathPriorityMergeReader
+    implements ManagedSeriesReader {
 
   private static final int BATCH_SIZE = 4096;
   private volatile boolean managedByPool;
@@ -36,18 +36,9 @@ public class AssignPathManagedMergeReader implements ManagedSeriesReader, IPoint
   private BatchData batchData;
   private TSDataType dataType;
 
-  private final IAssignPathPriorityMergeReader underlyingReader;
-
-  public AssignPathManagedMergeReader(String fullPath, TSDataType dataType, boolean isAscending) {
-    underlyingReader =
-        isAscending
-            ? new AssignPathAscPriorityMergeReader(fullPath)
-            : new AssignPathDescPriorityMergeReader(fullPath);
+  public AssignPathManagedMergeReader(String fullPath, TSDataType dataType) {
+    super(fullPath);
     this.dataType = dataType;
-  }
-
-  public void addReader(AbstractMultPointReader reader, long priority) throws IOException {
-    underlyingReader.addReader(reader, priority);
   }
 
   @Override
@@ -80,10 +71,10 @@ public class AssignPathManagedMergeReader implements ManagedSeriesReader, IPoint
   }
 
   private void constructBatch() throws IOException {
-    if (underlyingReader.hasNextTimeValuePair()) {
+    if (hasNextTimeValuePair()) {
       batchData = new BatchData(dataType);
-      while (underlyingReader.hasNextTimeValuePair() && batchData.length() < BATCH_SIZE) {
-        TimeValuePair next = underlyingReader.nextTimeValuePair();
+      while (hasNextTimeValuePair() && batchData.length() < BATCH_SIZE) {
+        TimeValuePair next = nextTimeValuePair();
         batchData.putAnObject(next.getTimestamp(), next.getValue().getValue());
       }
     }
@@ -97,25 +88,5 @@ public class AssignPathManagedMergeReader implements ManagedSeriesReader, IPoint
     BatchData ret = batchData;
     batchData = null;
     return ret;
-  }
-
-  @Override
-  public boolean hasNextTimeValuePair() throws IOException {
-    return underlyingReader.hasNextTimeValuePair();
-  }
-
-  @Override
-  public TimeValuePair nextTimeValuePair() throws IOException {
-    return underlyingReader.nextTimeValuePair();
-  }
-
-  @Override
-  public TimeValuePair currentTimeValuePair() throws IOException {
-    return underlyingReader.currentTimeValuePair();
-  }
-
-  @Override
-  public void close() throws IOException {
-    underlyingReader.close();
   }
 }

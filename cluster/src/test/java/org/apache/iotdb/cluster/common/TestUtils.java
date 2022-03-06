@@ -358,7 +358,7 @@ public class TestUtils {
 
   /**
    * The TsFileResource's path should be consist with the {@link
-   * org.apache.iotdb.tsfile.utils.FilePathUtils#splitTsFilePath(String)}
+   * org.apache.iotdb.db.utils.FilePathUtils#splitTsFilePath(TsFileResource)}
    */
   public static List<TsFileResource> prepareTsFileResources(
       int sgNum, int fileNum, int seriesNum, int ptNum, boolean asHardLink)
@@ -377,7 +377,7 @@ public class TestUtils {
                       + File.separator
                       + 0
                       + File.separator
-                      + "0-%d-0-0"
+                      + "0-%d-0"
                       + TsFileConstant.TSFILE_SUFFIX,
                   i);
       if (asHardLink) {
@@ -410,7 +410,6 @@ public class TestUtils {
       resource.updateEndTime(TestUtils.getTestSg(sgNum), (i + 1) * ptNum - 1);
       resource.setMaxPlanIndex(i);
       resource.setMinPlanIndex(i);
-      resource.setClosed(true);
 
       resource.serialize();
       ret.add(resource);

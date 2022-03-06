@@ -18,7 +18,6 @@
  */
 package org.apache.iotdb.db.qp.sql;
 
-import org.apache.iotdb.db.conf.IoTDBConstant;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.engine.trigger.api.TriggerEvent;
 import org.apache.iotdb.db.exception.index.UnsupportedIndexTypeException;
@@ -34,9 +33,7 @@ import org.apache.iotdb.db.qp.logical.crud.FilterOperator;
 import org.apache.iotdb.db.qp.logical.crud.FromOperator;
 import org.apache.iotdb.db.qp.logical.crud.InOperator;
 import org.apache.iotdb.db.qp.logical.crud.InsertOperator;
-import org.apache.iotdb.db.qp.logical.crud.LikeOperator;
 import org.apache.iotdb.db.qp.logical.crud.QueryOperator;
-import org.apache.iotdb.db.qp.logical.crud.RegexpOperator;
 import org.apache.iotdb.db.qp.logical.crud.SelectOperator;
 import org.apache.iotdb.db.qp.logical.sys.AlterTimeSeriesOperator;
 import org.apache.iotdb.db.qp.logical.sys.AlterTimeSeriesOperator.AlterType;
@@ -66,13 +63,11 @@ import org.apache.iotdb.db.qp.logical.sys.MergeOperator;
 import org.apache.iotdb.db.qp.logical.sys.MoveFileOperator;
 import org.apache.iotdb.db.qp.logical.sys.RemoveFileOperator;
 import org.apache.iotdb.db.qp.logical.sys.SetStorageGroupOperator;
-import org.apache.iotdb.db.qp.logical.sys.SetSystemModeOperator;
 import org.apache.iotdb.db.qp.logical.sys.SetTTLOperator;
 import org.apache.iotdb.db.qp.logical.sys.ShowChildNodesOperator;
 import org.apache.iotdb.db.qp.logical.sys.ShowChildPathsOperator;
 import org.apache.iotdb.db.qp.logical.sys.ShowDevicesOperator;
 import org.apache.iotdb.db.qp.logical.sys.ShowFunctionsOperator;
-import org.apache.iotdb.db.qp.logical.sys.ShowLockInfoOperator;
 import org.apache.iotdb.db.qp.logical.sys.ShowMergeStatusOperator;
 import org.apache.iotdb.db.qp.logical.sys.ShowOperator;
 import org.apache.iotdb.db.qp.logical.sys.ShowStorageGroupOperator;
@@ -85,8 +80,8 @@ import org.apache.iotdb.db.qp.logical.sys.TracingOperator;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.AggregationCallContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.AggregationElementContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.AliasClauseContext;
-import org.apache.iotdb.db.qp.sql.SqlBaseParser.AlignByDeviceClauseOrDisableAlignContext;
-import org.apache.iotdb.db.qp.sql.SqlBaseParser.AlignByDeviceClauseOrDisableAlignStatementContext;
+import org.apache.iotdb.db.qp.sql.SqlBaseParser.AlignByDeviceClauseOrDisableAlignInSpecialLimitContext;
+import org.apache.iotdb.db.qp.sql.SqlBaseParser.AlignByDeviceStatementOrDisableAlignInSpecialClauseContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.AlterClauseContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.AlterTimeseriesContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.AlterUserContext;
@@ -106,7 +101,6 @@ import org.apache.iotdb.db.qp.sql.SqlBaseParser.CreateFunctionContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.CreateIndexContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.CreateRoleContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.CreateSnapshotContext;
-import org.apache.iotdb.db.qp.sql.SqlBaseParser.CreateStorageGroupContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.CreateTimeseriesContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.CreateTriggerContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.CreateUserContext;
@@ -158,7 +152,6 @@ import org.apache.iotdb.db.qp.sql.SqlBaseParser.ListRolePrivilegesContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.ListUserContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.ListUserPrivilegesContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.LoadConfigurationStatementContext;
-import org.apache.iotdb.db.qp.sql.SqlBaseParser.LoadFilesClauseContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.LoadFilesContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.LoadStatementContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.MergeContext;
@@ -183,8 +176,6 @@ import org.apache.iotdb.db.qp.sql.SqlBaseParser.RootOrIdContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.SelectStatementContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.SequenceClauseContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.SetStorageGroupContext;
-import org.apache.iotdb.db.qp.sql.SqlBaseParser.SetSystemToReadOnlyContext;
-import org.apache.iotdb.db.qp.sql.SqlBaseParser.SetSystemToWritableContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.SetTTLStatementContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.ShowAllTTLStatementContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.ShowChildNodesContext;
@@ -192,7 +183,6 @@ import org.apache.iotdb.db.qp.sql.SqlBaseParser.ShowChildPathsContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.ShowDevicesContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.ShowFlushTaskInfoContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.ShowFunctionsContext;
-import org.apache.iotdb.db.qp.sql.SqlBaseParser.ShowLockInfoContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.ShowMergeStatusContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.ShowQueryProcesslistContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.ShowStorageGroupContext;
@@ -222,12 +212,10 @@ import org.apache.iotdb.db.qp.sql.SqlBaseParser.UdfAttributeContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.UdfCallContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.UnsetTTLStatementContext;
 import org.apache.iotdb.db.qp.sql.SqlBaseParser.WhereClauseContext;
-import org.apache.iotdb.db.qp.sql.SqlBaseParser.WithoutNullStatementContext;
 import org.apache.iotdb.db.qp.utils.DatetimeUtils;
 import org.apache.iotdb.db.query.executor.fill.IFill;
 import org.apache.iotdb.db.query.executor.fill.LinearFill;
 import org.apache.iotdb.db.query.executor.fill.PreviousFill;
-import org.apache.iotdb.db.query.executor.fill.ValueFill;
 import org.apache.iotdb.db.query.udf.core.context.UDFContext;
 import org.apache.iotdb.tsfile.common.conf.TSFileDescriptor;
 import org.apache.iotdb.tsfile.common.constant.TsFileConstant;
@@ -262,11 +250,6 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
   private static final String DELETE_RANGE_ERROR_MSG =
       "For delete statement, where clause can only contain atomic expressions like : "
           + "time > XXX, time <= XXX, or two atomic expressions connected by 'AND'";
-
-  private static final String DELETE_ONLY_SUPPORT_TIME_EXP_ERROR_MSG =
-      "For delete statement, where clause can only contain time expressions, "
-          + "value filter is not currently supported.";
-
   private ZoneId zoneId;
   QueryOperator queryOp;
 
@@ -860,16 +843,6 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
   }
 
   @Override
-  public Operator visitShowLockInfo(ShowLockInfoContext ctx) {
-    if (ctx.prefixPath() != null) {
-      return new ShowLockInfoOperator(SQLConstant.TOK_LOCK_INFO, parsePrefixPath(ctx.prefixPath()));
-    } else {
-      return new ShowLockInfoOperator(
-          SQLConstant.TOK_LOCK_INFO, new PartialPath(SQLConstant.getSingleRootArray()));
-    }
-  }
-
-  @Override
   public Operator visitShowChildPaths(ShowChildPathsContext ctx) {
     if (ctx.prefixPath() != null) {
       return new ShowChildPathsOperator(
@@ -928,16 +901,6 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
   }
 
   @Override
-  public Operator visitSetSystemToReadOnly(SetSystemToReadOnlyContext ctx) {
-    return new SetSystemModeOperator(SQLConstant.TOK_SET_SYSTEM_MODE, true);
-  }
-
-  @Override
-  public Operator visitSetSystemToWritable(SetSystemToWritableContext ctx) {
-    return new SetSystemModeOperator(SQLConstant.TOK_SET_SYSTEM_MODE, false);
-  }
-
-  @Override
   public Operator visitCountTimeseries(CountTimeseriesContext ctx) {
     PrefixPathContext pathContext = ctx.prefixPath();
     PartialPath path =
@@ -991,16 +954,24 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
 
   @Override
   public Operator visitLoadFiles(LoadFilesContext ctx) {
-    LoadFilesOperator loadFilesOperator =
-        new LoadFilesOperator(
+    if (ctx.autoCreateSchema() != null) {
+      if (ctx.autoCreateSchema().INT() != null) {
+        return new LoadFilesOperator(
             new File(removeStringQuote(ctx.stringLiteral().getText())),
-            true,
-            IoTDBDescriptor.getInstance().getConfig().getDefaultStorageGroupLevel(),
-            true);
-    if (ctx.loadFilesClause() != null) {
-      parseLoadFiles(loadFilesOperator, ctx.loadFilesClause());
+            Boolean.parseBoolean(ctx.autoCreateSchema().booleanClause().getText()),
+            Integer.parseInt(ctx.autoCreateSchema().INT().getText()));
+      } else {
+        return new LoadFilesOperator(
+            new File(removeStringQuote(ctx.stringLiteral().getText())),
+            Boolean.parseBoolean(ctx.autoCreateSchema().booleanClause().getText()),
+            IoTDBDescriptor.getInstance().getConfig().getDefaultStorageGroupLevel());
+      }
+    } else {
+      return new LoadFilesOperator(
+          new File(removeStringQuote(ctx.stringLiteral().getText())),
+          true,
+          IoTDBDescriptor.getInstance().getConfig().getDefaultStorageGroupLevel());
     }
-    return loadFilesOperator;
   }
 
   @Override
@@ -1140,15 +1111,6 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
     return selectOp;
   }
 
-  @Override
-  public Operator visitCreateStorageGroup(CreateStorageGroupContext ctx) {
-    SetStorageGroupOperator setStorageGroupOperator =
-        new SetStorageGroupOperator(SQLConstant.TOK_METADATA_SET_FILE_LEVEL);
-    PartialPath path = parsePrefixPath(ctx.prefixPath());
-    setStorageGroupOperator.setPath(path);
-    return setStorageGroupOperator;
-  }
-
   public void parseAsClause(List<AsClauseContext> asClauseContexts, SelectOperator selectOp) {
     for (AsClauseContext asClauseContext : asClauseContexts) {
       PartialPath path = parseSuffixPath(asClauseContext.suffixPath());
@@ -1171,7 +1133,11 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
       parseSlimitClause(ctx.slimitClause(), queryOp);
     }
     if (ctx.alignByDeviceClauseOrDisableAlign() != null) {
-      parseAlignByDeviceClauseOrDisableAlign(ctx.alignByDeviceClauseOrDisableAlign());
+      if (ctx.alignByDeviceClauseOrDisableAlign().alignByDeviceClause() != null) {
+        parseAlignByDeviceClause(queryOp);
+      } else {
+        parseDisableAlign(queryOp);
+      }
     }
     return queryOp;
   }
@@ -1183,41 +1149,22 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
       parseLimitClause(ctx.limitClause(), queryOp);
     }
     if (ctx.alignByDeviceClauseOrDisableAlign() != null) {
-      parseAlignByDeviceClauseOrDisableAlign(ctx.alignByDeviceClauseOrDisableAlign());
+      if (ctx.alignByDeviceClauseOrDisableAlign().alignByDeviceClause() != null) {
+        parseAlignByDeviceClause(queryOp);
+      } else {
+        parseDisableAlign(queryOp);
+      }
     }
     return queryOp;
   }
 
   @Override
-  public Operator visitAlignByDeviceClauseOrDisableAlignStatement(
-      AlignByDeviceClauseOrDisableAlignStatementContext ctx) {
-    parseAlignByDeviceClauseOrDisableAlign(ctx.alignByDeviceClauseOrDisableAlign());
-    return queryOp;
-  }
-
-  private void parseAlignByDeviceClauseOrDisableAlign(
-      AlignByDeviceClauseOrDisableAlignContext ctx) {
-    if (ctx.alignByDeviceClause() != null) {
+  public Operator visitAlignByDeviceClauseOrDisableAlignInSpecialLimit(
+      AlignByDeviceClauseOrDisableAlignInSpecialLimitContext ctx) {
+    if (ctx.alignByDeviceClauseOrDisableAlign().alignByDeviceClause() != null) {
       parseAlignByDeviceClause(queryOp);
     } else {
       parseDisableAlign(queryOp);
-    }
-  }
-
-  @Override
-  public Operator visitWithoutNullStatement(WithoutNullStatementContext ctx) {
-    if (ctx.withoutNullClause().WITHOUT() != null) {
-      queryOp.setWithoutAllNull(ctx.withoutNullClause().ALL() != null);
-      queryOp.setWithoutAnyNull(ctx.withoutNullClause().ANY() != null);
-    }
-    if (ctx.limitClause() != null) {
-      parseLimitClause(ctx.limitClause(), queryOp);
-    }
-    if (ctx.slimitClause() != null) {
-      parseSlimitClause(ctx.slimitClause(), queryOp);
-    }
-    if (ctx.alignByDeviceClauseOrDisableAlign() != null) {
-      parseAlignByDeviceClauseOrDisableAlign(ctx.alignByDeviceClauseOrDisableAlign());
     }
     return queryOp;
   }
@@ -1262,7 +1209,22 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
       parseSlimitClause(ctx.slimitClause(), queryOp);
     }
     if (ctx.alignByDeviceClauseOrDisableAlign() != null) {
-      parseAlignByDeviceClauseOrDisableAlign(ctx.alignByDeviceClauseOrDisableAlign());
+      if (ctx.alignByDeviceClauseOrDisableAlign().alignByDeviceClause() != null) {
+        parseAlignByDeviceClause(queryOp);
+      } else {
+        parseDisableAlign(queryOp);
+      }
+    }
+    return queryOp;
+  }
+
+  @Override
+  public Operator visitAlignByDeviceStatementOrDisableAlignInSpecialClause(
+      AlignByDeviceStatementOrDisableAlignInSpecialClauseContext ctx) {
+    if (ctx.alignByDeviceClauseOrDisableAlign().alignByDeviceClause() != null) {
+      parseAlignByDeviceClause(queryOp);
+    } else {
+      parseDisableAlign(queryOp);
     }
     return queryOp;
   }
@@ -1377,17 +1339,8 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
     if (!queryOp.hasAggregation()) {
       throw new SQLParserException("There is no aggregation function with group by query");
     }
-    setLevels(queryOp, ctx.LEVEL(), ctx.INT());
-  }
-
-  private void setLevels(QueryOperator queryOp, TerminalNode level, List<TerminalNode> anInt) {
-    if (level != null && anInt != null) {
-      int[] levels = new int[anInt.size()];
-      for (int i = 0; i < anInt.size(); i++) {
-        levels[i] = Integer.parseInt(anInt.get(i).getText());
-      }
-      queryOp.setLevels(levels);
-    }
+    queryOp.setGroupByLevel(true);
+    queryOp.setLevel(Integer.parseInt(ctx.INT().getText()));
   }
 
   public void parseFillClause(FillClauseContext ctx, QueryOperator queryOp) {
@@ -1498,7 +1451,10 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
 
     parseTimeInterval(ctx.timeInterval(), queryOp);
 
-    setLevels(queryOp, ctx.LEVEL(), ctx.INT());
+    if (ctx.INT() != null) {
+      queryOp.setGroupByLevel(true);
+      queryOp.setLevel(Integer.parseInt(ctx.INT().getText()));
+    }
   }
 
   private void parseGroupByFillClause(GroupByFillClauseContext ctx, QueryOperator queryOp) {
@@ -1510,7 +1466,7 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
     queryOp.setLeftCRightO(ctx.timeInterval().LS_BRACKET() != null);
 
     // parse timeUnit
-    queryOp.setUnit(DatetimeUtils.convertDurationStrToLong(ctx.DURATION().getText()));
+    queryOp.setUnit(parseDuration(ctx.DURATION().getText()));
     queryOp.setSlidingStep(queryOp.getUnit());
 
     parseTimeInterval(ctx.timeInterval(), queryOp);
@@ -1528,9 +1484,7 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
         if (typeClause.previousUntilLastClause() != null) {
           long preRange;
           if (typeClause.previousUntilLastClause().DURATION() != null) {
-            preRange =
-                DatetimeUtils.convertDurationStrToLong(
-                    typeClause.previousUntilLastClause().DURATION().getText());
+            preRange = parseDuration(typeClause.previousUntilLastClause().DURATION().getText());
           } else {
             preRange = IoTDBDescriptor.getInstance().getConfig().getDefaultFillInterval();
           }
@@ -1538,9 +1492,7 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
         } else {
           long preRange;
           if (typeClause.previousClause().DURATION() != null) {
-            preRange =
-                DatetimeUtils.convertDurationStrToLong(
-                    typeClause.previousClause().DURATION().getText());
+            preRange = parseDuration(typeClause.previousClause().DURATION().getText());
           } else {
             preRange = IoTDBDescriptor.getInstance().getConfig().getDefaultFillInterval();
           }
@@ -1571,34 +1523,22 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
 
     if (ctx.linearClause() != null) { // linear
       if (ctx.linearClause().DURATION(0) != null) {
-        long beforeRange =
-            DatetimeUtils.convertDurationStrToLong(ctx.linearClause().DURATION(0).getText());
-        long afterRange =
-            DatetimeUtils.convertDurationStrToLong(ctx.linearClause().DURATION(1).getText());
+        long beforeRange = parseDuration(ctx.linearClause().DURATION(0).getText());
+        long afterRange = parseDuration(ctx.linearClause().DURATION(1).getText());
         fillTypes.put(dataType, new LinearFill(beforeRange, afterRange));
       } else {
         fillTypes.put(dataType, new LinearFill(defaultFillInterval, defaultFillInterval));
       }
     } else if (ctx.previousClause() != null) { // previous
       if (ctx.previousClause().DURATION() != null) {
-        long preRange =
-            DatetimeUtils.convertDurationStrToLong(ctx.previousClause().DURATION().getText());
+        long preRange = parseDuration(ctx.previousClause().DURATION().getText());
         fillTypes.put(dataType, new PreviousFill(preRange));
       } else {
         fillTypes.put(dataType, new PreviousFill(defaultFillInterval));
       }
-    } else if (ctx.specificValueClause() != null) {
-      if (ctx.specificValueClause().constant() != null) {
-        fillTypes.put(
-            dataType, new ValueFill(ctx.specificValueClause().constant().getText(), dataType));
-      } else {
-        throw new SQLParserException("fill value cannot be null");
-      }
     } else { // previous until last
       if (ctx.previousUntilLastClause().DURATION() != null) {
-        long preRange =
-            DatetimeUtils.convertDurationStrToLong(
-                ctx.previousUntilLastClause().DURATION().getText());
+        long preRange = parseDuration(ctx.previousUntilLastClause().DURATION().getText());
         fillTypes.put(dataType, new PreviousFill(preRange, true));
       } else {
         fillTypes.put(dataType, new PreviousFill(defaultFillInterval, true));
@@ -1645,20 +1585,19 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
   private void parseTimeInterval(TimeIntervalContext timeInterval, QueryOperator queryOp) {
     long startTime;
     long endTime;
-    long currentTime = DatetimeUtils.currentTime();
     if (timeInterval.timeValue(0).INT() != null) {
       startTime = Long.parseLong(timeInterval.timeValue(0).INT().getText());
     } else if (timeInterval.timeValue(0).dateExpression() != null) {
-      startTime = parseDateExpression(timeInterval.timeValue(0).dateExpression(), currentTime);
+      startTime = parseDateExpression(timeInterval.timeValue(0).dateExpression());
     } else {
-      startTime = parseTimeFormat(timeInterval.timeValue(0).dateFormat().getText(), currentTime);
+      startTime = parseTimeFormat(timeInterval.timeValue(0).dateFormat().getText());
     }
     if (timeInterval.timeValue(1).INT() != null) {
       endTime = Long.parseLong(timeInterval.timeValue(1).INT().getText());
     } else if (timeInterval.timeValue(1).dateExpression() != null) {
-      endTime = parseDateExpression(timeInterval.timeValue(1).dateExpression(), currentTime);
+      endTime = parseDateExpression(timeInterval.timeValue(1).dateExpression());
     } else {
-      endTime = parseTimeFormat(timeInterval.timeValue(1).dateFormat().getText(), currentTime);
+      endTime = parseTimeFormat(timeInterval.timeValue(1).dateFormat().getText());
     }
 
     queryOp.setStartTime(startTime);
@@ -1733,12 +1672,6 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
   }
 
   private Pair<Long, Long> calcOperatorInterval(FilterOperator filterOperator) {
-
-    if (filterOperator.getSinglePath() != null
-        && !IoTDBConstant.TIME.equals(filterOperator.getSinglePath().getMeasurement())) {
-      throw new SQLParserException(DELETE_ONLY_SUPPORT_TIME_EXP_ERROR_MSG);
-    }
-
     long time = Long.parseLong(((BasicFunctionOperator) filterOperator).getValue());
     switch (filterOperator.getTokenIntType()) {
       case SQLConstant.LESSTHAN:
@@ -1814,27 +1747,14 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
 
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
   private FilterOperator parsePredicate(PredicateContext ctx) {
-    PartialPath path = null;
     if (ctx.OPERATOR_NOT() != null) {
       FilterOperator notOp = new FilterOperator(SQLConstant.KW_NOT);
       notOp.addChildOperator(parseOrExpression(ctx.orExpression()));
       return notOp;
     } else if (ctx.LR_BRACKET() != null && ctx.OPERATOR_NOT() == null) {
       return parseOrExpression(ctx.orExpression());
-    } else if (ctx.REGEXP() != null || ctx.LIKE() != null) {
-      if (ctx.suffixPath() != null) {
-        path = parseSuffixPath(ctx.suffixPath());
-      } else if (ctx.fullPath() != null) {
-        path = parseFullPath(ctx.fullPath());
-      }
-      if (path == null) {
-        throw new SQLParserException("Path is null, please check the sql.");
-      }
-      return ctx.REGEXP() != null
-          ? new RegexpOperator(
-              ctx.REGEXP().getSymbol().getType(), path, ctx.stringLiteral().getText())
-          : new LikeOperator(ctx.LIKE().getSymbol().getType(), path, ctx.stringLiteral().getText());
     } else {
+      PartialPath path = null;
       if (ctx.TIME() != null || ctx.TIMESTAMP() != null) {
         path = new PartialPath(SQLConstant.getSingleTimeArray());
       }
@@ -1901,44 +1821,85 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
     time = parseTimeFormat(ctx.getChild(0).getText());
     for (int i = 1; i < ctx.getChildCount(); i = i + 2) {
       if (ctx.getChild(i).getText().equals("+")) {
-        time += DatetimeUtils.convertDurationStrToLong(time, ctx.getChild(i + 1).getText());
+        time += parseDuration(ctx.getChild(i + 1).getText());
       } else {
-        time -= DatetimeUtils.convertDurationStrToLong(time, ctx.getChild(i + 1).getText());
-      }
-    }
-    return time;
-  }
-
-  private Long parseDateExpression(DateExpressionContext ctx, long currentTime) {
-    long time;
-    time = parseTimeFormat(ctx.getChild(0).getText(), currentTime);
-    for (int i = 1; i < ctx.getChildCount(); i = i + 2) {
-      if (ctx.getChild(i).getText().equals("+")) {
-        time += DatetimeUtils.convertDurationStrToLong(time, ctx.getChild(i + 1).getText());
-      } else {
-        time -= DatetimeUtils.convertDurationStrToLong(time, ctx.getChild(i + 1).getText());
+        time -= parseDuration(ctx.getChild(i + 1).getText());
       }
     }
     return time;
   }
 
   /**
+   * parse duration to time value.
+   *
+   * @param durationStr represent duration string like: 12d8m9ns, 1y1mo, etc.
+   * @return time in milliseconds, microseconds, or nanoseconds depending on the profile
+   */
+  private Long parseDuration(String durationStr) {
+    String timestampPrecision = IoTDBDescriptor.getInstance().getConfig().getTimestampPrecision();
+
+    long total = 0;
+    long tmp = 0;
+    for (int i = 0; i < durationStr.length(); i++) {
+      char ch = durationStr.charAt(i);
+      if (Character.isDigit(ch)) {
+        tmp *= 10;
+        tmp += (ch - '0');
+      } else {
+        String unit = durationStr.charAt(i) + "";
+        // This is to identify units with two letters.
+        if (i + 1 < durationStr.length() && !Character.isDigit(durationStr.charAt(i + 1))) {
+          i++;
+          unit += durationStr.charAt(i);
+        }
+        total +=
+            DatetimeUtils.convertDurationStrToLong(tmp, unit.toLowerCase(), timestampPrecision);
+        tmp = 0;
+      }
+    }
+    if (total <= 0) {
+      throw new SQLParserException("Interval must more than 0.");
+    }
+    return total;
+  }
+
+  /**
    * parse time unit or sliding step in group by query. If 'mo' is used, then other units can not be
    * used together, like '1mo1d'.
    *
-   * @param durationStr represent duration string like: 12d8m9ns, 1y1d, etc.
+   * @param durationStr represent duration string like: 12d8m9ns, 1y1mo, etc.
    * @return time in milliseconds, microseconds, or nanoseconds depending on the profile
    */
   private long parseTimeUnitOrSlidingStep(
       QueryOperator queryOp, String durationStr, boolean isParsingTimeUnit) {
-    if (durationStr.toLowerCase().contains("mo")) {
-      if (isParsingTimeUnit) {
-        queryOp.setIntervalByMonth(true);
-      } else {
-        queryOp.setSlidingStepByMonth(true);
+    boolean hasMonthUnit = false;
+    boolean hasOtherUnits = false;
+    for (int i = 0; i < durationStr.length(); i++) {
+      char ch = durationStr.charAt(i);
+      if (!Character.isDigit(ch)) {
+        String unit = durationStr.charAt(i) + "";
+        // This is to identify units with two letters.
+        if (i + 1 < durationStr.length() && !Character.isDigit(durationStr.charAt(i + 1))) {
+          i++;
+          unit += durationStr.charAt(i);
+        }
+        if (unit.equalsIgnoreCase("mo")) {
+          if (isParsingTimeUnit) {
+            queryOp.setIntervalByMonth(true);
+          } else {
+            queryOp.setSlidingStepByMonth(true);
+          }
+          hasMonthUnit = true;
+        } else {
+          hasOtherUnits = true;
+        }
       }
     }
-    return DatetimeUtils.convertDurationStrToLong(durationStr);
+    if (hasMonthUnit && hasOtherUnits) {
+      throw new SQLParserException(
+          "Natural month unit can not be used with other time units together now.");
+    }
+    return parseDuration(durationStr);
   }
 
   private PartialPath parseSuffixPath(SuffixPathContext ctx) {
@@ -2153,9 +2114,19 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
     if (timestampStr == null || timestampStr.trim().equals("")) {
       throw new SQLParserException("input timestamp cannot be empty");
     }
-
+    long startupNano = IoTDBDescriptor.getInstance().getConfig().getStartUpNanosecond();
     if (timestampStr.equalsIgnoreCase(SQLConstant.NOW_FUNC)) {
-      return DatetimeUtils.currentTime();
+      String timePrecision = IoTDBDescriptor.getInstance().getConfig().getTimestampPrecision();
+      switch (timePrecision) {
+        case "ns":
+          return System.currentTimeMillis() * 1000_000
+              + (System.nanoTime() - startupNano) % 1000_000;
+        case "us":
+          return System.currentTimeMillis() * 1000
+              + (System.nanoTime() - startupNano) / 1000 % 1000;
+        default:
+          return System.currentTimeMillis();
+      }
     }
     try {
       return DatetimeUtils.convertDatetimeStrToLong(timestampStr, zoneId);
@@ -2166,50 +2137,6 @@ public class IoTDBSqlVisitor extends SqlBaseBaseVisitor<Operator> {
                   + "Input like yyyy-MM-dd HH:mm:ss, yyyy-MM-ddTHH:mm:ss or "
                   + "refer to user document for more info.",
               timestampStr));
-    }
-  }
-
-  public long parseTimeFormat(String timestampStr, long currentTime) throws SQLParserException {
-    if (timestampStr == null || timestampStr.trim().equals("")) {
-      throw new SQLParserException("input timestamp cannot be empty");
-    }
-    if (timestampStr.equalsIgnoreCase(SQLConstant.NOW_FUNC)) {
-      return currentTime;
-    }
-    try {
-      return DatetimeUtils.convertDatetimeStrToLong(timestampStr, zoneId);
-    } catch (Exception e) {
-      throw new SQLParserException(
-          String.format(
-              "Input time format %s error. "
-                  + "Input like yyyy-MM-dd HH:mm:ss, yyyy-MM-ddTHH:mm:ss or "
-                  + "refer to user document for more info.",
-              timestampStr));
-    }
-  }
-
-  /**
-   * used for parsing load tsfile, context will be one of "SCHEMA, LEVEL, METADATA", and maybe
-   * followed by a recursion property statement
-   *
-   * @param operator the result operator, setting by clause context
-   * @param ctx context of property statement
-   */
-  private void parseLoadFiles(LoadFilesOperator operator, LoadFilesClauseContext ctx) {
-    if (ctx.AUTOREGISTER() != null) {
-      operator.setAutoCreateSchema(Boolean.parseBoolean(ctx.booleanClause().getText()));
-    } else if (ctx.SGLEVEL() != null) {
-      operator.setSgLevel(Integer.parseInt(ctx.INT().getText()));
-    } else if (ctx.VERIFY() != null) {
-      operator.setVerifyMetadata(Boolean.parseBoolean(ctx.booleanClause().getText()));
-    } else {
-      throw new SQLParserException(
-          String.format(
-              "load tsfile format %s error, please input AUTOREGISTER | SGLEVEL | VERIFY.",
-              ctx.getText()));
-    }
-    if (ctx.loadFilesClause() != null) {
-      parseLoadFiles(operator, ctx.loadFilesClause());
     }
   }
 }

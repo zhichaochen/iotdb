@@ -30,13 +30,14 @@ import org.apache.iotdb.db.qp.physical.crud.LastQueryPlan;
 import org.apache.iotdb.db.qp.physical.crud.RawDataQueryPlan;
 import org.apache.iotdb.db.qp.physical.crud.UDTFPlan;
 import org.apache.iotdb.db.query.context.QueryContext;
-import org.apache.iotdb.db.query.control.SessionManager;
 import org.apache.iotdb.db.query.dataset.groupby.GroupByEngineDataSet;
 import org.apache.iotdb.db.query.dataset.groupby.GroupByFillDataSet;
 import org.apache.iotdb.db.query.dataset.groupby.GroupByTimeDataSet;
 import org.apache.iotdb.db.query.dataset.groupby.GroupByWithValueFilterDataSet;
 import org.apache.iotdb.db.query.dataset.groupby.GroupByWithoutValueFilterDataSet;
+import org.apache.iotdb.db.query.executor.fill.IFill;
 import org.apache.iotdb.tsfile.exception.filter.QueryFilterOptimizationException;
+import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.read.expression.ExpressionType;
 import org.apache.iotdb.tsfile.read.expression.IExpression;
 import org.apache.iotdb.tsfile.read.expression.impl.BinaryExpression;
@@ -51,8 +52,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Query entrance class of IoTDB query process. All query clause will be transformed to physical
@@ -107,7 +108,7 @@ public class QueryRouter implements IQueryRouter {
           "paths:"
               + aggregationPlan.getPaths()
               + " level:"
-              + Arrays.toString(aggregationPlan.getLevels())
+              + aggregationPlan.getLevel()
               + " duplicatePaths:"
               + aggregationPlan.getDeduplicatedPaths()
               + " deduplicatePaths:"
@@ -150,11 +151,7 @@ public class QueryRouter implements IQueryRouter {
           IOException {
 
     if (logger.isDebugEnabled()) {
-      logger.debug(
-          "paths:"
-              + groupByTimePlan.getPaths()
-              + " level:"
-              + Arrays.toString(groupByTimePlan.getLevels()));
+      logger.debug("paths:" + groupByTimePlan.getPaths() + " level:" + groupByTimePlan.getLevel());
     }
 
     GroupByEngineDataSet dataSet = null;
@@ -182,7 +179,7 @@ public class QueryRouter implements IQueryRouter {
     // we support group by level for count operation
     // details at https://issues.apache.org/jira/browse/IOTDB-622
     // and UserGuide/Operation Manual/DML
-    if (groupByTimePlan.isGroupByLevel()) {
+    if (groupByTimePlan.getLevel() >= 0) {
       return groupByLevelWithoutTimeIntervalDataSet(context, groupByTimePlan, dataSet);
     }
     return dataSet;
@@ -201,8 +198,7 @@ public class QueryRouter implements IQueryRouter {
               plan.getStartTime(),
               plan.getEndTime(),
               plan.isSlidingStepByMonth(),
-              plan.isIntervalByMonth(),
-              SessionManager.getInstance().getCurrSessionTimeZone())));
+              plan.isIntervalByMonth())));
     } else {
       return new GlobalTimeExpression(
           new GroupByFilter(
@@ -231,12 +227,22 @@ public class QueryRouter implements IQueryRouter {
   @Override
   public QueryDataSet fill(FillQueryPlan fillQueryPlan, QueryContext context)
       throws StorageEngineException, QueryProcessException, IOException {
-    FillQueryExecutor fillQueryExecutor = getFillExecutor(fillQueryPlan);
-    return fillQueryExecutor.execute(context);
+    List<PartialPath> fillPaths = fillQueryPlan.getDeduplicatedPaths();
+    List<TSDataType> dataTypes = fillQueryPlan.getDeduplicatedDataTypes();
+    long queryTime = fillQueryPlan.getQueryTime();
+    Map<TSDataType, IFill> fillType = fillQueryPlan.getFillType();
+
+    FillQueryExecutor fillQueryExecutor =
+        getFillExecutor(fillPaths, dataTypes, queryTime, fillType);
+    return fillQueryExecutor.execute(context, fillQueryPlan);
   }
 
-  protected FillQueryExecutor getFillExecutor(FillQueryPlan plan) {
-    return new FillQueryExecutor(plan);
+  protected FillQueryExecutor getFillExecutor(
+      List<PartialPath> fillPaths,
+      List<TSDataType> dataTypes,
+      long queryTime,
+      Map<TSDataType, IFill> fillType) {
+    return new FillQueryExecutor(fillPaths, dataTypes, queryTime, fillType);
   }
 
   @Override
@@ -245,16 +251,13 @@ public class QueryRouter implements IQueryRouter {
           IOException {
     GroupByEngineDataSet groupByEngineDataSet =
         (GroupByEngineDataSet) groupBy(groupByFillPlan, context);
-    // here we pass an empty LastQueryPlan as we don't depend on it but only to generate a
-    // LastQueryExecutor
     return new GroupByFillDataSet(
         groupByFillPlan.getDeduplicatedPaths(),
         groupByFillPlan.getDeduplicatedDataTypes(),
         groupByEngineDataSet,
         groupByFillPlan.getFillType(),
         context,
-        groupByFillPlan,
-        getLastQueryExecutor(new LastQueryPlan()));
+        groupByFillPlan);
   }
 
   @Override

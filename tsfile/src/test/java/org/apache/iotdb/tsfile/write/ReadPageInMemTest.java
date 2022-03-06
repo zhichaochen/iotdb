@@ -31,7 +31,6 @@ import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
 import org.apache.iotdb.tsfile.write.schema.Schema;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,7 +41,7 @@ import static org.junit.Assert.fail;
 
 public class ReadPageInMemTest {
 
-  private String filePath = TestConstant.BASE_OUTPUT_PATH.concat("TsFileReadPageInMem.tsfile");
+  private String filePath = TestConstant.BASE_OUTPUT_PATH.concat("TsFileReadPageInMem");
   private File file = new File(filePath);
   private TSFileConfig conf = TSFileDescriptor.getInstance().getConfig();
   private TsFileWriter innerWriter;
@@ -85,13 +84,7 @@ public class ReadPageInMemTest {
 
   @Before
   public void setUp() throws Exception {
-    if (file.exists()) {
-      Assert.assertTrue(file.delete());
-    }
-    if (!file.getParentFile().exists()) {
-      Assert.assertTrue(file.getParentFile().mkdirs());
-    }
-
+    file.delete();
     pageSize = conf.getPageSizeInByte();
     conf.setPageSizeInByte(200);
     ChunkGroupSize = conf.getGroupSizeInByte();

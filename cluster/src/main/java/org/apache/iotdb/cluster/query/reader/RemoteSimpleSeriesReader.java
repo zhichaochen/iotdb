@@ -149,8 +149,6 @@ public class RemoteSimpleSeriesReader implements IPointReader {
       curSyncClient = sourceInfo.getCurSyncClient(RaftServer.getReadOperationTimeoutMS());
       return curSyncClient.fetchSingleSeries(sourceInfo.getHeader(), sourceInfo.getReaderId());
     } catch (TException e) {
-      // the connection may be broken, close it to avoid it being reused
-      curSyncClient.getInputProtocol().getTransport().close();
       // try other node
       if (!sourceInfo.switchNode(false, lastTimestamp)) {
         return null;

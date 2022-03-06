@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 /**
  * create multiple timeSeries, could be split to several sub Plans to execute in different DataGroup
@@ -48,7 +47,6 @@ import java.util.stream.Collectors;
 public class CreateMultiTimeSeriesPlan extends PhysicalPlan implements BatchPlan {
 
   private List<PartialPath> paths;
-  private List<PartialPath> prefixPaths;
   private List<TSDataType> dataTypes;
   private List<TSEncoding> encodings;
   private List<CompressionType> compressors;
@@ -146,15 +144,6 @@ public class CreateMultiTimeSeriesPlan extends PhysicalPlan implements BatchPlan
     return results;
   }
 
-  @Override
-  public List<PartialPath> getPrefixPaths() {
-    if (prefixPaths != null) {
-      return prefixPaths;
-    }
-    prefixPaths = paths.stream().map(PartialPath::getDevicePath).collect(Collectors.toList());
-    return prefixPaths;
-  }
-
   public TSStatus[] getFailingStatus() {
     return StatusUtils.getFailingStatus(results, paths.size());
   }
@@ -221,7 +210,7 @@ public class CreateMultiTimeSeriesPlan extends PhysicalPlan implements BatchPlan
   }
 
   @Override
-  public void serializeImpl(ByteBuffer buffer) {
+  public void serialize(ByteBuffer buffer) {
     int type = PhysicalPlanType.CREATE_MULTI_TIMESERIES.ordinal();
     buffer.put((byte) type);
     buffer.putInt(paths.size());

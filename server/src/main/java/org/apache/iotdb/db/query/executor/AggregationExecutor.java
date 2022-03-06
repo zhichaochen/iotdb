@@ -41,7 +41,8 @@ import org.apache.iotdb.db.query.reader.series.IReaderByTimestamp;
 import org.apache.iotdb.db.query.reader.series.SeriesAggregateReader;
 import org.apache.iotdb.db.query.reader.series.SeriesReaderByTimestamp;
 import org.apache.iotdb.db.query.timegenerator.ServerTimeGenerator;
-import org.apache.iotdb.db.utils.AggregateUtils;
+import org.apache.iotdb.db.utils.FilePathUtils;
+import org.apache.iotdb.db.utils.QueryUtils;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.file.metadata.statistics.Statistics;
 import org.apache.iotdb.tsfile.read.common.BatchData;
@@ -104,9 +105,7 @@ public class AggregationExecutor {
     AggregateResult[] aggregateResultList = new AggregateResult[selectedSeries.size()];
     // TODO-Cluster: group the paths by storage group to reduce communications
     List<StorageGroupProcessor> list =
-        StorageEngine.getInstance()
-            .mergeLockAndInitQueryDataSource(
-                new ArrayList<>(pathToAggrIndexesMap.keySet()), context, timeFilter);
+        StorageEngine.getInstance().mergeLock(new ArrayList<>(pathToAggrIndexesMap.keySet()));
     try {
       for (Map.Entry<PartialPath, List<Integer>> entry : pathToAggrIndexesMap.entrySet()) {
         aggregateOneSeries(
@@ -190,7 +189,9 @@ public class AggregationExecutor {
     // construct series reader without value filter
     QueryDataSource queryDataSource =
         QueryResourceManager.getInstance().getQueryDataSource(seriesPath, context, timeFilter);
-
+    if (fileFilter != null) {
+      QueryUtils.filterQueryDataSource(queryDataSource, fileFilter);
+    }
     // update filter by TTL
     timeFilter = queryDataSource.updateFilterUsingTTL(timeFilter);
 
@@ -346,8 +347,7 @@ public class AggregationExecutor {
     Map<PartialPath, List<Integer>> pathToAggrIndexesMap =
         groupAggregationsBySeries(selectedSeries);
     Map<IReaderByTimestamp, List<Integer>> readerToAggrIndexesMap = new HashMap<>();
-    List<StorageGroupProcessor> list =
-        StorageEngine.getInstance().mergeLockAndInitQueryDataSource(selectedSeries, context, null);
+    List<StorageGroupProcessor> list = StorageEngine.getInstance().mergeLock(selectedSeries);
     try {
       for (int i = 0; i < selectedSeries.size(); i++) {
         PartialPath path = selectedSeries.get(i);
@@ -444,10 +444,8 @@ public class AggregationExecutor {
                 .updateResultUsingTimestamps(timeArray, timeArrayLength, entry.getKey());
           } else {
             Object[] values = entry.getKey().getValuesInTimestamps(timeArray, timeArrayLength);
-            if (values != null) {
-              for (Integer i : entry.getValue()) {
-                aggregateResults.get(i).updateResultUsingValues(timeArray, timeArrayLength, values);
-              }
+            for (Integer i : entry.getValue()) {
+              aggregateResults.get(i).updateResultUsingValues(timeArray, timeArrayLength, values);
             }
           }
         }
@@ -470,11 +468,11 @@ public class AggregationExecutor {
     }
 
     SingleDataSet dataSet;
-    if (plan.isGroupByLevel()) {
+    if (plan.getLevel() >= 0) {
       Map<String, AggregateResult> finalPaths = plan.getAggPathByLevel();
 
       List<AggregateResult> mergedAggResults =
-          AggregateUtils.mergeRecordByPath(plan, aggregateResultList, finalPaths);
+          FilePathUtils.mergeRecordByPath(plan, aggregateResultList, finalPaths);
 
       List<PartialPath> paths = new ArrayList<>();
       List<TSDataType> dataTypes = new ArrayList<>();

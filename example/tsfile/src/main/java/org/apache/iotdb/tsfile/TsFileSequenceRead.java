@@ -45,7 +45,8 @@ public class TsFileSequenceRead {
     "squid:S106"
   }) // Suppress high Cognitive Complexity and Standard outputs warning
   public static void main(String[] args) throws IOException {
-    String filename = "test.tsfile";
+    String filename =
+        "/Users/surevil/Documents/private/incubator-iotdb/data/data/sequence/root.storage_group/0/0/1624266455037-1-0-0.tsfile";
     if (args.length >= 1) {
       filename = args[0];
     }
@@ -100,11 +101,11 @@ public class TsFileSequenceRead {
                 System.out.println("\t\tpoints in the page: " + batchData.length());
               }
               while (batchData.hasCurrent()) {
-                System.out.println(
-                    "\t\t\ttime, value: "
-                        + batchData.currentTime()
-                        + ", "
-                        + batchData.currentValue());
+                //                System.out.println(
+                //                    "\t\t\ttime, value: "
+                //                        + batchData.currentTime()
+                //                        + ", "
+                //                        + batchData.currentValue());
                 batchData.next();
               }
               dataSize -= pageHeader.getSerializedPageSize();

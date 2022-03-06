@@ -34,8 +34,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.iotdb.db.rescon.PrimitiveArrayManager.ARRAY_SIZE;
-import static org.apache.iotdb.tsfile.utils.RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
-import static org.apache.iotdb.tsfile.utils.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
 
 public abstract class TVList {
 
@@ -81,16 +79,12 @@ public abstract class TVList {
     return null;
   }
 
-  public static long tvListArrayMemCost(TSDataType type) {
+  public static long tvListArrayMemSize(TSDataType type) {
     long size = 0;
-    // time array mem size
+    // time size
     size += (long) PrimitiveArrayManager.ARRAY_SIZE * 8L;
-    // value array mem size
+    // value size
     size += (long) PrimitiveArrayManager.ARRAY_SIZE * (long) type.getDataTypeSize();
-    // two array headers mem size
-    size += NUM_BYTES_ARRAY_HEADER * 2;
-    // Object references size in ArrayList
-    size += NUM_BYTES_OBJECT_REF * 2;
     return size;
   }
 
@@ -300,7 +294,7 @@ public abstract class TVList {
   }
 
   protected Object getPrimitiveArraysByType(TSDataType dataType) {
-    return PrimitiveArrayManager.allocate(dataType);
+    return PrimitiveArrayManager.getPrimitiveArraysByType(dataType);
   }
 
   protected long[] cloneTime(long[] array) {

@@ -21,7 +21,6 @@ package org.apache.iotdb.db.metadata.mnode;
 import org.apache.iotdb.db.conf.IoTDBConstant;
 import org.apache.iotdb.db.metadata.PartialPath;
 import org.apache.iotdb.db.metadata.logfile.MLogWriter;
-import org.apache.iotdb.db.metadata.template.Template;
 import org.apache.iotdb.db.rescon.CachedStringPool;
 
 import java.io.IOException;
@@ -31,7 +30,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -68,11 +66,6 @@ public class MNode implements Serializable {
    */
   @SuppressWarnings("squid:S3077")
   private transient volatile Map<String, MNode> aliasChildren = null;
-
-  // device template
-  protected Template deviceTemplate = null;
-
-  private volatile boolean useTemplate = false;
 
   /** Constructor of MNode. */
   public MNode(MNode parent, String name) {
@@ -152,14 +145,6 @@ public class MNode implements Serializable {
     if (aliasChildren != null) {
       aliasChildren.remove(alias);
     }
-  }
-
-  public Template getDeviceTemplate() {
-    return deviceTemplate;
-  }
-
-  public void setDeviceTemplate(Template deviceTemplate) {
-    this.deviceTemplate = deviceTemplate;
   }
 
   /** get the child with the name */
@@ -317,59 +302,5 @@ public class MNode implements Serializable {
 
     this.deleteChild(measurement);
     this.addChild(newChildNode.getName(), newChildNode);
-  }
-
-  public void setFullPath(String fullPath) {
-    this.fullPath = fullPath;
-  }
-
-  /**
-   * get upper template of this node, remember we get nearest template alone this node to root
-   *
-   * @return upper template
-   */
-  public Template getUpperTemplate() {
-    MNode cur = this;
-    while (cur != null) {
-      if (cur.getDeviceTemplate() != null) {
-        return cur.deviceTemplate;
-      }
-      cur = cur.parent;
-    }
-
-    return null;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    MNode mNode = (MNode) o;
-    if (fullPath == null) {
-      return Objects.equals(getFullPath(), mNode.getFullPath());
-    } else {
-      return Objects.equals(fullPath, mNode.getFullPath());
-    }
-  }
-
-  @Override
-  public int hashCode() {
-    if (fullPath == null) {
-      return Objects.hash(getFullPath());
-    } else {
-      return Objects.hash(fullPath);
-    }
-  }
-
-  public boolean isUseTemplate() {
-    return useTemplate;
-  }
-
-  public void setUseTemplate(boolean useTemplate) {
-    this.useTemplate = useTemplate;
   }
 }

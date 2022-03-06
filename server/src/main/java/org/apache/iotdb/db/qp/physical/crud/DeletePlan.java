@@ -136,7 +136,7 @@ public class DeletePlan extends PhysicalPlan {
   }
 
   @Override
-  public void serializeImpl(ByteBuffer buffer) {
+  public void serialize(ByteBuffer buffer) {
     int type = PhysicalPlanType.DELETE.ordinal();
     buffer.put((byte) type);
     buffer.putLong(deleteStartTime);

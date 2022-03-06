@@ -19,6 +19,7 @@
 
 package org.apache.iotdb.db.query.reader.series;
 
+import org.apache.iotdb.db.engine.querycontext.QueryDataSource;
 import org.apache.iotdb.db.engine.storagegroup.TsFileResource;
 import org.apache.iotdb.db.exception.metadata.IllegalPathException;
 import org.apache.iotdb.db.exception.metadata.MetadataException;
@@ -41,7 +42,7 @@ import java.util.Set;
 
 public class SeriesReaderByTimestampTest {
 
-  private static final String SERIES_READER_TEST_SG = "root.sg1";
+  private static final String SERIES_READER_TEST_SG = "root.seriesReaderTest";
   private List<String> deviceIds = new ArrayList<>();
   private List<MeasurementSchema> measurementSchemas = new ArrayList<>();
 
@@ -60,6 +61,12 @@ public class SeriesReaderByTimestampTest {
 
   @Test
   public void test() throws IOException, IllegalPathException {
+    QueryDataSource dataSource =
+        new QueryDataSource(
+            new PartialPath(SERIES_READER_TEST_SG + ".device0.sensor0"),
+            seqResources,
+            unseqResources);
+
     Set<String> allSensors = new HashSet<>();
     allSensors.add("sensor0");
 
@@ -69,8 +76,7 @@ public class SeriesReaderByTimestampTest {
             allSensors,
             TSDataType.INT32,
             new QueryContext(),
-            seqResources,
-            unseqResources,
+            dataSource,
             null,
             true);
 

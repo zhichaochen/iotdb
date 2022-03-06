@@ -35,7 +35,6 @@ import org.apache.iotdb.tsfile.read.common.Path;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -57,10 +56,8 @@ public class LevelCompactionCacheTest extends LevelCompactionTest {
   @Before
   public void setUp() throws IOException, WriteProcessException, MetadataException {
     super.setUp();
-    tempSGDir = new File(TestConstant.OUTPUT_DATA_DIR);
-    if (!tempSGDir.exists()) {
-      Assert.assertTrue(tempSGDir.mkdirs());
-    }
+    tempSGDir = new File(TestConstant.BASE_OUTPUT_PATH.concat("tempSG"));
+    tempSGDir.mkdirs();
   }
 
   @Override
@@ -73,7 +70,7 @@ public class LevelCompactionCacheTest extends LevelCompactionTest {
   @Test
   public void testCompactionChunkCache() throws IOException {
     LevelCompactionTsFileManagement levelCompactionTsFileManagement =
-        new LevelCompactionTsFileManagement(COMPACTION_TEST_SG, "0", tempSGDir.getPath());
+        new LevelCompactionTsFileManagement(COMPACTION_TEST_SG, tempSGDir.getPath());
     TsFileResource tsFileResource = seqResources.get(1);
     TsFileSequenceReader reader = new TsFileSequenceReader(tsFileResource.getTsFilePath());
     List<Path> paths = reader.getAllPaths();

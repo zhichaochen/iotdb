@@ -77,6 +77,6 @@ public class DiskChunkReaderByTimestamp implements IReaderByTimestamp {
     if (hasCacheData()) {
       return data;
     }
-    return chunkReaderByTimestamp.nextPageData();
+    return chunkReaderByTimestamp.nextPageData(false);
   }
 }

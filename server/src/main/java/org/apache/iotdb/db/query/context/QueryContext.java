@@ -51,8 +51,6 @@ public class QueryContext {
 
   private boolean debug;
 
-  private boolean ascending;
-
   public QueryContext() {}
 
   public QueryContext(long queryId) {
@@ -110,13 +108,5 @@ public class QueryContext {
 
   public boolean chunkNotSatisfy(ChunkMetadata chunkMetaData) {
     return chunkMetaData.getEndTime() < queryTimeLowerBound;
-  }
-
-  public boolean isAscending() {
-    return ascending;
-  }
-
-  public void setAscending(boolean ascending) {
-    this.ascending = ascending;
   }
 }

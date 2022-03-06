@@ -97,7 +97,7 @@ public class MergeUtils {
     ChunkReader chunkReader = new ChunkReader(chunk, null);
     int ptWritten = 0;
     while (chunkReader.hasNextSatisfiedPage()) {
-      BatchData batchData = chunkReader.nextPageData();
+      BatchData batchData = chunkReader.nextPageData(true);
       for (int i = 0; i < batchData.length(); i++) {
         writeBatchPoint(batchData, i, chunkWriter);
       }

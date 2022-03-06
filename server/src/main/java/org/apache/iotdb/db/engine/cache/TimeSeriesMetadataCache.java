@@ -24,17 +24,13 @@ import org.apache.iotdb.db.conf.IoTDBConstant;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.query.control.FileReaderManager;
 import org.apache.iotdb.db.utils.TestOnly;
+import org.apache.iotdb.tsfile.common.cache.Accountable;
 import org.apache.iotdb.tsfile.file.metadata.TimeseriesMetadata;
 import org.apache.iotdb.tsfile.read.TsFileSequenceReader;
 import org.apache.iotdb.tsfile.read.common.Path;
 import org.apache.iotdb.tsfile.utils.BloomFilter;
-import org.apache.iotdb.tsfile.utils.FilePathUtils;
-import org.apache.iotdb.tsfile.utils.Pair;
 import org.apache.iotdb.tsfile.utils.RamUsageEstimator;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.Weigher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +43,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * This class is used to cache <code>TimeSeriesMetadata</code> in IoTDB. The caching strategy is
@@ -61,9 +59,12 @@ public class TimeSeriesMetadataCache {
       config.getAllocateMemoryForTimeSeriesMetaDataCache();
   private static final boolean CACHE_ENABLE = config.isMetaDataCacheEnable();
 
-  private final Cache<TimeSeriesMetadataCacheKey, TimeseriesMetadata> lruCache;
+  private final LRULinkedHashMap<TimeSeriesMetadataCacheKey, TimeseriesMetadata> lruCache;
 
-  private final AtomicLong entryAverageSize = new AtomicLong(0);
+  private final AtomicLong cacheHitNum = new AtomicLong();
+  private final AtomicLong cacheRequestNum = new AtomicLong();
+
+  private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
   private final Map<String, WeakReference<String>> devices =
       Collections.synchronizedMap(new WeakHashMap<>());
@@ -75,26 +76,46 @@ public class TimeSeriesMetadataCache {
           "TimeseriesMetadataCache size = " + MEMORY_THRESHOLD_IN_TIME_SERIES_METADATA_CACHE);
     }
     lruCache =
-        Caffeine.newBuilder()
-            .maximumWeight(MEMORY_THRESHOLD_IN_TIME_SERIES_METADATA_CACHE)
-            .weigher(
-                (Weigher<TimeSeriesMetadataCacheKey, TimeseriesMetadata>)
-                    (key, value) ->
-                        (int)
-                            (RamUsageEstimator.shallowSizeOf(key)
-                                + RamUsageEstimator.sizeOf(key.device)
-                                + RamUsageEstimator.sizeOf(key.measurement)
-                                + RamUsageEstimator.sizeOf(key.tsFilePrefixPath)
-                                + RamUsageEstimator.sizeOf(key.tsFileVersion)
-                                + RamUsageEstimator.shallowSizeOf(value)
-                                + RamUsageEstimator.sizeOf(value.getMeasurementId())
-                                + RamUsageEstimator.shallowSizeOf(value.getStatistics())
-                                + (value.getChunkMetadataList().get(0).calculateRamSize()
-                                        + RamUsageEstimator.NUM_BYTES_OBJECT_REF)
-                                    * value.getChunkMetadataList().size()
-                                + RamUsageEstimator.shallowSizeOf(value.getChunkMetadataList())))
-            .recordStats()
-            .build();
+        new LRULinkedHashMap<TimeSeriesMetadataCacheKey, TimeseriesMetadata>(
+            MEMORY_THRESHOLD_IN_TIME_SERIES_METADATA_CACHE) {
+
+          @Override
+          protected long calEntrySize(TimeSeriesMetadataCacheKey key, TimeseriesMetadata value) {
+            long currentSize;
+            if (count < 10) {
+              currentSize =
+                  RamUsageEstimator.shallowSizeOf(key)
+                      + RamUsageEstimator.sizeOf(key.device)
+                      + RamUsageEstimator.sizeOf(key.measurement)
+                      + RamUsageEstimator.shallowSizeOf(value)
+                      + RamUsageEstimator.sizeOf(value.getMeasurementId())
+                      + RamUsageEstimator.shallowSizeOf(value.getStatistics())
+                      + (value.getChunkMetadataList().get(0).calculateRamSize()
+                              + RamUsageEstimator.NUM_BYTES_OBJECT_REF)
+                          * value.getChunkMetadataList().size()
+                      + RamUsageEstimator.shallowSizeOf(value.getChunkMetadataList());
+              averageSize = ((averageSize * count) + currentSize) / (++count);
+            } else if (count < 100000) {
+              count++;
+              currentSize = averageSize;
+            } else {
+              averageSize =
+                  RamUsageEstimator.shallowSizeOf(key)
+                      + RamUsageEstimator.sizeOf(key.device)
+                      + RamUsageEstimator.sizeOf(key.measurement)
+                      + RamUsageEstimator.shallowSizeOf(value)
+                      + RamUsageEstimator.sizeOf(value.getMeasurementId())
+                      + RamUsageEstimator.shallowSizeOf(value.getStatistics())
+                      + (value.getChunkMetadataList().get(0).calculateRamSize()
+                              + RamUsageEstimator.NUM_BYTES_OBJECT_REF)
+                          * value.getChunkMetadataList().size()
+                      + RamUsageEstimator.shallowSizeOf(value.getChunkMetadataList());
+              count = 1;
+              currentSize = averageSize;
+            }
+            return currentSize;
+          }
+        };
   }
 
   public static TimeSeriesMetadataCache getInstance() {
@@ -120,9 +141,20 @@ public class TimeSeriesMetadataCache {
       return reader.readTimeseriesMetadata(new Path(key.device, key.measurement), false);
     }
 
-    TimeseriesMetadata timeseriesMetadata = lruCache.getIfPresent(key);
+    cacheRequestNum.incrementAndGet();
 
-    if (timeseriesMetadata == null) {
+    TimeseriesMetadata timeseriesMetadata;
+    lock.readLock().lock();
+    try {
+      timeseriesMetadata = lruCache.get(key);
+    } finally {
+      lock.readLock().unlock();
+    }
+
+    if (timeseriesMetadata != null) {
+      cacheHitNum.incrementAndGet();
+      printCacheLog(true);
+    } else {
       if (debug) {
         DEBUG_LOGGER.info(
             "Cache miss: {}.{} in file: {}", key.device, key.measurement, key.filePath);
@@ -132,8 +164,16 @@ public class TimeSeriesMetadataCache {
       synchronized (
           devices.computeIfAbsent(key.device + SEPARATOR + key.filePath, WeakReference::new)) {
         // double check
-        timeseriesMetadata = lruCache.getIfPresent(key);
-        if (timeseriesMetadata == null) {
+        lock.readLock().lock();
+        try {
+          timeseriesMetadata = lruCache.get(key);
+        } finally {
+          lock.readLock().unlock();
+        }
+        if (timeseriesMetadata != null) {
+          cacheHitNum.incrementAndGet();
+          printCacheLog(true);
+        } else {
           Path path = new Path(key.device, key.measurement);
           // bloom filter part
           TsFileSequenceReader reader = FileReaderManager.getInstance().get(key.filePath, true);
@@ -144,17 +184,24 @@ public class TimeSeriesMetadataCache {
             }
             return null;
           }
+          printCacheLog(false);
           List<TimeseriesMetadata> timeSeriesMetadataList =
               reader.readTimeseriesMetadata(path, allSensors);
           // put TimeSeriesMetadata of all sensors used in this query into cache
-          for (TimeseriesMetadata metadata : timeSeriesMetadataList) {
-            TimeSeriesMetadataCacheKey k =
-                new TimeSeriesMetadataCacheKey(
-                    key.filePath, key.device, metadata.getMeasurementId());
-            lruCache.put(k, metadata);
-            if (metadata.getMeasurementId().equals(key.measurement)) {
-              timeseriesMetadata = metadata;
-            }
+          lock.writeLock().lock();
+          try {
+            timeSeriesMetadataList.forEach(
+                metadata -> {
+                  TimeSeriesMetadataCacheKey k =
+                      new TimeSeriesMetadataCacheKey(
+                          key.filePath, key.device, metadata.getMeasurementId());
+                  if (!lruCache.containsKey(k)) {
+                    lruCache.put(k, metadata);
+                  }
+                });
+            timeseriesMetadata = lruCache.get(key);
+          } finally {
+            lock.writeLock().unlock();
           }
         }
       }
@@ -177,54 +224,73 @@ public class TimeSeriesMetadataCache {
     }
   }
 
-  public double calculateTimeSeriesMetadataHitRatio() {
-    return lruCache.stats().hitRate();
+  private void printCacheLog(boolean isHit) {
+    if (!logger.isDebugEnabled()) {
+      return;
+    }
+    logger.debug(
+        "[TimeSeriesMetadata cache {}hit] The number of requests for cache is {}, hit rate is {}.",
+        isHit ? "" : "didn't ",
+        cacheRequestNum.get(),
+        cacheHitNum.get() * 1.0 / cacheRequestNum.get());
   }
 
-  public long getEvictionCount() {
-    return lruCache.stats().evictionCount();
+  public double calculateTimeSeriesMetadataHitRatio() {
+    if (cacheRequestNum.get() != 0) {
+      return cacheHitNum.get() * 1.0 / cacheRequestNum.get();
+    } else {
+      return 0;
+    }
+  }
+
+  public long getUsedMemory() {
+    return lruCache.getUsedMemory();
   }
 
   public long getMaxMemory() {
-    return MEMORY_THRESHOLD_IN_TIME_SERIES_METADATA_CACHE;
+    return lruCache.getMaxMemory();
   }
 
-  public double getAverageLoadPenalty() {
-    return lruCache.stats().averageLoadPenalty();
+  public double getUsedMemoryProportion() {
+    return lruCache.getUsedMemoryProportion();
   }
 
   public long getAverageSize() {
-    return entryAverageSize.get();
+    return lruCache.getAverageSize();
   }
 
   /** clear LRUCache. */
   public void clear() {
-    lruCache.invalidateAll();
-    lruCache.cleanUp();
+    lock.writeLock().lock();
+    if (lruCache != null) {
+      lruCache.clear();
+    }
+    lock.writeLock().unlock();
   }
 
   public void remove(TimeSeriesMetadataCacheKey key) {
-    lruCache.invalidate(key);
+    lock.writeLock().lock();
+    if (key != null) {
+      lruCache.remove(key);
+    }
+    lock.writeLock().unlock();
   }
 
   @TestOnly
   public boolean isEmpty() {
-    return lruCache.asMap().isEmpty();
+    return lruCache.isEmpty();
   }
 
-  public static class TimeSeriesMetadataCacheKey {
+  public static class TimeSeriesMetadataCacheKey implements Accountable {
+
     private final String filePath;
-    private final String tsFilePrefixPath;
-    private final long tsFileVersion;
     private final String device;
     private final String measurement;
 
+    private long ramSize;
+
     public TimeSeriesMetadataCacheKey(String filePath, String device, String measurement) {
       this.filePath = filePath;
-      Pair<String, Long> tsFilePrefixPathAndTsFileVersionPair =
-          FilePathUtils.getTsFilePrefixPathAndTsFileVersionPair(filePath);
-      this.tsFilePrefixPath = tsFilePrefixPathAndTsFileVersionPair.left;
-      this.tsFileVersion = tsFilePrefixPathAndTsFileVersionPair.right;
       this.device = device;
       this.measurement = measurement;
     }
@@ -238,15 +304,24 @@ public class TimeSeriesMetadataCache {
         return false;
       }
       TimeSeriesMetadataCacheKey that = (TimeSeriesMetadataCacheKey) o;
-      return device.equals(that.device)
-          && measurement.equals(that.measurement)
-          && tsFileVersion == that.tsFileVersion
-          && tsFilePrefixPath.equals(that.tsFilePrefixPath);
+      return Objects.equals(filePath, that.filePath)
+          && Objects.equals(device, that.device)
+          && Objects.equals(measurement, that.measurement);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(tsFilePrefixPath, tsFileVersion, device, measurement);
+      return Objects.hash(filePath, device, measurement);
+    }
+
+    @Override
+    public void setRamSize(long size) {
+      this.ramSize = size;
+    }
+
+    @Override
+    public long getRamSize() {
+      return ramSize;
     }
   }
 

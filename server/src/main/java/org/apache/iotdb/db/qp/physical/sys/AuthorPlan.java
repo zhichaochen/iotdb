@@ -325,7 +325,7 @@ public class AuthorPlan extends PhysicalPlan {
   }
 
   @Override
-  public void serializeImpl(ByteBuffer buffer) {
+  public void serialize(ByteBuffer buffer) {
     int type = this.getPlanType(super.getOperatorType());
     buffer.put((byte) type);
     buffer.putInt(authorType.ordinal());

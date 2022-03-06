@@ -27,7 +27,7 @@ public interface IChunkReader {
 
   boolean hasNextSatisfiedPage() throws IOException;
 
-  BatchData nextPageData() throws IOException;
+  BatchData nextPageData(boolean isCompaction) throws IOException;
 
   void close() throws IOException;
 

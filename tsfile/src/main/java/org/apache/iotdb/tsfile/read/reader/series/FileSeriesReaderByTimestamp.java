@@ -67,7 +67,7 @@ public class FileSeriesReaderByTimestamp {
       }
 
       if (chunkReader.hasNextSatisfiedPage()) {
-        data = chunkReader.nextPageData();
+        data = chunkReader.nextPageData(false);
       } else {
         return null;
       }
@@ -91,7 +91,7 @@ public class FileSeriesReaderByTimestamp {
         return null;
       } else {
         if (chunkReader.hasNextSatisfiedPage()) {
-          data = chunkReader.nextPageData();
+          data = chunkReader.nextPageData(false);
         } else if (!constructNextSatisfiedChunkReader()) {
           return null;
         }
@@ -114,7 +114,7 @@ public class FileSeriesReaderByTimestamp {
         return true;
       }
       while (chunkReader.hasNextSatisfiedPage()) {
-        data = chunkReader.nextPageData();
+        data = chunkReader.nextPageData(false);
         if (data != null && data.hasCurrent()) {
           return true;
         }
@@ -122,7 +122,7 @@ public class FileSeriesReaderByTimestamp {
     }
     while (constructNextSatisfiedChunkReader()) {
       while (chunkReader.hasNextSatisfiedPage()) {
-        data = chunkReader.nextPageData();
+        data = chunkReader.nextPageData(false);
         if (data != null && data.hasCurrent()) {
           return true;
         }

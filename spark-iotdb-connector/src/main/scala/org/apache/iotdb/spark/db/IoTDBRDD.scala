@@ -60,9 +60,10 @@ class IoTDBRDD private[iotdb](
     val part = split.asInstanceOf[IoTDBPartition]
 
     var taskInfo: String = _
-    Option(TaskContext.get()).foreach { taskContext =>
+    Option(TaskContext.get()).foreach { taskContext => {
       taskContext.addTaskCompletionListener { _ => conn.close() }
       taskInfo = "task Id: " + taskContext.taskAttemptId() + " partition Id: " + taskContext.partitionId()
+    }
     }
 
     Class.forName("org.apache.iotdb.jdbc.IoTDBDriver")
@@ -111,8 +112,8 @@ class IoTDBRDD private[iotdb](
 
     override def hasNext: Boolean = {
       if (!finished && !gotNext) {
-        nextValue = getNext
-        gotNext = true
+          nextValue = getNext
+          gotNext = true
       }
       !finished
     }

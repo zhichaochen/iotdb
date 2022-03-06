@@ -57,7 +57,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.apache.iotdb.db.conf.IoTDBConstant.COLUMN_TIMESERIES;
-import static org.apache.iotdb.db.conf.IoTDBConstant.COLUMN_TIMESERIES_DATATYPE;
 import static org.apache.iotdb.db.conf.IoTDBConstant.COLUMN_VALUE;
 
 public class LastQueryExecutor {
@@ -92,10 +91,8 @@ public class LastQueryExecutor {
     ListDataSet dataSet =
         new ListDataSet(
             Arrays.asList(
-                new PartialPath(COLUMN_TIMESERIES, false),
-                new PartialPath(COLUMN_VALUE, false),
-                new PartialPath(COLUMN_TIMESERIES_DATATYPE, false)),
-            Arrays.asList(TSDataType.TEXT, TSDataType.TEXT, TSDataType.TEXT));
+                new PartialPath(COLUMN_TIMESERIES, false), new PartialPath(COLUMN_VALUE, false)),
+            Arrays.asList(TSDataType.TEXT, TSDataType.TEXT));
 
     List<Pair<Boolean, TimeValuePair>> lastPairList =
         calculateLastPairForSeries(selectedSeries, dataTypes, context, expression, lastQueryPlan);
@@ -120,10 +117,6 @@ public class LastQueryExecutor {
         valueField.setBinaryV(new Binary(lastTimeValuePair.getValue().getStringValue()));
         resultRecord.addField(valueField);
 
-        Field typeField = new Field(TSDataType.TEXT);
-        typeField.setBinaryV(new Binary(lastTimeValuePair.getValue().getDataType().name()));
-        resultRecord.addField(typeField);
-
         dataSet.putRecord(resultRecord);
       }
     }
@@ -134,7 +127,7 @@ public class LastQueryExecutor {
     return dataSet;
   }
 
-  public List<Pair<Boolean, TimeValuePair>> calculateLastPairForSeries(
+  protected List<Pair<Boolean, TimeValuePair>> calculateLastPairForSeries(
       List<PartialPath> seriesPaths,
       List<TSDataType> dataTypes,
       QueryContext context,
@@ -172,14 +165,12 @@ public class LastQueryExecutor {
 
     // Acquire query resources for the rest series paths
     List<LastPointReader> readerList = new ArrayList<>();
-    List<StorageGroupProcessor> list =
-        StorageEngine.getInstance()
-            .mergeLockAndInitQueryDataSource(nonCachedPaths, context, filter);
+    List<StorageGroupProcessor> list = StorageEngine.getInstance().mergeLock(nonCachedPaths);
     try {
       for (int i = 0; i < nonCachedPaths.size(); i++) {
         QueryDataSource dataSource =
             QueryResourceManager.getInstance()
-                .getQueryDataSource(nonCachedPaths.get(i), context, filter);
+                .getQueryDataSource(nonCachedPaths.get(i), context, null);
         LastPointReader lastReader =
             new LastPointReader(
                 nonCachedPaths.get(i),
@@ -188,7 +179,7 @@ public class LastQueryExecutor {
                 context,
                 dataSource,
                 Long.MAX_VALUE,
-                filter);
+                null);
         readerList.add(lastReader);
       }
     } finally {

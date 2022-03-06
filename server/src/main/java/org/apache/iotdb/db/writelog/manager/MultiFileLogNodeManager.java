@@ -18,7 +18,6 @@
  */
 package org.apache.iotdb.db.writelog.manager;
 
-import org.apache.iotdb.db.concurrent.IoTDBThreadPoolFactory;
 import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.exception.StartupException;
@@ -34,6 +33,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -50,17 +50,12 @@ public class MultiFileLogNodeManager implements WriteLogNodeManager, IService {
 
   private ScheduledExecutorService executorService;
   private final IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
-  private boolean firstReadOnly = true;
 
   private void forceTask() {
     if (IoTDBDescriptor.getInstance().getConfig().isReadOnly()) {
-      if (firstReadOnly) {
-        logger.warn("system mode is read-only, the force flush WAL task is stopped");
-        firstReadOnly = false;
-      }
+      logger.warn("system mode is read-only, the force flush WAL task is stopped");
       return;
     }
-    firstReadOnly = true;
     if (Thread.interrupted()) {
       logger.info("WAL force thread exits.");
       return;
@@ -127,8 +122,7 @@ public class MultiFileLogNodeManager implements WriteLogNodeManager, IService {
         return;
       }
       if (config.getForceWalPeriodInMs() > 0) {
-        executorService = IoTDBThreadPoolFactory.newSingleThreadScheduledExecutor("WAL-ForceSync");
-
+        executorService = Executors.newSingleThreadScheduledExecutor();
         executorService.scheduleWithFixedDelay(
             this::forceTask,
             config.getForceWalPeriodInMs(),

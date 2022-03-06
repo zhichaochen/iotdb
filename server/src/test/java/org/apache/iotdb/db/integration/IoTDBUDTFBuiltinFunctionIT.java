@@ -148,10 +148,9 @@ public class IoTDBUDTFBuiltinFunctionIT {
   }
 
   private void testMathFunction(String functionName, MathFunctionProxy functionProxy) {
-    try (Connection connection =
-            DriverManager.getConnection(
-                Config.IOTDB_URL_PREFIX + "127.0.0.1:6667/", "root", "root");
-        Statement statement = connection.createStatement()) {
+    try (Statement statement =
+        DriverManager.getConnection(Config.IOTDB_URL_PREFIX + "127.0.0.1:6667/", "root", "root")
+            .createStatement()) {
       ResultSet resultSet =
           statement.executeQuery(
               String.format(
@@ -180,10 +179,9 @@ public class IoTDBUDTFBuiltinFunctionIT {
     final String BOTTOM_K = "BOTTOM_K";
     final String K = "'k'='2'";
 
-    try (Connection connection =
-            DriverManager.getConnection(
-                Config.IOTDB_URL_PREFIX + "127.0.0.1:6667/", "root", "root");
-        Statement statement = connection.createStatement()) {
+    try (Statement statement =
+        DriverManager.getConnection(Config.IOTDB_URL_PREFIX + "127.0.0.1:6667/", "root", "root")
+            .createStatement()) {
       ResultSet resultSet =
           statement.executeQuery(
               String.format(
@@ -203,10 +201,9 @@ public class IoTDBUDTFBuiltinFunctionIT {
       fail(throwable.getMessage());
     }
 
-    try (Connection connection =
-            DriverManager.getConnection(
-                Config.IOTDB_URL_PREFIX + "127.0.0.1:6667/", "root", "root");
-        Statement statement = connection.createStatement()) {
+    try (Statement statement =
+        DriverManager.getConnection(Config.IOTDB_URL_PREFIX + "127.0.0.1:6667/", "root", "root")
+            .createStatement()) {
       ResultSet resultSet =
           statement.executeQuery(
               String.format(
@@ -229,10 +226,9 @@ public class IoTDBUDTFBuiltinFunctionIT {
 
   @Test
   public void testStringProcessingFunctions() {
-    try (Connection connection =
-            DriverManager.getConnection(
-                Config.IOTDB_URL_PREFIX + "127.0.0.1:6667/", "root", "root");
-        Statement statement = connection.createStatement()) {
+    try (Statement statement =
+        DriverManager.getConnection(Config.IOTDB_URL_PREFIX + "127.0.0.1:6667/", "root", "root")
+            .createStatement()) {
       ResultSet resultSet =
           statement.executeQuery(
               "select STRING_CONTAINS(s6, 's'='0'), STRING_MATCHES(s6, 'regex'='\\d') from root.sg.d1");
@@ -264,10 +260,9 @@ public class IoTDBUDTFBuiltinFunctionIT {
   }
 
   public void testVariationTrendCalculationFunction(String functionName, double expected) {
-    try (Connection connection =
-            DriverManager.getConnection(
-                Config.IOTDB_URL_PREFIX + "127.0.0.1:6667/", "root", "root");
-        Statement statement = connection.createStatement()) {
+    try (Statement statement =
+        DriverManager.getConnection(Config.IOTDB_URL_PREFIX + "127.0.0.1:6667/", "root", "root")
+            .createStatement()) {
       ResultSet resultSet =
           statement.executeQuery(
               String.format(

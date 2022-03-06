@@ -58,8 +58,8 @@ public class CacheHitRatioMonitor implements CacheHitRatioMonitorMXBean, IServic
   }
 
   @Override
-  public long getChunkEvictionCount() {
-    return ChunkCache.getInstance().getEvictionCount();
+  public long getChunkCacheUsedMemory() {
+    return ChunkCache.getInstance().getUsedMemory();
   }
 
   @Override
@@ -68,8 +68,8 @@ public class CacheHitRatioMonitor implements CacheHitRatioMonitorMXBean, IServic
   }
 
   @Override
-  public double getChunkCacheAverageLoadPenalty() {
-    return ChunkCache.getInstance().getAverageLoadPenalty();
+  public double getChunkCacheUsedMemoryProportion() {
+    return ChunkCache.getInstance().getUsedMemoryProportion();
   }
 
   @Override
@@ -83,8 +83,8 @@ public class CacheHitRatioMonitor implements CacheHitRatioMonitorMXBean, IServic
   }
 
   @Override
-  public long getTimeSeriesMetadataCacheEvictionCount() {
-    return TimeSeriesMetadataCache.getInstance().getEvictionCount();
+  public long getTimeSeriesMetadataCacheUsedMemory() {
+    return TimeSeriesMetadataCache.getInstance().getUsedMemory();
   }
 
   @Override
@@ -93,8 +93,8 @@ public class CacheHitRatioMonitor implements CacheHitRatioMonitorMXBean, IServic
   }
 
   @Override
-  public double getTimeSeriesCacheAverageLoadPenalty() {
-    return TimeSeriesMetadataCache.getInstance().getAverageLoadPenalty();
+  public double getTimeSeriesCacheUsedMemoryProportion() {
+    return TimeSeriesMetadataCache.getInstance().getUsedMemoryProportion();
   }
 
   @Override

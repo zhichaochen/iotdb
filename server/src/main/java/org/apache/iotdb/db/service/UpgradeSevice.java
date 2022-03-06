@@ -18,7 +18,6 @@
  */
 package org.apache.iotdb.db.service;
 
-import org.apache.iotdb.db.concurrent.IoTDBThreadPoolFactory;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.engine.StorageEngine;
 import org.apache.iotdb.db.engine.upgrade.UpgradeLog;
@@ -30,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class UpgradeSevice implements IService {
@@ -38,7 +38,8 @@ public class UpgradeSevice implements IService {
 
   private static final UpgradeSevice INSTANCE = new UpgradeSevice();
   private ExecutorService upgradeThreadPool;
-  private static AtomicInteger cntUpgradeFileNum = new AtomicInteger();
+  private AtomicInteger threadCnt = new AtomicInteger();
+  private static int cntUpgradeFileNum;
 
   private UpgradeSevice() {}
 
@@ -52,10 +53,12 @@ public class UpgradeSevice implements IService {
     if (updateThreadNum <= 0) {
       updateThreadNum = 1;
     }
-    upgradeThreadPool = IoTDBThreadPoolFactory.newFixedThreadPool(updateThreadNum, "UpgradeThread");
+    upgradeThreadPool =
+        Executors.newFixedThreadPool(
+            updateThreadNum, r -> new Thread(r, "UpgradeThread-" + threadCnt.getAndIncrement()));
     UpgradeLog.createUpgradeLog();
     countUpgradeFiles();
-    if (cntUpgradeFileNum.get() == 0) {
+    if (cntUpgradeFileNum == 0) {
       stop();
       return;
     }
@@ -79,8 +82,22 @@ public class UpgradeSevice implements IService {
     return ServiceType.UPGRADE_SERVICE;
   }
 
-  public static AtomicInteger getTotalUpgradeFileNum() {
-    return cntUpgradeFileNum;
+  public static void setCntUpgradeFileNum(int cntUpgradeFileNum) {
+    UpgradeUtils.getCntUpgradeFileLock().writeLock().lock();
+    try {
+      UpgradeSevice.cntUpgradeFileNum = cntUpgradeFileNum;
+    } finally {
+      UpgradeUtils.getCntUpgradeFileLock().writeLock().unlock();
+    }
+  }
+
+  public static int getCntUpgradeFileNum() {
+    UpgradeUtils.getCntUpgradeFileLock().readLock().lock();
+    try {
+      return cntUpgradeFileNum;
+    } finally {
+      UpgradeUtils.getCntUpgradeFileLock().readLock().unlock();
+    }
   }
 
   public void submitUpgradeTask(UpgradeTask upgradeTask) {
@@ -88,7 +105,7 @@ public class UpgradeSevice implements IService {
   }
 
   private static void countUpgradeFiles() {
-    cntUpgradeFileNum.addAndGet(StorageEngine.getInstance().countUpgradeFiles());
+    cntUpgradeFileNum = StorageEngine.getInstance().countUpgradeFiles();
     logger.info("finish counting upgrading files, total num:{}", cntUpgradeFileNum);
   }
 

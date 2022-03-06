@@ -56,9 +56,6 @@ public class MetaUtils {
         }
         nodes.add(node);
         startIndex = i + 1;
-        if (startIndex == path.length()) {
-          throw new IllegalPathException(path);
-        }
       } else if (path.charAt(i) == '"') {
         int endIndex = path.indexOf('"', i + 1);
         // if a double quotes with escape character

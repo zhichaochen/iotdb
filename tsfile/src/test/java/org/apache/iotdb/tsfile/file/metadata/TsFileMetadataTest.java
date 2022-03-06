@@ -39,21 +39,13 @@ public class TsFileMetadataTest {
   final String PATH = TestConstant.BASE_OUTPUT_PATH.concat("output1.tsfile");
 
   @Before
-  public void setUp() {
-    File file = new File(PATH);
-    if (file.exists()) {
-      Assert.assertTrue(file.delete());
-    }
-    if (!file.getParentFile().exists()) {
-      Assert.assertTrue(file.getParentFile().mkdirs());
-    }
-  }
+  public void setUp() {}
 
   @After
   public void tearDown() {
     File file = new File(PATH);
     if (file.exists()) {
-      Assert.assertTrue(file.delete());
+      file.delete();
     }
   }
 
@@ -69,7 +61,7 @@ public class TsFileMetadataTest {
     FileInputStream fileInputStream = null;
     TsFileMetadata metaData = null;
     try {
-      fileInputStream = new FileInputStream(PATH);
+      fileInputStream = new FileInputStream(new File(PATH));
       FileChannel channel = fileInputStream.getChannel();
       ByteBuffer buffer = ByteBuffer.allocate((int) channel.size());
       channel.read(buffer);

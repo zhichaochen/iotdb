@@ -83,7 +83,6 @@ public class TsFileSequenceReader implements AutoCloseable {
   protected static final TSFileConfig config = TSFileDescriptor.getInstance().getConfig();
   private static final String METADATA_INDEX_NODE_DESERIALIZE_ERROR =
       "Something error happened while deserializing MetadataIndexNode of file {}";
-  private static final int MAX_READ_BUFFER_SIZE = 4 * 1024 * 1024;
   protected String file;
   protected TsFileInput tsFileInput;
   protected long fileMetadataPos;
@@ -379,7 +378,7 @@ public class TsFileSequenceReader implements AutoCloseable {
     Pair<MetadataIndexEntry, Long> metadataIndexPair =
         getMetadataAndEndOffset(deviceMetadataIndexNode, path.getDevice(), true, true);
     if (metadataIndexPair == null) {
-      return Collections.emptyList();
+      return null;
     }
     ByteBuffer buffer = readData(metadataIndexPair.left.getOffset(), metadataIndexPair.right);
     MetadataIndexNode metadataIndexNode = deviceMetadataIndexNode;
@@ -394,7 +393,7 @@ public class TsFileSequenceReader implements AutoCloseable {
           getMetadataAndEndOffset(metadataIndexNode, path.getMeasurement(), false, false);
     }
     if (metadataIndexPair == null) {
-      return Collections.emptyList();
+      return null;
     }
     List<TimeseriesMetadata> timeseriesMetadataList = new ArrayList<>();
     buffer = readData(metadataIndexPair.left.getOffset(), metadataIndexPair.right);
@@ -733,7 +732,7 @@ public class TsFileSequenceReader implements AutoCloseable {
             metadataIndex.getChildIndexEntry(name, false);
         ByteBuffer buffer = readData(childIndexEntry.left.getOffset(), childIndexEntry.right);
         return getMetadataAndEndOffset(
-            MetadataIndexNode.deserializeFrom(buffer), name, isDeviceLevel, exactSearch);
+            MetadataIndexNode.deserializeFrom(buffer), name, isDeviceLevel, false);
       }
     } catch (BufferOverflowException e) {
       logger.error("Something error happened while deserializing MetadataIndex of file {}", file);
@@ -848,10 +847,6 @@ public class TsFileSequenceReader implements AutoCloseable {
     tsFileInput.position(tsFileInput.position() + header.getCompressedSize());
   }
 
-  public ByteBuffer readCompressedPage(PageHeader header) throws IOException {
-    return readData(-1, header.getCompressedSize());
-  }
-
   public ByteBuffer readPage(PageHeader header, CompressionType type) throws IOException {
     ByteBuffer buffer = readData(-1, header.getCompressedSize());
     IUnCompressor unCompressor = IUnCompressor.getUnCompressor(type);
@@ -901,35 +896,23 @@ public class TsFileSequenceReader implements AutoCloseable {
    *
    * @param position the start position of data in the tsFileInput, or the current position if
    *     position = -1
-   * @param totalSize the size of data that want to read
+   * @param size the size of data that want to read
    * @return data that been read.
    */
-  protected ByteBuffer readData(long position, int totalSize) throws IOException {
-    int allocateSize = Math.min(MAX_READ_BUFFER_SIZE, totalSize);
-    int allocateNum = (int) Math.ceil((double) totalSize / allocateSize);
-    ByteBuffer buffer = ByteBuffer.allocate(totalSize);
-    int bufferLimit = 0;
-    for (int i = 0; i < allocateNum; i++) {
-      if (i == allocateNum - 1) {
-        allocateSize = totalSize - allocateSize * (allocateNum - 1);
+  protected ByteBuffer readData(long position, int size) throws IOException {
+    ByteBuffer buffer = ByteBuffer.allocate(size);
+    if (position < 0) {
+      if (ReadWriteIOUtils.readAsPossible(tsFileInput, buffer) != size) {
+        throw new IOException("reach the end of the data");
       }
-      bufferLimit += allocateSize;
-      buffer.limit(bufferLimit);
-      if (position < 0) {
-        if (ReadWriteIOUtils.readAsPossible(tsFileInput, buffer) != allocateSize) {
-          throw new IOException("reach the end of the data");
-        }
-      } else {
-        long actualReadSize =
-            ReadWriteIOUtils.readAsPossible(tsFileInput, buffer, position, allocateSize);
-        if (actualReadSize != allocateSize) {
-          throw new IOException(
-              String.format(
-                  "reach the end of the data. Size of data that want to read: %s,"
-                      + "actual read size: %s, position: %s",
-                  allocateSize, actualReadSize, position));
-        }
-        position += allocateSize;
+    } else {
+      long actualReadSize = ReadWriteIOUtils.readAsPossible(tsFileInput, buffer, position, size);
+      if (actualReadSize != size) {
+        throw new IOException(
+            String.format(
+                "reach the end of the data. Size of data that want to read: %s,"
+                    + "actual read size: %s, position: %s",
+                size, actualReadSize, position));
       }
     }
     buffer.flip();
@@ -960,9 +943,7 @@ public class TsFileSequenceReader implements AutoCloseable {
    * @param newSchema the schema on each time series in the file
    * @param chunkGroupMetadataList ChunkGroupMetadata List
    * @param fastFinish if true and the file is complete, then newSchema and chunkGroupMetadataList
-   *     will not be loaded
-   * @param loadLastChunkMetadata construct the ChunkMetadataList of last ChunkGroup. Notice, assure
-   *     the last ChunkGroup is complete if set this parameter to true!
+   *     parameter will be not modified.
    * @return the position of the file that is fine. All data after the position in the file should
    *     be truncated.
    */
@@ -970,8 +951,7 @@ public class TsFileSequenceReader implements AutoCloseable {
   public long selfCheck(
       Map<Path, MeasurementSchema> newSchema,
       List<ChunkGroupMetadata> chunkGroupMetadataList,
-      boolean fastFinish,
-      boolean loadLastChunkMetadata)
+      boolean fastFinish)
       throws IOException {
     File checkFile = FSFactoryProducer.getFSFactory().getFile(this.file);
     long fileSize;
@@ -1149,7 +1129,6 @@ public class TsFileSequenceReader implements AutoCloseable {
         }
         // last chunk group Metadata
         chunkGroupMetadataList.add(new ChunkGroupMetadata(lastDeviceId, chunkMetadataList));
-        lastDeviceId = null;
       }
       truncatedSize = this.position() - 1;
     } catch (Exception e) {
@@ -1158,17 +1137,6 @@ public class TsFileSequenceReader implements AutoCloseable {
           file,
           this.position(),
           e.getMessage());
-    }
-    if (loadLastChunkMetadata && lastDeviceId != null) {
-      // add last chunk group metadata list
-      if (chunkMetadataList.size() > 0) {
-        chunkGroupMetadataList.add(new ChunkGroupMetadata(lastDeviceId, chunkMetadataList));
-        if (newSchema != null) {
-          for (MeasurementSchema tsSchema : measurementSchemaList) {
-            newSchema.putIfAbsent(new Path(lastDeviceId, tsSchema.getMeasurementId()), tsSchema);
-          }
-        }
-      }
     }
     // Despite the completeness of the data section, we will discard current FileMetadata
     // so that we can continue to write data into this tsfile.

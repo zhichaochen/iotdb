@@ -35,7 +35,6 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import com.google.gson.JsonObject;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -65,8 +64,8 @@ public class PerfTest {
 
   private static void generateSampleInputDataFile() throws IOException {
     File file = new File(inputDataFile);
-    if (!file.getParentFile().exists()) {
-      Assert.assertTrue(file.getParentFile().mkdirs());
+    if (file.exists()) {
+      file.delete();
     }
     FileWriter fw = new FileWriter(file);
 

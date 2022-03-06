@@ -55,7 +55,7 @@ public class MeasurementMNodePlan extends MNodePlan {
   }
 
   @Override
-  public void serializeImpl(ByteBuffer buffer) {
+  public void serialize(ByteBuffer buffer) {
     buffer.put((byte) PhysicalPlanType.MEASUREMENT_MNODE.ordinal());
 
     putString(buffer, name);

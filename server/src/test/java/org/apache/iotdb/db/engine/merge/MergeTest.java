@@ -43,7 +43,6 @@ import org.apache.iotdb.tsfile.write.record.datapoint.DataPoint;
 import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 
 import java.io.File;
@@ -87,7 +86,7 @@ abstract class MergeTest {
 
   @After
   public void tearDown() throws IOException, StorageEngineException {
-    removeFiles(seqResources, unseqResources);
+    removeFiles();
     seqResources.clear();
     unseqResources.clear();
     IoTDBDescriptor.getInstance()
@@ -129,7 +128,7 @@ abstract class MergeTest {
     for (int i = 0; i < seqFileNum; i++) {
       File file =
           new File(
-              TestConstant.OUTPUT_DATA_DIR.concat(
+              TestConstant.BASE_OUTPUT_PATH.concat(
                   i
                       + IoTDBConstant.FILE_NAME_SEPARATOR
                       + i
@@ -149,7 +148,7 @@ abstract class MergeTest {
     for (int i = 0; i < unseqFileNum; i++) {
       File file =
           new File(
-              TestConstant.OUTPUT_DATA_DIR.concat(
+              TestConstant.BASE_OUTPUT_PATH.concat(
                   (10000 + i)
                       + IoTDBConstant.FILE_NAME_SEPARATOR
                       + (10000 + i)
@@ -169,7 +168,7 @@ abstract class MergeTest {
 
     File file =
         new File(
-            TestConstant.OUTPUT_DATA_DIR.concat(
+            TestConstant.BASE_OUTPUT_PATH.concat(
                 unseqFileNum
                     + IoTDBConstant.FILE_NAME_SEPARATOR
                     + unseqFileNum
@@ -187,27 +186,23 @@ abstract class MergeTest {
     prepareFile(tsFileResource, 0, ptNum * unseqFileNum, 20000);
   }
 
-  void removeFiles(List<TsFileResource> seqResList, List<TsFileResource> unseqResList)
-      throws IOException {
-    for (TsFileResource tsFileResource : seqResList) {
+  private void removeFiles() throws IOException {
+    for (TsFileResource tsFileResource : seqResources) {
       tsFileResource.remove();
       tsFileResource.getModFile().remove();
     }
-    for (TsFileResource tsFileResource : unseqResList) {
+    for (TsFileResource tsFileResource : unseqResources) {
       tsFileResource.remove();
       tsFileResource.getModFile().remove();
     }
 
     FileReaderManager.getInstance().closeAndRemoveAllOpenedReaders();
+    FileReaderManager.getInstance().stop();
   }
 
   void prepareFile(TsFileResource tsFileResource, long timeOffset, long ptNum, long valueOffset)
       throws IOException, WriteProcessException {
-    File tsfile = tsFileResource.getTsFile();
-    if (!tsfile.getParentFile().exists()) {
-      Assert.assertTrue(tsfile.getParentFile().mkdirs());
-    }
-    TsFileWriter fileWriter = new TsFileWriter(tsfile);
+    TsFileWriter fileWriter = new TsFileWriter(tsFileResource.getTsFile());
     for (String deviceId : deviceIds) {
       for (MeasurementSchema measurementSchema : measurementSchemas) {
         fileWriter.registerTimeseries(

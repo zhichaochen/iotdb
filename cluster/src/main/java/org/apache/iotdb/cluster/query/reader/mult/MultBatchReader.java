@@ -41,7 +41,7 @@ public class MultBatchReader implements IMultBatchReader {
   @Override
   public boolean hasNextBatch() throws IOException {
     for (IBatchReader reader : pathBatchReaders.values()) {
-      if (reader != null && reader.hasNextBatch()) {
+      if (reader.hasNextBatch()) {
         return true;
       }
     }
@@ -50,8 +50,7 @@ public class MultBatchReader implements IMultBatchReader {
 
   @Override
   public boolean hasNextBatch(String fullPath) throws IOException {
-    IBatchReader reader = pathBatchReaders.get(fullPath);
-    return reader != null && reader.hasNextBatch();
+    return pathBatchReaders.get(fullPath).hasNextBatch();
   }
 
   @Override

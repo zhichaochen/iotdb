@@ -46,7 +46,6 @@ import org.apache.iotdb.cluster.rpc.thrift.PullSchemaRequest;
 import org.apache.iotdb.cluster.rpc.thrift.PullSchemaResp;
 import org.apache.iotdb.cluster.rpc.thrift.PullSnapshotRequest;
 import org.apache.iotdb.cluster.rpc.thrift.PullSnapshotResp;
-import org.apache.iotdb.cluster.rpc.thrift.RefreshReuqest;
 import org.apache.iotdb.cluster.rpc.thrift.RequestCommitIndexResponse;
 import org.apache.iotdb.cluster.rpc.thrift.SendSnapshotRequest;
 import org.apache.iotdb.cluster.rpc.thrift.SingleSeriesQueryRequest;
@@ -306,11 +305,6 @@ public class DataClusterServer extends RaftServer
     if (service != null) {
       service.executeNonQueryPlan(request, resultHandler);
     }
-  }
-
-  @Override
-  public void refreshConnection(RefreshReuqest request, AsyncMethodCallback<Void> resultHandler) {
-    resultHandler.onComplete(null);
   }
 
   @Override
@@ -760,16 +754,6 @@ public class DataClusterServer extends RaftServer
   }
 
   @Override
-  public void getDeviceCount(
-      Node header, List<String> pathsToQuery, AsyncMethodCallback<Integer> resultHandler)
-      throws TException {
-    DataAsyncService service = getDataAsyncService(header, resultHandler, "count device");
-    if (service != null) {
-      service.getDeviceCount(header, pathsToQuery, resultHandler);
-    }
-  }
-
-  @Override
   public void onSnapshotApplied(
       Node header, List<Integer> slots, AsyncMethodCallback<Boolean> resultHandler) {
     DataAsyncService service = getDataAsyncService(header, resultHandler, "Snapshot applied");
@@ -907,11 +891,6 @@ public class DataClusterServer extends RaftServer
   }
 
   @Override
-  public int getDeviceCount(Node header, List<String> pathsToQuery) throws TException {
-    return getDataSyncService(header).getDeviceCount(header, pathsToQuery);
-  }
-
-  @Override
   public HeartBeatResponse sendHeartbeat(HeartBeatRequest request) {
     return getDataSyncService(request.getHeader()).sendHeartbeat(request);
   }
@@ -940,9 +919,6 @@ public class DataClusterServer extends RaftServer
   public TSStatus executeNonQueryPlan(ExecutNonQueryReq request) throws TException {
     return getDataSyncService(request.getHeader()).executeNonQueryPlan(request);
   }
-
-  @Override
-  public void refreshConnection(RefreshReuqest request) {}
 
   @Override
   public RequestCommitIndexResponse requestCommitIndex(Node header) throws TException {

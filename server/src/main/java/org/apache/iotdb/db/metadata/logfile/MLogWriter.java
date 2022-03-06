@@ -28,9 +28,6 @@ import org.apache.iotdb.db.metadata.mnode.MNode;
 import org.apache.iotdb.db.metadata.mnode.MeasurementMNode;
 import org.apache.iotdb.db.metadata.mnode.StorageGroupMNode;
 import org.apache.iotdb.db.qp.physical.PhysicalPlan;
-import org.apache.iotdb.db.qp.physical.crud.CreateTemplatePlan;
-import org.apache.iotdb.db.qp.physical.crud.SetDeviceTemplatePlan;
-import org.apache.iotdb.db.qp.physical.sys.AutoCreateDeviceMNodePlan;
 import org.apache.iotdb.db.qp.physical.sys.ChangeAliasPlan;
 import org.apache.iotdb.db.qp.physical.sys.ChangeTagOffsetPlan;
 import org.apache.iotdb.db.qp.physical.sys.CreateTimeSeriesPlan;
@@ -40,14 +37,12 @@ import org.apache.iotdb.db.qp.physical.sys.MNodePlan;
 import org.apache.iotdb.db.qp.physical.sys.MeasurementMNodePlan;
 import org.apache.iotdb.db.qp.physical.sys.SetStorageGroupPlan;
 import org.apache.iotdb.db.qp.physical.sys.SetTTLPlan;
-import org.apache.iotdb.db.qp.physical.sys.SetUsingDeviceTemplatePlan;
 import org.apache.iotdb.db.qp.physical.sys.StorageGroupMNodePlan;
 import org.apache.iotdb.db.writelog.io.LogWriter;
 import org.apache.iotdb.tsfile.file.metadata.enums.CompressionType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
 import org.apache.iotdb.tsfile.fileSystem.FSFactoryProducer;
-import org.apache.iotdb.tsfile.utils.Pair;
 import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
 
 import org.apache.commons.io.FileUtils;
@@ -156,18 +151,6 @@ public class MLogWriter implements AutoCloseable {
     putLog(plan);
   }
 
-  public void createDeviceTemplate(CreateTemplatePlan plan) throws IOException {
-    putLog(plan);
-  }
-
-  public void setDeviceTemplate(SetDeviceTemplatePlan plan) throws IOException {
-    putLog(plan);
-  }
-
-  public void autoCreateDeviceMNode(AutoCreateDeviceMNodePlan plan) throws IOException {
-    putLog(plan);
-  }
-
   public void serializeMNode(MNode node) throws IOException {
     int childSize = 0;
     if (node.getChildren() != null) {
@@ -198,11 +181,6 @@ public class MLogWriter implements AutoCloseable {
     putLog(plan);
   }
 
-  public void setUsingDeviceTemplate(PartialPath path) throws IOException {
-    SetUsingDeviceTemplatePlan plan = new SetUsingDeviceTemplatePlan(path);
-    putLog(plan);
-  }
-
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
   public static void upgradeTxtToBin(
       String schemaDir, String oldFileName, String newFileName, boolean isSnapshot)
@@ -219,8 +197,7 @@ public class MLogWriter implements AutoCloseable {
       }
 
       try (MLogWriter mLogWriter = new MLogWriter(schemaDir, newFileName + ".tmp");
-          MLogTxtReader mLogTxtReader = new MLogTxtReader(schemaDir, oldFileName);
-          TagLogFile tagLogFile = new TagLogFile(schemaDir, MetadataConstant.TAG_LOG)) {
+          MLogTxtReader mLogTxtReader = new MLogTxtReader(schemaDir, oldFileName)) {
         // upgrade from old character log file to new binary mlog
         while (mLogTxtReader.hasNext()) {
           String cmd = mLogTxtReader.next();
@@ -229,13 +206,13 @@ public class MLogWriter implements AutoCloseable {
             break;
           }
           try {
-            mLogWriter.operation(cmd, isSnapshot, tagLogFile);
+            mLogWriter.operation(cmd, isSnapshot);
           } catch (MetadataException e) {
             logger.error("failed to upgrade cmd {}.", cmd, e);
           }
         }
+
         // rename .bin.tmp to .bin
-        mLogWriter.close();
         FSFactoryProducer.getFSFactory().moveFile(tmpLogFile, logFile);
       }
     } else if (!logFile.exists() && !tmpLogFile.exists()) {
@@ -299,10 +276,9 @@ public class MLogWriter implements AutoCloseable {
     logNum = number;
   }
 
-  public void operation(String cmd, boolean isSnapshot, TagLogFile tagLogFile)
-      throws IOException, MetadataException {
+  public void operation(String cmd, boolean isSnapshot) throws IOException, MetadataException {
     if (!isSnapshot) {
-      operation(cmd, tagLogFile);
+      operation(cmd);
     } else {
       PhysicalPlan plan = convertFromString(cmd);
       if (plan != null) {
@@ -319,7 +295,7 @@ public class MLogWriter implements AutoCloseable {
    * @throws MetadataException
    */
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
-  public void operation(String cmd, TagLogFile tagLogFile) throws IOException, MetadataException {
+  public void operation(String cmd) throws IOException, MetadataException {
     // see createTimeseries() to get the detailed format of the cmd
     String[] args = cmd.trim().split(",", -1);
     switch (args[0]) {
@@ -354,15 +330,8 @@ public class MLogWriter implements AutoCloseable {
           alias = args[6];
         }
         long offset = -1L;
-        Map<String, String> tags = null;
-        Map<String, String> attributes = null;
         if (!args[7].isEmpty()) {
           offset = Long.parseLong(args[7]);
-          Pair<Map<String, String>, Map<String, String>> tagAttributePair =
-              tagLogFile.read(
-                  IoTDBDescriptor.getInstance().getConfig().getTagAttributeTotalSize(), offset);
-          tags = tagAttributePair.left;
-          attributes = tagAttributePair.right;
         }
 
         CreateTimeSeriesPlan plan =
@@ -372,8 +341,8 @@ public class MLogWriter implements AutoCloseable {
                 TSEncoding.deserialize((byte) Short.parseShort(args[3])),
                 CompressionType.deserialize((byte) Short.parseShort(args[4])),
                 props,
-                tags,
-                attributes,
+                null,
+                null,
                 alias);
 
         plan.setTagOffset(offset);

@@ -48,11 +48,11 @@ public class MemTableManager {
    *
    * @throws WriteProcessException
    */
-  public synchronized IMemTable getAvailableMemTable(String storageGroup)
+  public synchronized IMemTable getAvailableMemTable(String storageGroup, boolean sequence)
       throws WriteProcessException {
     if (!reachMaxMemtableNumber()) {
       currentMemtableNumber++;
-      return new PrimitiveMemTable();
+      return new PrimitiveMemTable(sequence);
     }
 
     // wait until the total number of memtable is less than the system capacity
@@ -60,7 +60,7 @@ public class MemTableManager {
     while (true) {
       if (!reachMaxMemtableNumber()) {
         currentMemtableNumber++;
-        return new PrimitiveMemTable();
+        return new PrimitiveMemTable(sequence);
       }
       try {
         wait(WAIT_TIME);
@@ -100,10 +100,6 @@ public class MemTableManager {
         MEMTABLE_NUM_FOR_EACH_PARTITION * CONFIG.getConcurrentWritingTimePartition() * diff;
     CONFIG.setMaxMemtableNumber(maxMemTableNum);
     notifyAll();
-  }
-
-  public synchronized void close() {
-    currentMemtableNumber = 0;
   }
 
   private static class InstanceHolder {

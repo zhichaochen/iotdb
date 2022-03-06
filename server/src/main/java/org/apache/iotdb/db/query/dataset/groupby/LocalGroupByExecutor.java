@@ -331,9 +331,6 @@ public class LocalGroupByExecutor implements GroupByExecutor {
       // stop calc and cached current batchData
       if (ascending && batchData.currentTime() >= curEndTime) {
         preCachedData = batchData;
-        // reset the last position to current Index
-        lastReadCurArrayIndex = batchData.getReadCurArrayIndex();
-        lastReadCurListIndex = batchData.getReadCurListIndex();
         return true;
       }
 

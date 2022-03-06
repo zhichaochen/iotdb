@@ -89,14 +89,8 @@ public class RemoteGroupByExecutor implements GroupByExecutor {
                 .getClientProvider()
                 .getSyncDataClient(source, RaftServer.getReadOperationTimeoutMS())) {
 
-          try {
-            aggrBuffers =
-                syncDataClient.getGroupByResult(header, executorId, curStartTime, curEndTime);
-          } catch (TException e) {
-            // the connection may be broken, close it to avoid it being reused
-            syncDataClient.getInputProtocol().getTransport().close();
-            throw e;
-          }
+          aggrBuffers =
+              syncDataClient.getGroupByResult(header, executorId, curStartTime, curEndTime);
         }
       }
     } catch (TException e) {
@@ -139,14 +133,9 @@ public class RemoteGroupByExecutor implements GroupByExecutor {
             metaGroupMember
                 .getClientProvider()
                 .getSyncDataClient(source, RaftServer.getReadOperationTimeoutMS())) {
-          try {
-            aggrBuffer =
-                syncDataClient.peekNextNotNullValue(header, executorId, nextStartTime, nextEndTime);
-          } catch (TException e) {
-            // the connection may be broken, close it to avoid it being reused
-            syncDataClient.getInputProtocol().getTransport().close();
-            throw e;
-          }
+
+          aggrBuffer =
+              syncDataClient.peekNextNotNullValue(header, executorId, nextStartTime, nextEndTime);
         }
       }
     } catch (TException e) {
@@ -160,9 +149,7 @@ public class RemoteGroupByExecutor implements GroupByExecutor {
     if (aggrBuffer != null) {
       long time = aggrBuffer.getLong();
       Object o = SerializeUtils.deserializeObject(aggrBuffer);
-      if (o != null) {
-        result = new Pair<>(time, o);
-      }
+      result = new Pair<>(time, o);
     }
     logger.debug(
         "Fetched peekNextNotNullValue from {} of [{}, {}]: {}",

@@ -61,7 +61,7 @@ public abstract class NodeToolCmd implements Runnable {
       type = OptionType.GLOBAL,
       name = {"-u", "--user"},
       description = "The username to access the remote jmx")
-  private String user = "root";
+  private String user = "iotdb";
 
   @Option(
       type = OptionType.GLOBAL,

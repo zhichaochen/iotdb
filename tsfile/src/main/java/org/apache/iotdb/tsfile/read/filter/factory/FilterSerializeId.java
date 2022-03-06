@@ -23,7 +23,6 @@ public enum FilterSerializeId {
   AND,
   EQ,
   GROUP_BY,
-  GROUP_BY_MONTH,
   GT,
   GTEQ,
   LT,
@@ -31,7 +30,5 @@ public enum FilterSerializeId {
   NEQ,
   NOT,
   OR,
-  IN,
-  REGEXP,
-  LIKE
+  IN
 }

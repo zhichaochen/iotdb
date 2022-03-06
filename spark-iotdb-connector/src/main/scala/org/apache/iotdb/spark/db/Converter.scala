@@ -65,11 +65,7 @@ object Converter {
       }
 
       val colCount = resultSetMetaData.getColumnCount
-      var startIndex = 2
-      if (!"Time".equals(resultSetMetaData.getColumnName(1))) {
-        startIndex = 1
-      }
-      for (i <- startIndex to colCount) {
+      for (i <- 2 to colCount) {
         fields += StructField(resultSetMetaData.getColumnLabel(i), resultSetMetaData.getColumnType(i) match {
           case Types.BOOLEAN => BooleanType
           case Types.INTEGER => IntegerType

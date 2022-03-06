@@ -30,9 +30,7 @@ import java.util.Set;
 
 import static org.apache.iotdb.db.engine.compaction.utils.CompactionLogger.FULL_MERGE;
 import static org.apache.iotdb.db.engine.compaction.utils.CompactionLogger.SEQUENCE_NAME;
-import static org.apache.iotdb.db.engine.compaction.utils.CompactionLogger.SOURCE_INFO;
 import static org.apache.iotdb.db.engine.compaction.utils.CompactionLogger.SOURCE_NAME;
-import static org.apache.iotdb.db.engine.compaction.utils.CompactionLogger.TARGET_INFO;
 import static org.apache.iotdb.db.engine.compaction.utils.CompactionLogger.TARGET_NAME;
 import static org.apache.iotdb.db.engine.compaction.utils.CompactionLogger.UNSEQUENCE_NAME;
 
@@ -41,11 +39,9 @@ public class CompactionLogAnalyzer {
   public static final String STR_DEVICE_OFFSET_SEPARATOR = " ";
 
   private File logFile;
-  private List<String> deviceList = new ArrayList<>();
-  private List<Long> offsets = new ArrayList<>();
+  private Set<String> deviceSet = new HashSet<>();
+  private long offset = 0;
   private List<String> sourceFiles = new ArrayList<>();
-  private List<CompactionFileInfo> sourceFileInfo = new ArrayList<>();
-  private CompactionFileInfo targetFileInfo = null;
   private String targetFile = null;
   private boolean isSeq = false;
   private boolean fullMerge = false;
@@ -65,19 +61,11 @@ public class CompactionLogAnalyzer {
         switch (currLine) {
           case SOURCE_NAME:
             currLine = bufferedReader.readLine();
-            sourceFileInfo.add(CompactionFileInfo.parseCompactionFileInfoFromPath(currLine));
-            break;
-          case SOURCE_INFO:
-            currLine = bufferedReader.readLine();
-            sourceFileInfo.add(CompactionFileInfo.parseCompactionFileInfo(currLine));
+            sourceFiles.add(currLine);
             break;
           case TARGET_NAME:
             currLine = bufferedReader.readLine();
-            targetFileInfo = CompactionFileInfo.parseCompactionFileInfoFromPath(currLine);
-            break;
-          case TARGET_INFO:
-            currLine = bufferedReader.readLine();
-            targetFileInfo = CompactionFileInfo.parseCompactionFileInfo(currLine);
+            targetFile = currLine;
             break;
           case FULL_MERGE:
             fullMerge = true;
@@ -90,8 +78,8 @@ public class CompactionLogAnalyzer {
             break;
           default:
             int separatorIndex = currLine.lastIndexOf(STR_DEVICE_OFFSET_SEPARATOR);
-            deviceList.add(currLine.substring(0, separatorIndex));
-            offsets.add(Long.parseLong(currLine.substring(separatorIndex + 1)));
+            deviceSet.add(currLine.substring(0, separatorIndex));
+            offset = Long.parseLong(currLine.substring(separatorIndex + 1));
             break;
         }
       }
@@ -99,19 +87,11 @@ public class CompactionLogAnalyzer {
   }
 
   public Set<String> getDeviceSet() {
-    if (offsets.size() < 2) {
-      return new HashSet<>();
-    } else {
-      return new HashSet<>(deviceList.subList(0, deviceList.size() - 1));
-    }
+    return deviceSet;
   }
 
   public long getOffset() {
-    if (offsets.size() > 2) {
-      return offsets.get(offsets.size() - 2);
-    } else {
-      return 0;
-    }
+    return offset;
   }
 
   public List<String> getSourceFiles() {
@@ -128,13 +108,5 @@ public class CompactionLogAnalyzer {
 
   public boolean isFullMerge() {
     return fullMerge;
-  }
-
-  public List<CompactionFileInfo> getSourceFileInfo() {
-    return sourceFileInfo;
-  }
-
-  public CompactionFileInfo getTargetFileInfo() {
-    return targetFileInfo;
   }
 }

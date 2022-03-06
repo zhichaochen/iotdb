@@ -22,6 +22,9 @@ package org.apache.iotdb.db.engine.compaction.no;
 import org.apache.iotdb.db.engine.compaction.TsFileManagement;
 import org.apache.iotdb.db.engine.storagegroup.TsFileResource;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -33,15 +36,15 @@ import java.util.TreeSet;
 
 public class NoCompactionTsFileManagement extends TsFileManagement {
 
+  private static final Logger logger = LoggerFactory.getLogger(NoCompactionTsFileManagement.class);
   // includes sealed and unsealed sequence TsFiles
   private final Map<Long, TreeSet<TsFileResource>> sequenceFileTreeSetMap = new TreeMap<>();
 
   // includes sealed and unsealed unSequence TsFiles
   private final Map<Long, List<TsFileResource>> unSequenceFileListMap = new TreeMap<>();
 
-  public NoCompactionTsFileManagement(
-      String storageGroupName, String virtualStorageGroupId, String storageGroupDir) {
-    super(storageGroupName, virtualStorageGroupId, storageGroupDir);
+  public NoCompactionTsFileManagement(String storageGroupName, String storageGroupDir) {
+    super(storageGroupName, storageGroupDir);
   }
 
   @Deprecated
@@ -174,6 +177,11 @@ public class NoCompactionTsFileManagement extends TsFileManagement {
   }
 
   @Override
+  public void addRecover(TsFileResource tsFileResource, boolean sequence) {
+    logger.info("{} do not need to recover", storageGroupName);
+  }
+
+  @Override
   public void addAll(List<TsFileResource> tsFileResourceList, boolean sequence) {
     writeLock();
     try {
@@ -258,13 +266,19 @@ public class NoCompactionTsFileManagement extends TsFileManagement {
   }
 
   @Override
-  public void recover() {}
+  public void recover() {
+    logger.info("{} no recover logic", storageGroupName);
+  }
 
   @Override
-  public void forkCurrentFileList(long timePartition) {}
+  public void forkCurrentFileList(long timePartition) {
+    logger.info("{} do not need fork", storageGroupName);
+  }
 
   @Override
-  protected void merge(long timePartition) {}
+  protected void merge(long timePartition) {
+    logger.info("{} no merge logic", storageGroupName);
+  }
 
   private TreeSet<TsFileResource> newSequenceTsFileResources(Long k) {
     return new TreeSet<>((o1, o2) -> compareFileName(o1.getTsFile(), o2.getTsFile()));

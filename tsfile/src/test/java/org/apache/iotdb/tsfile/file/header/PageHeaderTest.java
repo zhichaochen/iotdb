@@ -44,15 +44,7 @@ public class PageHeaderTest {
   private final String PATH = TestConstant.BASE_OUTPUT_PATH.concat("outputPageHeader.tsfile");
 
   @Before
-  public void setUp() {
-    File file = new File(PATH);
-    if (file.exists()) {
-      Assert.assertTrue(file.delete());
-    }
-    if (!file.getParentFile().exists()) {
-      Assert.assertTrue(file.getParentFile().mkdirs());
-    }
-  }
+  public void setUp() {}
 
   @After
   public void tearDown() {
@@ -75,7 +67,7 @@ public class PageHeaderTest {
     FileInputStream fis = null;
     PageHeader header = null;
     try {
-      fis = new FileInputStream(PATH);
+      fis = new FileInputStream(new File(PATH));
       header = PageHeader.deserializeFrom(fis, DATA_TYPE, true);
       return header;
     } catch (IOException e) {

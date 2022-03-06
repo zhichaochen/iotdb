@@ -44,12 +44,6 @@ public abstract class QueryPlan extends PhysicalPlan {
 
   private boolean enableRedirect = false;
 
-  // if true, we don't need the row whose any column is null
-  private boolean withoutAnyNull;
-
-  // if true, we don't need the row whose all columns are null
-  private boolean withoutAllNull;
-
   public QueryPlan() {
     super(true);
     setOperatorType(Operator.OperatorType.QUERY);
@@ -141,21 +135,5 @@ public abstract class QueryPlan extends PhysicalPlan {
 
   public void setEnableRedirect(boolean enableRedirect) {
     this.enableRedirect = enableRedirect;
-  }
-
-  public boolean isWithoutAnyNull() {
-    return withoutAnyNull;
-  }
-
-  public void setWithoutAnyNull(boolean withoutAnyNull) {
-    this.withoutAnyNull = withoutAnyNull;
-  }
-
-  public boolean isWithoutAllNull() {
-    return withoutAllNull;
-  }
-
-  public void setWithoutAllNull(boolean withoutAllNull) {
-    this.withoutAllNull = withoutAllNull;
   }
 }

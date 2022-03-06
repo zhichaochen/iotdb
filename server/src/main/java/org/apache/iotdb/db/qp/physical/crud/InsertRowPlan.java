@@ -62,7 +62,6 @@ public class InsertRowPlan extends InsertPlan {
   private boolean isNeedInferType = false;
 
   private List<Object> failedValues;
-  private List<PartialPath> paths;
 
   public InsertRowPlan() {
     super(OperatorType.INSERT);
@@ -247,22 +246,16 @@ public class InsertRowPlan extends InsertPlan {
     }
     failedValues.add(values[index]);
     values[index] = null;
-    if (isNeedInferType) {
-      dataTypes[index] = null;
-    }
   }
 
   @Override
   public List<PartialPath> getPaths() {
-    if (paths != null) {
-      return paths;
-    }
-    paths = new ArrayList<>(measurements.length);
+    List<PartialPath> ret = new ArrayList<>();
     for (String m : measurements) {
       PartialPath fullPath = deviceId.concatNode(m);
-      paths.add(fullPath);
+      ret.add(fullPath);
     }
-    return paths;
+    return ret;
   }
 
   public Object[] getValues() {
@@ -337,7 +330,7 @@ public class InsertRowPlan extends InsertPlan {
       // and is forwarded to other nodes
       if (dataTypes == null || dataTypes[i] == null) {
         ReadWriteIOUtils.write(TYPE_RAW_STRING, outputStream);
-        ReadWriteIOUtils.write(values[i].toString(), outputStream);
+        ReadWriteIOUtils.write((String) values[i], outputStream);
       } else {
         ReadWriteIOUtils.write(dataTypes[i], outputStream);
         switch (dataTypes[i]) {
@@ -367,7 +360,7 @@ public class InsertRowPlan extends InsertPlan {
   }
 
   private void putValues(ByteBuffer buffer) throws QueryProcessException {
-    for (int i = 0; i < measurements.length; i++) {
+    for (int i = 0; i < values.length; i++) {
       if (measurements[i] == null) {
         continue;
       }
@@ -375,7 +368,7 @@ public class InsertRowPlan extends InsertPlan {
       // and is forwarded to other nodes
       if (dataTypes == null || dataTypes[i] == null) {
         ReadWriteIOUtils.write(TYPE_RAW_STRING, buffer);
-        ReadWriteIOUtils.write(values[i].toString(), buffer);
+        ReadWriteIOUtils.write((String) values[i], buffer);
       } else {
         ReadWriteIOUtils.write(dataTypes[i], buffer);
         switch (dataTypes[i]) {
@@ -442,7 +435,7 @@ public class InsertRowPlan extends InsertPlan {
   }
 
   @Override
-  public void serializeImpl(ByteBuffer buffer) {
+  public void serialize(ByteBuffer buffer) {
     int type = PhysicalPlanType.INSERT.ordinal();
     buffer.put((byte) type);
     subSerialize(buffer);

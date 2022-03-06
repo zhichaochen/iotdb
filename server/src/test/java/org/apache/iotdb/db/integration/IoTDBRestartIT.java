@@ -18,8 +18,6 @@
  */
 package org.apache.iotdb.db.integration;
 
-import org.apache.iotdb.db.conf.IoTDBConfig;
-import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.engine.StorageEngine;
 import org.apache.iotdb.db.engine.compaction.CompactionMergeTaskPoolManager;
 import org.apache.iotdb.db.exception.StorageEngineException;
@@ -136,39 +134,35 @@ public class IoTDBRestartIT {
             DriverManager.getConnection(
                 Config.IOTDB_URL_PREFIX + "127.0.0.1:6667/", "root", "root");
         Statement statement = connection.createStatement()) {
-      statement.execute("delete from root.turbine.d1.s1 where time <= 1");
+      statement.execute("delete from root.turbine.d1.s1 where time<=1");
 
-      boolean hasResultSet1 = statement.execute("SELECT s1 FROM root.turbine.d1");
-      assertTrue(hasResultSet1);
-      String[] exp1 = new String[] {"2,2.0", "3,3.0"};
-      ResultSet resultSet1 = statement.getResultSet();
+      boolean hasResultSet = statement.execute("SELECT s1 FROM root.turbine.d1");
+      assertTrue(hasResultSet);
+      String[] exp = new String[] {"2,2.0", "3,3.0"};
+      ResultSet resultSet = statement.getResultSet();
+      int cnt = 0;
       try {
-        int cnt = 0;
-        while (resultSet1.next()) {
-          String result = resultSet1.getString(TIMESTAMP_STR) + "," + resultSet1.getString(2);
-          assertEquals(exp1[cnt], result);
+        while (resultSet.next()) {
+          String result = resultSet.getString(TIMESTAMP_STR) + "," + resultSet.getString(2);
+          assertEquals(exp[cnt], result);
+          cnt++;
+        }
+
+        statement.execute("flush");
+        statement.execute("delete from root.turbine.d1.s1 where time<=2");
+
+        hasResultSet = statement.execute("SELECT s1 FROM root.turbine.d1");
+        assertTrue(hasResultSet);
+        exp = new String[] {"3,3.0"};
+        resultSet = statement.getResultSet();
+        cnt = 0;
+        while (resultSet.next()) {
+          String result = resultSet.getString(TIMESTAMP_STR) + "," + resultSet.getString(2);
+          assertEquals(exp[cnt], result);
           cnt++;
         }
       } finally {
-        resultSet1.close();
-      }
-
-      statement.execute("flush");
-      statement.execute("delete from root.turbine.d1.s1 where time <= 2");
-
-      boolean hasResultSet2 = statement.execute("SELECT s1 FROM root.turbine.d1");
-      assertTrue(hasResultSet2);
-      String[] exp2 = new String[] {"3,3.0"};
-      ResultSet resultSet2 = statement.getResultSet();
-      try {
-        int cnt = 0;
-        while (resultSet2.next()) {
-          String result = resultSet2.getString(TIMESTAMP_STR) + "," + resultSet2.getString(2);
-          assertEquals(exp2[cnt], result);
-          cnt++;
-        }
-      } finally {
-        resultSet2.close();
+        resultSet.close();
       }
     }
 
@@ -355,52 +349,6 @@ public class IoTDBRestartIT {
       assertEquals(1, cnt);
     }
 
-    EnvironmentUtils.cleanEnv();
-  }
-
-  @Test
-  public void testRecoverWALDeleteSchemaCheckResourceTime() throws Exception {
-    EnvironmentUtils.envSetUp();
-    Class.forName(Config.JDBC_DRIVER_NAME);
-    IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
-    int avgSeriesPointNumberThreshold = config.getAvgSeriesPointNumberThreshold();
-    config.setAvgSeriesPointNumberThreshold(2);
-    long tsfileSize = config.getSeqTsFileSize();
-    config.setSeqTsFileSize(10000000);
-
-    try (Connection connection =
-            DriverManager.getConnection(
-                Config.IOTDB_URL_PREFIX + "127.0.0.1:6667/", "root", "root");
-        Statement statement = connection.createStatement()) {
-      statement.execute("create timeseries root.turbine1.d1.s1 with datatype=INT64");
-      statement.execute("insert into root.turbine1.d1(timestamp,s1) values(1,1)");
-      statement.execute("insert into root.turbine1.d1(timestamp,s1) values(2,1)");
-      statement.execute("create timeseries root.turbine1.d1.s2 with datatype=BOOLEAN");
-      statement.execute("insert into root.turbine1.d1(timestamp,s2) values(3,true)");
-      statement.execute("insert into root.turbine1.d1(timestamp,s2) values(4,true)");
-    }
-
-    Thread.sleep(1000);
-    EnvironmentUtils.restartDaemon();
-
-    try (Connection connection =
-            DriverManager.getConnection(
-                Config.IOTDB_URL_PREFIX + "127.0.0.1:6667/", "root", "root");
-        Statement statement = connection.createStatement()) {
-
-      long[] result = new long[] {1L, 2L};
-      statement.execute("select s1 from root.turbine1.d1 where time < 3");
-      ResultSet resultSet = statement.getResultSet();
-      int cnt = 0;
-      while (resultSet.next()) {
-        assertEquals(resultSet.getLong(1), result[cnt]);
-        cnt++;
-      }
-      assertEquals(2, cnt);
-    }
-
-    config.setAvgSeriesPointNumberThreshold(avgSeriesPointNumberThreshold);
-    config.setSeqTsFileSize(tsfileSize);
     EnvironmentUtils.cleanEnv();
   }
 

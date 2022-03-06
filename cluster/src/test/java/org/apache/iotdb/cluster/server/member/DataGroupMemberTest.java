@@ -722,7 +722,6 @@ public class DataGroupMemberTest extends BaseMember {
     request.setDataTypeOrdinal(TSDataType.DOUBLE.ordinal());
     request.setRequester(TestUtils.getNode(1));
     request.setQueryId(0);
-    request.setAscending(true);
     Filter filter = TimeFilter.gtEq(5);
     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
     DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream);
@@ -785,7 +784,6 @@ public class DataGroupMemberTest extends BaseMember {
     request.setDataTypeOrdinal(TSDataType.DOUBLE.ordinal());
     request.setRequester(TestUtils.getNode(1));
     request.setQueryId(0);
-    request.setAscending(true);
     Filter filter = new AndFilter(TimeFilter.gtEq(5), ValueFilter.ltEq(8.0));
     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
     DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream);
@@ -1018,7 +1016,7 @@ public class DataGroupMemberTest extends BaseMember {
             + File.separator
             + "0-"
             + serialNum
-            + "-0-0.tsfile";
+            + "-0.tsfile";
     if (asHardLink) {
       fileName = fileName + ".0_0";
     }
@@ -1110,7 +1108,7 @@ public class DataGroupMemberTest extends BaseMember {
     Filter timeFilter = TimeFilter.gtEq(5);
     request.setTimeFilterBytes(SerializeUtils.serializeFilter(timeFilter));
     QueryContext queryContext =
-        new RemoteQueryContext(QueryResourceManager.getInstance().assignQueryId(true));
+        new RemoteQueryContext(QueryResourceManager.getInstance().assignQueryId(true, 1024, -1));
     try {
       request.setQueryId(queryContext.getQueryId());
       request.setRequestor(TestUtils.getNode(0));
@@ -1164,18 +1162,16 @@ public class DataGroupMemberTest extends BaseMember {
         request.timeFilterBytes.position(0);
         new DataAsyncService(dataGroupMember).getGroupByExecutor(request, handler);
         executorId = resultRef.get();
-        // TODO: This test is uncompleted because of shared QueryDataSource (IOTDB-2101)
-        // assertEquals(-1L, (long) executorId);
+        assertEquals(-1L, (long) executorId);
 
         // fetch result
-        //        aggrResultRef = new AtomicReference<>();
-        //        aggrResultHandler = new GenericHandler<>(TestUtils.getNode(0), aggrResultRef);
-        //        new DataAsyncService(dataGroupMember)
-        //            .getGroupByResult(TestUtils.getNode(30), executorId, 0, 20,
-        // aggrResultHandler);
-        //
-        //        byteBuffers = aggrResultRef.get();
-        //        assertNull(byteBuffers);
+        aggrResultRef = new AtomicReference<>();
+        aggrResultHandler = new GenericHandler<>(TestUtils.getNode(0), aggrResultRef);
+        new DataAsyncService(dataGroupMember)
+            .getGroupByResult(TestUtils.getNode(30), executorId, 0, 20, aggrResultHandler);
+
+        byteBuffers = aggrResultRef.get();
+        assertNull(byteBuffers);
       } finally {
         dataGroupMember.closeLogManager();
       }

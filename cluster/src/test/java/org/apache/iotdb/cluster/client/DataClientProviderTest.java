@@ -28,6 +28,7 @@ import org.apache.iotdb.cluster.rpc.thrift.Node;
 import org.apache.iotdb.cluster.utils.ClientUtils;
 import org.apache.iotdb.cluster.utils.ClusterNode;
 
+import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol.Factory;
 import org.junit.After;
 import org.junit.Assert;
@@ -95,7 +96,7 @@ public class DataClientProviderTest {
       SyncDataClient client = null;
       try {
         client = provider.getSyncDataClient(node, 100);
-      } catch (IOException e) {
+      } catch (TException e) {
         Assert.fail(e.getMessage());
       } finally {
         ClientUtils.putBackSyncClient(client);
@@ -134,7 +135,7 @@ public class DataClientProviderTest {
       SyncDataClient client = null;
       try {
         client = provider.getSyncDataClient(node, 100);
-      } catch (IOException e) {
+      } catch (TException e) {
         Assert.fail(e.getMessage());
       }
       assertNotNull(client);

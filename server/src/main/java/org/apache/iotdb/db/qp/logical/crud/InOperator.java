@@ -69,10 +69,6 @@ public class InOperator extends FunctionOperator {
     return values;
   }
 
-  public boolean getNot() {
-    return not;
-  }
-
   @Override
   public void reverseFunc() {
     not = !not;

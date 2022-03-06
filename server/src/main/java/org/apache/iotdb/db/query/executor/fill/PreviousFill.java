@@ -87,8 +87,7 @@ public class PreviousFill extends IFill {
       TSDataType dataType,
       long queryTime,
       Set<String> sensors,
-      QueryContext context)
-      throws QueryProcessException, StorageEngineException {
+      QueryContext context) {
     this.seriesPath = path;
     this.dataType = dataType;
     this.context = context;

@@ -23,7 +23,6 @@ import org.apache.iotdb.tsfile.common.conf.TSFileConfig;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.read.TimeValuePair;
 import org.apache.iotdb.tsfile.read.common.BatchData;
-import org.apache.iotdb.tsfile.read.common.BatchData.BatchDataType;
 import org.apache.iotdb.tsfile.read.filter.basic.Filter;
 import org.apache.iotdb.tsfile.utils.Binary;
 import org.apache.iotdb.tsfile.utils.ReadWriteIOUtils;
@@ -124,8 +123,46 @@ public class SerializeUtils {
       TSDataType dataType = batchData.getDataType();
       outputStream.writeInt(length);
       outputStream.write(dataType.ordinal());
-      outputStream.write(batchData.getBatchDataType().ordinal());
-      batchData.serializeData(outputStream);
+      switch (dataType) {
+        case BOOLEAN:
+          for (int i = 0; i < length; i++) {
+            outputStream.writeLong(batchData.getTimeByIndex(i));
+            outputStream.writeBoolean(batchData.getBooleanByIndex(i));
+          }
+          break;
+        case DOUBLE:
+          for (int i = 0; i < length; i++) {
+            outputStream.writeLong(batchData.getTimeByIndex(i));
+            outputStream.writeDouble(batchData.getDoubleByIndex(i));
+          }
+          break;
+        case FLOAT:
+          for (int i = 0; i < length; i++) {
+            outputStream.writeLong(batchData.getTimeByIndex(i));
+            outputStream.writeFloat(batchData.getFloatByIndex(i));
+          }
+          break;
+        case TEXT:
+          for (int i = 0; i < length; i++) {
+            outputStream.writeLong(batchData.getTimeByIndex(i));
+            Binary binary = batchData.getBinaryByIndex(i);
+            outputStream.writeInt(binary.getLength());
+            outputStream.write(binary.getValues());
+          }
+          break;
+        case INT64:
+          for (int i = 0; i < length; i++) {
+            outputStream.writeLong(batchData.getTimeByIndex(i));
+            outputStream.writeLong(batchData.getLongByIndex(i));
+          }
+          break;
+        case INT32:
+          for (int i = 0; i < length; i++) {
+            outputStream.writeLong(batchData.getTimeByIndex(i));
+            outputStream.writeInt(batchData.getIntByIndex(i));
+          }
+          break;
+      }
     } catch (IOException ignored) {
       // ignored
     }
@@ -138,7 +175,7 @@ public class SerializeUtils {
 
     int length = buffer.getInt();
     TSDataType dataType = TSDataType.values()[buffer.get()];
-    BatchData batchData = BatchDataType.deserialize(buffer.get(), dataType);
+    BatchData batchData = new BatchData(dataType);
     switch (dataType) {
       case INT32:
         for (int i = 0; i < length; i++) {
@@ -175,7 +212,6 @@ public class SerializeUtils {
         }
         break;
     }
-    batchData.resetBatchData();
     return batchData;
   }
 

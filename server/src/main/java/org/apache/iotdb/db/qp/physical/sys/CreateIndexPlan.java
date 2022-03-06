@@ -112,7 +112,7 @@ public class CreateIndexPlan extends PhysicalPlan {
   }
 
   @Override
-  public void serializeImpl(ByteBuffer buffer) {
+  public void serialize(ByteBuffer buffer) {
     int type = PhysicalPlanType.CREATE_INDEX.ordinal();
     buffer.put((byte) type);
     buffer.put((byte) indexType.serialize());

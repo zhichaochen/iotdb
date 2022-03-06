@@ -181,6 +181,7 @@ public class SeriesRawDataBatchReader implements ManagedSeriesReader {
   private boolean readPageData() throws IOException {
     while (seriesReader.hasNextPage()) {
       batchData = seriesReader.nextPage();
+      System.out.println("*** read page data of point:" + batchData.length());
       if (!isEmpty(batchData)) {
         return true;
       }
@@ -190,10 +191,5 @@ public class SeriesRawDataBatchReader implements ManagedSeriesReader {
 
   private boolean isEmpty(BatchData batchData) {
     return batchData == null || !batchData.hasCurrent();
-  }
-
-  @TestOnly
-  public SeriesReader getSeriesReader() {
-    return seriesReader;
   }
 }

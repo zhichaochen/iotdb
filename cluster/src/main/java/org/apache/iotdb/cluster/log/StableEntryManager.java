@@ -19,16 +19,12 @@
 
 package org.apache.iotdb.cluster.log;
 
-import org.apache.iotdb.cluster.log.manage.serializable.LogManagerMeta;
-
 import java.io.IOException;
 import java.util.List;
 
 public interface StableEntryManager {
 
   List<Log> getAllEntriesAfterAppliedIndex();
-
-  List<Log> getAllEntriesAfterCommittedIndex();
 
   void append(List<Log> entries, long maxHaveAppliedCommitIndex) throws IOException;
 
@@ -41,8 +37,6 @@ public interface StableEntryManager {
   void setHardStateAndFlush(HardState state);
 
   HardState getHardState();
-
-  LogManagerMeta getMeta();
 
   /**
    * @param startIndex (inclusive) the log start index

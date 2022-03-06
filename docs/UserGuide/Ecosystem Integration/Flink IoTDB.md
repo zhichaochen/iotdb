@@ -35,8 +35,6 @@ This example shows a case that sends data to a IoTDB server from a Flink job:
 - A simulated Source `SensorSource` generates data points per 1 second.
 - Flink uses `IoTDBSink` to consume the generated data points and write the data into IoTDB.
 
-It is noteworthy that to use IoTDBSink, schema auto-creation in IoTDB should be enabled. 
-
 ```java
 import org.apache.iotdb.tsfile.file.metadata.enums.CompressionType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
@@ -61,6 +59,7 @@ public class FlinkIoTDBSink {
     options.setPort(6667);
     options.setUser("root");
     options.setPassword("root");
+    options.setStorageGroup("root.sg");
 
     // If the server enables auto_create_schema, then we do not need to register all timeseries
     // here.

@@ -52,27 +52,6 @@ public class SyncClientPool {
   }
 
   /**
-   * Get a client of the given node from the cache if one is available, or null.
-   *
-   * <p>IMPORTANT!!! The caller should check whether the return value is null or not!
-   *
-   * @param node the node want to connect
-   * @return if the node can connect, return the client, otherwise null
-   */
-  public Client getClientForRefresh(Node node) {
-    ClusterNode clusterNode = new ClusterNode(node);
-    // As clientCaches is ConcurrentHashMap, computeIfAbsent is thread safety.
-    Deque<Client> clientStack = clientCaches.computeIfAbsent(clusterNode, n -> new ArrayDeque<>());
-    synchronized (clientStack) {
-      if (clientStack.isEmpty()) {
-        return null;
-      } else {
-        return clientStack.poll();
-      }
-    }
-  }
-
-  /**
    * See getClient(Node node, boolean activatedOnly)
    *
    * @param node the node want to connect
@@ -101,7 +80,7 @@ public class SyncClientPool {
 
     // As clientCaches is ConcurrentHashMap, computeIfAbsent is thread safety.
     Deque<Client> clientStack = clientCaches.computeIfAbsent(clusterNode, n -> new ArrayDeque<>());
-    synchronized (clientStack) {
+    synchronized (this) {
       if (clientStack.isEmpty()) {
         int nodeClientNum = nodeClientNumMap.getOrDefault(clusterNode, 0);
         if (nodeClientNum >= maxConnectionForEachNode) {
@@ -134,7 +113,7 @@ public class SyncClientPool {
     long waitStart = System.currentTimeMillis();
     while (clientStack.isEmpty()) {
       try {
-        clientStack.wait(waitClientTimeoutMS);
+        this.wait(waitClientTimeoutMS);
         if (clientStack.isEmpty()
             && System.currentTimeMillis() - waitStart >= waitClientTimeoutMS) {
           logger.warn(
@@ -165,7 +144,7 @@ public class SyncClientPool {
     ClusterNode clusterNode = new ClusterNode(node);
     // As clientCaches is ConcurrentHashMap, computeIfAbsent is thread safety.
     Deque<Client> clientStack = clientCaches.computeIfAbsent(clusterNode, n -> new ArrayDeque<>());
-    synchronized (clientStack) {
+    synchronized (this) {
       if (client.getInputProtocol() != null && client.getInputProtocol().getTransport().isOpen()) {
         clientStack.push(client);
         NodeStatusManager.getINSTANCE().activate(node);
@@ -179,7 +158,7 @@ public class SyncClientPool {
           NodeStatusManager.getINSTANCE().deactivate(node);
         }
       }
-      clientStack.notifyAll();
+      this.notifyAll();
     }
   }
 

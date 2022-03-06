@@ -52,7 +52,7 @@ public class ChunkDataIterator implements IPointReader {
       return true;
     }
     while (chunkReader.hasNextSatisfiedPage()) {
-      data = chunkReader.nextPageData();
+      data = chunkReader.nextPageData(false);
       if (data.hasCurrent()) {
         return true;
       }

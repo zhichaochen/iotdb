@@ -19,7 +19,6 @@
 
 package org.apache.iotdb.tsfile.write;
 
-import org.apache.iotdb.tsfile.constant.TestConstant;
 import org.apache.iotdb.tsfile.exception.encoding.TsFileEncodingException;
 import org.apache.iotdb.tsfile.exception.write.NoMeasurementException;
 import org.apache.iotdb.tsfile.exception.write.WriteProcessException;
@@ -48,10 +47,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class TsFileWriterTest {
   TsFileWriter writer = null;
@@ -61,12 +57,7 @@ public class TsFileWriterTest {
   @Before
   public void setUp() {
     try {
-      File outputDir = new File(TestConstant.BASE_OUTPUT_PATH);
-      if (!outputDir.exists()) {
-        Assert.assertTrue(outputDir.mkdirs());
-      }
-      writer =
-          new TsFileWriter(new File(TestConstant.BASE_OUTPUT_PATH + "tsfileWriter-" + fileName));
+      writer = new TsFileWriter(new File("target/tsfileWriter-" + fileName));
       addMeasurement();
     } catch (IOException e) {
       e.printStackTrace();
@@ -80,8 +71,7 @@ public class TsFileWriterTest {
       closeFile();
     }
     try {
-      Files.deleteIfExists(
-          new File(TestConstant.BASE_OUTPUT_PATH + "tsfileWriter-" + fileName).toPath());
+      Files.deleteIfExists(new File("target/tsfileWriter-" + fileName).toPath());
     } catch (IOException e) {
       e.printStackTrace();
       fail(e.getMessage());
@@ -280,8 +270,7 @@ public class TsFileWriterTest {
     // using TsFileReader for test
     try {
       ReadOnlyTsFile readOnlyTsFile =
-          new ReadOnlyTsFile(
-              new TsFileSequenceReader(TestConstant.BASE_OUTPUT_PATH + "tsfileWriter-" + fileName));
+          new ReadOnlyTsFile(new TsFileSequenceReader("target/tsfileWriter-" + fileName));
       QueryDataSet dataSet =
           readOnlyTsFile.query(
               QueryExpression.create()
@@ -302,8 +291,7 @@ public class TsFileWriterTest {
   private void readOneRow(int s2Value) {
     try {
       ReadOnlyTsFile readOnlyTsFile =
-          new ReadOnlyTsFile(
-              new TsFileSequenceReader(TestConstant.BASE_OUTPUT_PATH + "tsfileWriter-" + fileName));
+          new ReadOnlyTsFile(new TsFileSequenceReader("target/tsfileWriter-" + fileName));
       QueryDataSet dataSet =
           readOnlyTsFile.query(
               QueryExpression.create()

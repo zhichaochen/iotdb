@@ -45,25 +45,29 @@ public class CountAggrResult extends AggregateResult {
 
   @Override
   public void updateResultFromStatistics(Statistics statistics) {
-    setLongValue(getLongValue() + statistics.getCount());
+    long preValue = getLongValue();
+    preValue += statistics.getCount();
+    setLongValue(preValue);
   }
 
   @Override
   public void updateResultFromPageData(BatchData dataInThisPage) {
-    setLongValue(getLongValue() + dataInThisPage.length());
+    int cnt = dataInThisPage.length();
+    long preValue = getLongValue();
+    preValue += cnt;
+    setLongValue(preValue);
   }
 
   @Override
   public void updateResultFromPageData(BatchData dataInThisPage, long minBound, long maxBound) {
-    int cnt = 0;
     while (dataInThisPage.hasCurrent()) {
       if (dataInThisPage.currentTime() >= maxBound || dataInThisPage.currentTime() < minBound) {
         break;
       }
-      cnt++;
+      long preValue = getLongValue();
+      setLongValue(++preValue);
       dataInThisPage.next();
     }
-    setLongValue(getLongValue() + cnt);
   }
 
   @Override
@@ -76,7 +80,10 @@ public class CountAggrResult extends AggregateResult {
         cnt++;
       }
     }
-    setLongValue(getLongValue() + cnt);
+
+    long preValue = getLongValue();
+    preValue += cnt;
+    setLongValue(preValue);
   }
 
   @Override
@@ -87,7 +94,10 @@ public class CountAggrResult extends AggregateResult {
         cnt++;
       }
     }
-    setLongValue(getLongValue() + cnt);
+
+    long preValue = getLongValue();
+    preValue += cnt;
+    setLongValue(preValue);
   }
 
   @Override

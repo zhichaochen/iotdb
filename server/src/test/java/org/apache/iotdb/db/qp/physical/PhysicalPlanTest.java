@@ -28,8 +28,28 @@ import org.apache.iotdb.db.exception.runtime.SQLParserException;
 import org.apache.iotdb.db.metadata.PartialPath;
 import org.apache.iotdb.db.qp.Planner;
 import org.apache.iotdb.db.qp.logical.Operator.OperatorType;
-import org.apache.iotdb.db.qp.physical.crud.*;
-import org.apache.iotdb.db.qp.physical.sys.*;
+import org.apache.iotdb.db.qp.physical.crud.AggregationPlan;
+import org.apache.iotdb.db.qp.physical.crud.DeletePlan;
+import org.apache.iotdb.db.qp.physical.crud.FillQueryPlan;
+import org.apache.iotdb.db.qp.physical.crud.GroupByTimeFillPlan;
+import org.apache.iotdb.db.qp.physical.crud.GroupByTimePlan;
+import org.apache.iotdb.db.qp.physical.crud.LastQueryPlan;
+import org.apache.iotdb.db.qp.physical.crud.QueryPlan;
+import org.apache.iotdb.db.qp.physical.crud.RawDataQueryPlan;
+import org.apache.iotdb.db.qp.physical.crud.UDTFPlan;
+import org.apache.iotdb.db.qp.physical.sys.AuthorPlan;
+import org.apache.iotdb.db.qp.physical.sys.CreateFunctionPlan;
+import org.apache.iotdb.db.qp.physical.sys.CreateTimeSeriesPlan;
+import org.apache.iotdb.db.qp.physical.sys.CreateTriggerPlan;
+import org.apache.iotdb.db.qp.physical.sys.DataAuthPlan;
+import org.apache.iotdb.db.qp.physical.sys.DropFunctionPlan;
+import org.apache.iotdb.db.qp.physical.sys.DropTriggerPlan;
+import org.apache.iotdb.db.qp.physical.sys.LoadConfigurationPlan;
+import org.apache.iotdb.db.qp.physical.sys.OperateFilePlan;
+import org.apache.iotdb.db.qp.physical.sys.ShowPlan;
+import org.apache.iotdb.db.qp.physical.sys.ShowTriggersPlan;
+import org.apache.iotdb.db.qp.physical.sys.StartTriggerPlan;
+import org.apache.iotdb.db.qp.physical.sys.StopTriggerPlan;
 import org.apache.iotdb.db.query.executor.fill.LinearFill;
 import org.apache.iotdb.db.query.executor.fill.PreviousFill;
 import org.apache.iotdb.db.query.udf.service.UDFRegistrationService;
@@ -55,7 +75,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -969,58 +988,34 @@ public class PhysicalPlanTest {
     OperateFilePlan plan = (OperateFilePlan) processor.parseSQLToPhysicalPlan(metadata);
     assertEquals(
         String.format(
-            "OperateFilePlan{file=%s, targetDir=null, autoCreateSchema=true, sgLevel=1, verify=true, "
-                + "operatorType=LOAD_FILES}",
+            "OperateFilePlan{file=%s, targetDir=null, autoCreateSchema=true, sgLevel=1, operatorType=LOAD_FILES}",
             filePath),
         plan.toString());
 
-    metadata = String.format("load \"%s\" autoregister=true", filePath);
+    metadata = String.format("load \"%s\" true", filePath);
     processor = new Planner();
     plan = (OperateFilePlan) processor.parseSQLToPhysicalPlan(metadata);
     assertEquals(
         String.format(
-            "OperateFilePlan{file=%s, targetDir=null, autoCreateSchema=true, sgLevel=1, verify=true, "
-                + "operatorType=LOAD_FILES}",
+            "OperateFilePlan{file=%s, targetDir=null, autoCreateSchema=true, sgLevel=1, operatorType=LOAD_FILES}",
             filePath),
         plan.toString());
 
-    metadata = String.format("load \"%s\" autoregister=false", filePath);
+    metadata = String.format("load \"%s\" false", filePath);
     processor = new Planner();
     plan = (OperateFilePlan) processor.parseSQLToPhysicalPlan(metadata);
     assertEquals(
         String.format(
-            "OperateFilePlan{file=%s, targetDir=null, autoCreateSchema=false, sgLevel=1, verify=true, "
-                + "operatorType=LOAD_FILES}",
+            "OperateFilePlan{file=%s, targetDir=null, autoCreateSchema=false, sgLevel=1, operatorType=LOAD_FILES}",
             filePath),
         plan.toString());
 
-    metadata = String.format("load \"%s\" autoregister=true,sglevel=3", filePath);
+    metadata = String.format("load \"%s\" true 3", filePath);
     processor = new Planner();
     plan = (OperateFilePlan) processor.parseSQLToPhysicalPlan(metadata);
     assertEquals(
         String.format(
-            "OperateFilePlan{file=%s, targetDir=null, autoCreateSchema=true, sgLevel=3, verify=true, "
-                + "operatorType=LOAD_FILES}",
-            filePath),
-        plan.toString());
-
-    metadata = String.format("load \"%s\" autoregister=true,sglevel=3,verify=false", filePath);
-    processor = new Planner();
-    plan = (OperateFilePlan) processor.parseSQLToPhysicalPlan(metadata);
-    assertEquals(
-        String.format(
-            "OperateFilePlan{file=%s, targetDir=null, autoCreateSchema=true, sgLevel=3, verify=false, "
-                + "operatorType=LOAD_FILES}",
-            filePath),
-        plan.toString());
-
-    metadata = String.format("load \"%s\" autoregister=true,sglevel=3,verify=true", filePath);
-    processor = new Planner();
-    plan = (OperateFilePlan) processor.parseSQLToPhysicalPlan(metadata);
-    assertEquals(
-        String.format(
-            "OperateFilePlan{file=%s, targetDir=null, autoCreateSchema=true, sgLevel=3, verify=true, "
-                + "operatorType=LOAD_FILES}",
+            "OperateFilePlan{file=%s, targetDir=null, autoCreateSchema=true, sgLevel=3, operatorType=LOAD_FILES}",
             filePath),
         plan.toString());
   }
@@ -1033,7 +1028,7 @@ public class PhysicalPlanTest {
     OperateFilePlan plan = (OperateFilePlan) processor.parseSQLToPhysicalPlan(metadata);
     assertEquals(
         String.format(
-            "OperateFilePlan{file=%s, targetDir=null, autoCreateSchema=false, sgLevel=0, verify=false, operatorType=REMOVE_FILE}",
+            "OperateFilePlan{file=%s, targetDir=null, autoCreateSchema=false, sgLevel=0, operatorType=REMOVE_FILE}",
             filePath),
         plan.toString());
   }
@@ -1047,7 +1042,7 @@ public class PhysicalPlanTest {
     OperateFilePlan plan = (OperateFilePlan) processor.parseSQLToPhysicalPlan(metadata);
     assertEquals(
         String.format(
-            "OperateFilePlan{file=%s, targetDir=%s, autoCreateSchema=false, sgLevel=0, verify=false, operatorType=MOVE_FILE}",
+            "OperateFilePlan{file=%s, targetDir=%s, autoCreateSchema=false, sgLevel=0, operatorType=MOVE_FILE}",
             filePath, targetDir),
         plan.toString());
   }
@@ -1219,64 +1214,5 @@ public class PhysicalPlanTest {
     ShowTriggersPlan plan = (ShowTriggersPlan) processor.parseSQLToPhysicalPlan(sql);
     Assert.assertTrue(plan.isQuery());
     Assert.assertEquals("root.sg1.d1.s1", plan.getPath().getFullPath());
-  }
-
-  @Test
-  public void testShowFunction() throws QueryProcessException {
-    String sql = "SHOW FUNCTIONS";
-
-    ShowFunctionsPlan plan = (ShowFunctionsPlan) processor.parseSQLToPhysicalPlan(sql);
-    Assert.assertTrue(plan.isQuery());
-    Assert.assertEquals(ShowPlan.ShowContentType.FUNCTIONS, plan.getShowContentType());
-  }
-
-  @Test
-  public void testCreateStorageGroup() throws QueryProcessException {
-    String sqlStr = "CREATE STORAGE GROUP root.sg";
-    SetStorageGroupPlan plan = (SetStorageGroupPlan) processor.parseSQLToPhysicalPlan(sqlStr);
-    assertEquals("SetStorageGroup{root.sg}", plan.toString());
-  }
-
-  @Test
-  public void testRegexpQuery() throws QueryProcessException, MetadataException {
-    IoTDB.metaManager.createTimeseries(
-        new PartialPath("root.vehicle.d5.s1"),
-        TSDataType.TEXT,
-        TSEncoding.PLAIN,
-        CompressionType.UNCOMPRESSED,
-        null);
-
-    String sqlStr = "SELECT * FROM root.vehicle.d5 WHERE s1 REGEXP 'string*'";
-    PhysicalPlan plan = processor.parseSQLToPhysicalPlan(sqlStr);
-    IExpression queryFilter = ((RawDataQueryPlan) plan).getExpression();
-    IExpression expect =
-        new SingleSeriesExpression(new Path("root.vehicle.d5", "s1"), ValueFilter.like("string*"));
-    assertEquals(expect.toString(), queryFilter.toString());
-  }
-
-  @Test(expected = UnsupportedOperationException.class)
-  public void testSerializationError() {
-    ShowDevicesPlan plan = new ShowDevicesPlan();
-
-    ByteBuffer byteBuffer = ByteBuffer.allocate(10);
-    plan.serialize(byteBuffer);
-  }
-
-  @Test(expected = NullPointerException.class)
-  public void testSerializationRollback() {
-    InsertRowPlan plan = new InsertRowPlan();
-    // only serialize time
-    plan.setTime(0L);
-
-    ByteBuffer byteBuffer = ByteBuffer.allocate(10000);
-    byteBuffer.putInt(0);
-    long position = byteBuffer.position();
-
-    try {
-      plan.serialize(byteBuffer);
-    } catch (NullPointerException e) {
-      Assert.assertEquals(position, byteBuffer.position());
-      throw e;
-    }
   }
 }

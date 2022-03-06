@@ -109,13 +109,18 @@ public class ChunkReader implements IChunkReader {
    *
    * @return next data batch
    * @throws IOException IOException
+   * @param isCompaction
    */
   @Override
-  public BatchData nextPageData() throws IOException {
+  public BatchData nextPageData(boolean isCompaction) throws IOException {
     if (pageReaderList.isEmpty()) {
       throw new IOException("No more page");
     }
-    return pageReaderList.remove(0).getAllSatisfiedPageData();
+    BatchData batchData = pageReaderList.remove(0).getAllSatisfiedPageData();
+    if (!isCompaction) {
+      System.out.println("***read chunk data point:" + batchData.length());
+    }
+    return batchData;
   }
 
   private void skipBytesInStreamByLength(long length) {

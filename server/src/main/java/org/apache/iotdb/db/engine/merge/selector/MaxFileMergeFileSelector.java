@@ -155,7 +155,7 @@ public class MaxFileMergeFileSelector implements IMergeFileSelector {
       if (seqSelectedNum != resource.getSeqFiles().size()) {
         selectOverlappedSeqFiles(unseqFile);
       }
-      boolean isClosed = checkChoosable(unseqFile);
+      boolean isClosed = checkClosed(unseqFile);
       if (!isClosed) {
         tmpSelectedSeqFiles.clear();
         unseqIndex++;
@@ -168,10 +168,7 @@ public class MaxFileMergeFileSelector implements IMergeFileSelector {
           useTightBound
               ? calculateTightMemoryCost(unseqFile, tmpSelectedSeqFiles, startTime, timeLimit)
               : calculateLooseMemoryCost(unseqFile, tmpSelectedSeqFiles, startTime, timeLimit);
-      if (!updateSelectedFiles(newCost, unseqFile)) {
-        // older unseq files must be merged before newer ones
-        break;
-      }
+      updateSelectedFiles(newCost, unseqFile);
 
       tmpSelectedSeqFiles.clear();
       unseqIndex++;
@@ -184,7 +181,7 @@ public class MaxFileMergeFileSelector implements IMergeFileSelector {
     }
   }
 
-  private boolean updateSelectedFiles(long newCost, TsFileResource unseqFile) {
+  private void updateSelectedFiles(long newCost, TsFileResource unseqFile) {
     if (totalCost + newCost < memoryBudget) {
       selectedUnseqFiles.add(unseqFile);
       maxSeqFileCost = tempMaxSeqFileCost;
@@ -201,24 +198,21 @@ public class MaxFileMergeFileSelector implements IMergeFileSelector {
           tmpSelectedSeqFiles,
           newCost,
           totalCost);
-      return true;
     }
-    return false;
   }
 
-  private boolean checkChoosable(TsFileResource unseqFile) {
-    boolean choosable = unseqFile.isClosed() && !unseqFile.isMerging();
-    if (!choosable) {
+  private boolean checkClosed(TsFileResource unseqFile) {
+    boolean isClosed = unseqFile.isClosed();
+    if (!isClosed) {
       return false;
     }
     for (Integer seqIdx : tmpSelectedSeqFiles) {
-      if (!resource.getSeqFiles().get(seqIdx).isClosed()
-          || resource.getSeqFiles().get(seqIdx).isMerging()) {
-        choosable = false;
+      if (!resource.getSeqFiles().get(seqIdx).isClosed()) {
+        isClosed = false;
         break;
       }
     }
-    return choosable;
+    return isClosed;
   }
 
   private void selectOverlappedSeqFiles(TsFileResource unseqFile) {

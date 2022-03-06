@@ -57,7 +57,7 @@ public class StorageGroupMNodePlan extends MNodePlan {
   }
 
   @Override
-  public void serializeImpl(ByteBuffer buffer) {
+  public void serialize(ByteBuffer buffer) {
     buffer.put((byte) PhysicalPlanType.STORAGE_GROUP_MNODE.ordinal());
     putString(buffer, name);
     buffer.putLong(dataTTL);

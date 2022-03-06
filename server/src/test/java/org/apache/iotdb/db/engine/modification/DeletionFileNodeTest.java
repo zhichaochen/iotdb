@@ -26,7 +26,6 @@ import org.apache.iotdb.db.engine.modification.io.LocalTextModificationAccessor;
 import org.apache.iotdb.db.engine.querycontext.QueryDataSource;
 import org.apache.iotdb.db.engine.querycontext.ReadOnlyMemChunk;
 import org.apache.iotdb.db.engine.storagegroup.StorageGroupProcessor;
-import org.apache.iotdb.db.engine.storagegroup.TsFileResource;
 import org.apache.iotdb.db.exception.StorageEngineException;
 import org.apache.iotdb.db.exception.metadata.IllegalPathException;
 import org.apache.iotdb.db.exception.metadata.MetadataException;
@@ -127,18 +126,14 @@ public class DeletionFileNodeTest {
             new PartialPath(processorName + TsFileConstant.PATH_SEPARATOR + measurements[5]), null);
     List<StorageGroupProcessor> list =
         StorageEngine.getInstance()
-            .mergeLockAndInitQueryDataSource(
-                Collections.singletonList((PartialPath) expression.getSeriesPath()),
-                TEST_QUERY_CONTEXT,
-                null);
+            .mergeLock(Collections.singletonList((PartialPath) expression.getSeriesPath()));
     try {
       QueryDataSource dataSource =
           QueryResourceManager.getInstance()
               .getQueryDataSource(
                   (PartialPath) expression.getSeriesPath(), TEST_QUERY_CONTEXT, null);
-      TsFileResource tsFileResource = dataSource.getSeqResources().get(0);
       List<ReadOnlyMemChunk> timeValuePairs =
-          tsFileResource.getReadOnlyMemChunk((PartialPath) expression.getSeriesPath());
+          dataSource.getSeqResources().get(0).getReadOnlyMemChunk();
       int count = 0;
       for (ReadOnlyMemChunk chunk : timeValuePairs) {
         IPointReader iterator = chunk.getPointReader();
@@ -255,19 +250,16 @@ public class DeletionFileNodeTest {
 
     List<StorageGroupProcessor> list =
         StorageEngine.getInstance()
-            .mergeLockAndInitQueryDataSource(
-                Collections.singletonList((PartialPath) expression.getSeriesPath()),
-                TEST_QUERY_CONTEXT,
-                null);
+            .mergeLock(Collections.singletonList((PartialPath) expression.getSeriesPath()));
 
     try {
       QueryDataSource dataSource =
           QueryResourceManager.getInstance()
               .getQueryDataSource(
                   (PartialPath) expression.getSeriesPath(), TEST_QUERY_CONTEXT, null);
-      TsFileResource tsFileResource = dataSource.getUnseqResources().get(0);
+
       List<ReadOnlyMemChunk> timeValuePairs =
-          tsFileResource.getReadOnlyMemChunk((PartialPath) expression.getSeriesPath());
+          dataSource.getUnseqResources().get(0).getReadOnlyMemChunk();
       int count = 0;
       for (ReadOnlyMemChunk chunk : timeValuePairs) {
         IPointReader iterator = chunk.getPointReader();

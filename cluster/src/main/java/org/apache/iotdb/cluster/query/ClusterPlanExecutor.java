@@ -34,7 +34,6 @@ import org.apache.iotdb.cluster.rpc.thrift.Node;
 import org.apache.iotdb.cluster.server.RaftServer;
 import org.apache.iotdb.cluster.server.member.DataGroupMember;
 import org.apache.iotdb.cluster.server.member.MetaGroupMember;
-import org.apache.iotdb.db.conf.IoTDBConstant;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.engine.StorageEngine;
 import org.apache.iotdb.db.exception.StorageEngineException;
@@ -65,10 +64,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -128,160 +125,6 @@ public class ClusterPlanExecutor extends PlanExecutor {
   }
 
   @Override
-  protected int getDevicesNum(PartialPath path) throws MetadataException {
-    // make sure this node knows all storage groups
-    try {
-      metaGroupMember.syncLeaderWithConsistencyCheck(false);
-    } catch (CheckConsistencyException e) {
-      throw new MetadataException(e);
-    }
-    Map<String, String> sgPathMap = IoTDB.metaManager.determineStorageGroup(path);
-    if (sgPathMap.isEmpty()) {
-      throw new PathNotExistException(path.getFullPath());
-    }
-    logger.debug("The storage groups of path {} are {}", path, sgPathMap.keySet());
-    int ret;
-    try {
-      ret = getDeviceCount(sgPathMap, path);
-    } catch (CheckConsistencyException e) {
-      throw new MetadataException(e);
-    }
-    logger.debug("The number of devices satisfying {} is {}", path, ret);
-    return ret;
-  }
-
-  private int getDeviceCount(Map<String, String> sgPathMap, PartialPath queryPath)
-      throws CheckConsistencyException, MetadataException {
-    AtomicInteger result = new AtomicInteger();
-    // split the paths by the data group they belong to
-    Map<PartitionGroup, List<String>> groupPathMap = new HashMap<>();
-    for (String storageGroupName : sgPathMap.keySet()) {
-      PartialPath pathUnderSG = new PartialPath(storageGroupName);
-      // find the data group that should hold the device schemas of the storage group
-      PartitionGroup partitionGroup =
-          metaGroupMember.getPartitionTable().route(storageGroupName, 0);
-      PartialPath targetPath;
-      // If storage group node length is larger than the one of queryPath, we query the device count
-      // of the storage group directly
-      if (pathUnderSG.getNodeLength() >= queryPath.getNodeLength()) {
-        targetPath = pathUnderSG;
-      } else {
-        // Or we replace the prefix of queryPath with the storage group as the target queryPath
-        String[] targetNodes = new String[queryPath.getNodeLength()];
-        for (int i = 0; i < queryPath.getNodeLength(); i++) {
-          if (i < pathUnderSG.getNodeLength()) {
-            targetNodes[i] = pathUnderSG.getNodes()[i];
-          } else {
-            targetNodes[i] = queryPath.getNodes()[i];
-          }
-        }
-        targetPath = new PartialPath(targetNodes);
-      }
-      if (partitionGroup.contains(metaGroupMember.getThisNode())) {
-        // this node is a member of the group, perform a local query after synchronizing with the
-        // leader
-        metaGroupMember
-            .getLocalDataMember(partitionGroup.getHeader())
-            .syncLeaderWithConsistencyCheck(false);
-        int localResult = getLocalDeviceCount(targetPath);
-        logger.debug(
-            "{}: get device count of {} locally, result {}",
-            metaGroupMember.getName(),
-            partitionGroup,
-            localResult);
-        result.addAndGet(localResult);
-      } else {
-        // batch the queries of the same group to reduce communication
-        groupPathMap
-            .computeIfAbsent(partitionGroup, p -> new ArrayList<>())
-            .add(targetPath.getFullPath());
-      }
-    }
-    if (groupPathMap.isEmpty()) {
-      return result.get();
-    }
-
-    ExecutorService remoteQueryThreadPool = Executors.newFixedThreadPool(groupPathMap.size());
-    List<Future<Void>> remoteFutures = new ArrayList<>();
-    // query each data group separately
-    for (Entry<PartitionGroup, List<String>> partitionGroupPathEntry : groupPathMap.entrySet()) {
-      PartitionGroup partitionGroup = partitionGroupPathEntry.getKey();
-      List<String> pathsToQuery = partitionGroupPathEntry.getValue();
-      remoteFutures.add(
-          remoteQueryThreadPool.submit(
-              () -> {
-                try {
-                  result.addAndGet(getRemoteDeviceCount(partitionGroup, pathsToQuery));
-                } catch (MetadataException e) {
-                  logger.warn(
-                      "Cannot get remote device count of {} from {}",
-                      pathsToQuery,
-                      partitionGroup,
-                      e);
-                }
-                return null;
-              }));
-    }
-    waitForThreadPool(remoteFutures, remoteQueryThreadPool, "getDeviceCount()");
-
-    return result.get();
-  }
-
-  private int getLocalDeviceCount(PartialPath path) throws MetadataException {
-    return IoTDB.metaManager.getDevicesNum(path);
-  }
-
-  private int getRemoteDeviceCount(PartitionGroup partitionGroup, List<String> pathsToCount)
-      throws MetadataException {
-    // choose the node with lowest latency or highest throughput
-    List<Node> coordinatedNodes = QueryCoordinator.getINSTANCE().reorderNodes(partitionGroup);
-    for (Node node : coordinatedNodes) {
-      try {
-        Integer count;
-        if (ClusterDescriptor.getInstance().getConfig().isUseAsyncServer()) {
-          AsyncDataClient client =
-              metaGroupMember
-                  .getClientProvider()
-                  .getAsyncDataClient(node, RaftServer.getReadOperationTimeoutMS());
-          client.setTimeout(RaftServer.getReadOperationTimeoutMS());
-          count =
-              SyncClientAdaptor.getDeviceCount(client, partitionGroup.getHeader(), pathsToCount);
-        } else {
-          try (SyncDataClient syncDataClient =
-              metaGroupMember
-                  .getClientProvider()
-                  .getSyncDataClient(node, RaftServer.getReadOperationTimeoutMS())) {
-            try {
-              syncDataClient.setTimeout(RaftServer.getReadOperationTimeoutMS());
-              count = syncDataClient.getDeviceCount(partitionGroup.getHeader(), pathsToCount);
-            } catch (TException e) {
-              // the connection may be broken, close it to avoid it being reused
-              syncDataClient.getInputProtocol().getTransport().close();
-              throw e;
-            }
-          }
-        }
-        logger.debug(
-            "{}: get device count of {} from {}, result {}",
-            metaGroupMember.getName(),
-            partitionGroup,
-            node,
-            count);
-        if (count != null) {
-          return count;
-        }
-      } catch (IOException | TException e) {
-        throw new MetadataException(e);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new MetadataException(e);
-      }
-    }
-    logger.warn("Cannot get devices count of {} from {}", pathsToCount, partitionGroup);
-    return 0;
-  }
-
-  @Override
   protected int getPathsNum(PartialPath path) throws MetadataException {
     return getNodesNumInGivenLevel(path, -1);
   }
@@ -294,7 +137,6 @@ public class ClusterPlanExecutor extends PlanExecutor {
     } catch (CheckConsistencyException e) {
       throw new MetadataException(e);
     }
-
     // get all storage groups this path may belong to
     // the key is the storage group name and the value is the path to be queried with storage group
     // added, e.g:
@@ -305,37 +147,9 @@ public class ClusterPlanExecutor extends PlanExecutor {
       throw new PathNotExistException(path.getFullPath());
     }
     logger.debug("The storage groups of path {} are {}", path, sgPathMap.keySet());
-    int ret = 0;
+    int ret;
     try {
-      // level >= 0 is the COUNT NODE query
-      if (level >= 0) {
-        int prefixPartIdx = 0;
-        for (; prefixPartIdx < path.getNodeLength(); prefixPartIdx++) {
-          if (path.getNodes()[prefixPartIdx].equals(IoTDBConstant.PATH_WILDCARD)) {
-            break;
-          }
-        }
-        // if level is less than the query path level, there's no suitable node
-        if (level < prefixPartIdx - 1) {
-          return 0;
-        }
-        Set<String> deletedSg = new HashSet<>();
-        Set<PartialPath> matchedPath = new HashSet<>(0);
-        for (String sg : sgPathMap.keySet()) {
-          PartialPath p = new PartialPath(sg);
-          // if the storage group path level is larger than the query level, then the prefix must be
-          // a suitable node and there's no need to query children nodes later
-          if (p.getNodeLength() - 1 >= level) {
-            deletedSg.add(sg);
-            matchedPath.add(new PartialPath(Arrays.copyOfRange(p.getNodes(), 0, level + 1)));
-          }
-        }
-        for (String sg : deletedSg) {
-          sgPathMap.remove(sg);
-        }
-        ret += matchedPath.size();
-      }
-      ret += getPathCount(sgPathMap, level);
+      ret = getPathCount(sgPathMap, level);
     } catch (CheckConsistencyException e) {
       throw new MetadataException(e);
     }
@@ -445,13 +259,8 @@ public class ClusterPlanExecutor extends PlanExecutor {
               metaGroupMember
                   .getClientProvider()
                   .getSyncDataClient(node, RaftServer.getReadOperationTimeoutMS())) {
-            try {
-              count = syncDataClient.getPathCount(partitionGroup.getHeader(), pathsToQuery, level);
-            } catch (TException e) {
-              // the connection may be broken, close it to avoid it being reused
-              syncDataClient.getInputProtocol().getTransport().close();
-              throw e;
-            }
+            syncDataClient.setTimeout(RaftServer.getReadOperationTimeoutMS());
+            count = syncDataClient.getPathCount(partitionGroup.getHeader(), pathsToQuery, level);
           }
         }
         logger.debug(
@@ -554,14 +363,8 @@ public class ClusterPlanExecutor extends PlanExecutor {
               metaGroupMember
                   .getClientProvider()
                   .getSyncDataClient(node, RaftServer.getReadOperationTimeoutMS())) {
-            try {
-              paths =
-                  syncDataClient.getNodeList(group.getHeader(), schemaPattern.getFullPath(), level);
-            } catch (TException e) {
-              // the connection may be broken, close it to avoid it being reused
-              syncDataClient.getInputProtocol().getTransport().close();
-              throw e;
-            }
+            paths =
+                syncDataClient.getNodeList(group.getHeader(), schemaPattern.getFullPath(), level);
           }
         }
         if (paths != null) {
@@ -646,14 +449,8 @@ public class ClusterPlanExecutor extends PlanExecutor {
               metaGroupMember
                   .getClientProvider()
                   .getSyncDataClient(node, RaftServer.getReadOperationTimeoutMS())) {
-            try {
-              nextChildrenNodes =
-                  syncDataClient.getChildNodeInNextLevel(group.getHeader(), path.getFullPath());
-            } catch (TException e) {
-              // the connection may be broken, close it to avoid it being reused
-              syncDataClient.getInputProtocol().getTransport().close();
-              throw e;
-            }
+            nextChildrenNodes =
+                syncDataClient.getChildNodeInNextLevel(group.getHeader(), path.getFullPath());
           }
         }
         if (nextChildrenNodes != null) {
@@ -761,14 +558,8 @@ public class ClusterPlanExecutor extends PlanExecutor {
               metaGroupMember
                   .getClientProvider()
                   .getSyncDataClient(node, RaftServer.getReadOperationTimeoutMS())) {
-            try {
-              nextChildren =
-                  syncDataClient.getChildNodePathInNextLevel(group.getHeader(), path.getFullPath());
-            } catch (TException e) {
-              // the connection may be broken, close it to avoid it being reused
-              syncDataClient.getInputProtocol().getTransport().close();
-              throw e;
-            }
+            nextChildren =
+                syncDataClient.getChildNodePathInNextLevel(group.getHeader(), path.getFullPath());
           }
         }
         if (nextChildren != null) {

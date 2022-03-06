@@ -23,7 +23,6 @@ import org.apache.iotdb.db.exception.query.QueryProcessException;
 import org.apache.iotdb.db.metadata.PartialPath;
 import org.apache.iotdb.db.qp.logical.Operator.OperatorType;
 import org.apache.iotdb.db.qp.physical.BatchPlan;
-import org.apache.iotdb.db.utils.StatusUtils;
 import org.apache.iotdb.service.rpc.thrift.TSStatus;
 
 import java.io.DataOutputStream;
@@ -92,8 +91,6 @@ public class InsertMultiTabletPlan extends InsertPlan implements BatchPlan {
   /** record the result of creation of time series */
   private Map<Integer, TSStatus> results = new TreeMap<>();
 
-  private List<PartialPath> prefixPaths;
-
   boolean[] isExecuted;
 
   public InsertMultiTabletPlan() {
@@ -127,17 +124,6 @@ public class InsertMultiTabletPlan extends InsertPlan implements BatchPlan {
       result.addAll(insertTabletPlan.getPaths());
     }
     return result;
-  }
-
-  public List<PartialPath> getPrefixPaths() {
-    if (prefixPaths != null) {
-      return prefixPaths;
-    }
-    prefixPaths = new ArrayList<>(insertTabletPlanList.size());
-    for (InsertTabletPlan insertTabletPlan : insertTabletPlanList) {
-      prefixPaths.add(insertTabletPlan.getDeviceId());
-    }
-    return prefixPaths;
   }
 
   @Override
@@ -240,10 +226,6 @@ public class InsertMultiTabletPlan extends InsertPlan implements BatchPlan {
     return insertTabletPlanList;
   }
 
-  public TSStatus[] getFailingStatus() {
-    return StatusUtils.getFailingStatus(results, insertTabletPlanList.size());
-  }
-
   public void setResults(Map<Integer, TSStatus> results) {
     this.results = results;
   }
@@ -256,7 +238,7 @@ public class InsertMultiTabletPlan extends InsertPlan implements BatchPlan {
   }
 
   @Override
-  public void serializeImpl(ByteBuffer buffer) {
+  public void serialize(ByteBuffer buffer) {
     int type = PhysicalPlanType.MULTI_BATCH_INSERT.ordinal();
     buffer.put((byte) type);
     buffer.putInt(insertTabletPlanList.size());

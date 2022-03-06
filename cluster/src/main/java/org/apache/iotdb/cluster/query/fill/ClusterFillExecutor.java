@@ -19,36 +19,31 @@
 
 package org.apache.iotdb.cluster.query.fill;
 
-import org.apache.iotdb.cluster.query.reader.ClusterReaderFactory;
 import org.apache.iotdb.cluster.server.member.MetaGroupMember;
-import org.apache.iotdb.db.exception.StorageEngineException;
-import org.apache.iotdb.db.exception.query.QueryProcessException;
 import org.apache.iotdb.db.metadata.PartialPath;
-import org.apache.iotdb.db.qp.physical.crud.FillQueryPlan;
 import org.apache.iotdb.db.query.context.QueryContext;
 import org.apache.iotdb.db.query.executor.FillQueryExecutor;
 import org.apache.iotdb.db.query.executor.fill.IFill;
 import org.apache.iotdb.db.query.executor.fill.LinearFill;
 import org.apache.iotdb.db.query.executor.fill.PreviousFill;
-import org.apache.iotdb.db.query.reader.series.IReaderByTimestamp;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
-import org.apache.iotdb.tsfile.read.TimeValuePair;
-import org.apache.iotdb.tsfile.utils.TsPrimitiveType;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class ClusterFillExecutor extends FillQueryExecutor {
 
   private MetaGroupMember metaGroupMember;
-  private ClusterReaderFactory clusterReaderFactory;
 
-  public ClusterFillExecutor(FillQueryPlan plan, MetaGroupMember metaGroupMember) {
-    super(plan);
+  public ClusterFillExecutor(
+      List<PartialPath> selectedSeries,
+      List<TSDataType> dataTypes,
+      long queryTime,
+      Map<TSDataType, IFill> typeIFillMap,
+      MetaGroupMember metaGroupMember) {
+    super(selectedSeries, dataTypes, queryTime, typeIFillMap);
     this.metaGroupMember = metaGroupMember;
-    this.clusterReaderFactory = new ClusterReaderFactory(metaGroupMember);
   }
 
   @Override
@@ -58,8 +53,7 @@ public class ClusterFillExecutor extends FillQueryExecutor {
       TSDataType dataType,
       long queryTime,
       Set<String> deviceMeasurements,
-      QueryContext context)
-      throws QueryProcessException, StorageEngineException {
+      QueryContext context) {
     if (fill instanceof LinearFill) {
       IFill clusterFill = new ClusterLinearFill((LinearFill) fill, metaGroupMember);
       clusterFill.configureFill(path, dataType, queryTime, deviceMeasurements, context);
@@ -68,36 +62,7 @@ public class ClusterFillExecutor extends FillQueryExecutor {
       IFill clusterFill = new ClusterPreviousFill((PreviousFill) fill, metaGroupMember);
       clusterFill.configureFill(path, dataType, queryTime, deviceMeasurements, context);
       return clusterFill;
-    } else {
-      fill.configureFill(path, dataType, queryTime, deviceMeasurements, context);
-      return fill;
     }
-  }
-
-  @Override
-  protected List<TimeValuePair> getTimeValuePairs(QueryContext context)
-      throws QueryProcessException, StorageEngineException, IOException {
-    List<TimeValuePair> ret = new ArrayList<>(selectedSeries.size());
-
-    for (int i = 0; i < selectedSeries.size(); i++) {
-      PartialPath path = selectedSeries.get(i);
-      TSDataType dataType = dataTypes.get(i);
-      IReaderByTimestamp reader =
-          clusterReaderFactory.getReaderByTimestamp(
-              path,
-              plan.getAllMeasurementsInDevice(path.getDevice()),
-              dataTypes.get(i),
-              context,
-              plan.isAscending());
-
-      Object[] results = reader.getValuesInTimestamps(new long[] {queryTime}, 1);
-      if (results != null && results[0] != null) {
-        ret.add(new TimeValuePair(queryTime, TsPrimitiveType.getByType(dataType, results[0])));
-      } else {
-        ret.add(null);
-      }
-    }
-
-    return ret;
+    return null;
   }
 }

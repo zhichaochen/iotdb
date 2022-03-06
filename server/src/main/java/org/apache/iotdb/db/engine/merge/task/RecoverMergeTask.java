@@ -20,8 +20,8 @@
 package org.apache.iotdb.db.engine.merge.task;
 
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
-import org.apache.iotdb.db.engine.merge.recover.MergeLogAnalyzer;
-import org.apache.iotdb.db.engine.merge.recover.MergeLogAnalyzer.Status;
+import org.apache.iotdb.db.engine.merge.recover.LogAnalyzer;
+import org.apache.iotdb.db.engine.merge.recover.LogAnalyzer.Status;
 import org.apache.iotdb.db.engine.merge.recover.MergeLogger;
 import org.apache.iotdb.db.engine.merge.selector.MaxSeriesMergeFileSelector;
 import org.apache.iotdb.db.engine.storagegroup.TsFileResource;
@@ -31,12 +31,11 @@ import org.apache.iotdb.db.utils.MergeUtils;
 import org.apache.iotdb.tsfile.file.metadata.ChunkMetadata;
 import org.apache.iotdb.tsfile.write.writer.RestorableTsFileIOWriter;
 
-import org.h2.store.fs.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -52,7 +51,7 @@ public class RecoverMergeTask extends MergeTask {
 
   private static final Logger logger = LoggerFactory.getLogger(RecoverMergeTask.class);
 
-  private MergeLogAnalyzer analyzer;
+  private LogAnalyzer analyzer;
 
   public RecoverMergeTask(
       List<TsFileResource> seqFiles,
@@ -74,7 +73,7 @@ public class RecoverMergeTask extends MergeTask {
     }
     long startTime = System.currentTimeMillis();
 
-    analyzer = new MergeLogAnalyzer(resource, taskName, logFile, storageGroupName);
+    analyzer = new LogAnalyzer(resource, taskName, logFile, storageGroupName);
     Status status = analyzer.analyze();
     if (logger.isInfoEnabled()) {
       logger.info(
@@ -105,7 +104,7 @@ public class RecoverMergeTask extends MergeTask {
     }
   }
 
-  private void resumeAfterFilesLogged(boolean continueMerge) throws IOException, MetadataException {
+  private void resumeAfterFilesLogged(boolean continueMerge) throws IOException {
     if (continueMerge) {
       resumeMergeProgress();
       calculateConcurrentSeriesNum();
@@ -206,16 +205,16 @@ public class RecoverMergeTask extends MergeTask {
   // scan the metadata to compute how many chunks are merged/unmerged so at last we can decide to
   // move the merged chunks or the unmerged chunks
   private void recoverChunkCounts() throws IOException {
-    logger.info("{} recovered chunk counts", taskName);
+    logger.info("{} recovering chunk counts", taskName);
     int fileCnt = 1;
     for (TsFileResource tsFileResource : resource.getSeqFiles()) {
       logger.info(
-          "{} recovered {}  {}/{}",
+          "{} recovering {}  {}/{}",
           taskName,
           tsFileResource.getTsFile().getName(),
           fileCnt,
           resource.getSeqFiles().size());
-      RestorableTsFileIOWriter mergeFileWriter = resource.getMergeFileWriter(tsFileResource, true);
+      RestorableTsFileIOWriter mergeFileWriter = resource.getMergeFileWriter(tsFileResource);
       mergeFileWriter.makeMetadataVisible();
       mergeContext.getUnmergedChunkStartTimes().put(tsFileResource, new HashMap<>());
       List<PartialPath> pathsToRecover = analyzer.getMergedPaths();
@@ -288,15 +287,12 @@ public class RecoverMergeTask extends MergeTask {
     for (Entry<File, Long> entry : analyzer.getFileLastPositions().entrySet()) {
       File file = entry.getKey();
       Long lastPosition = entry.getValue();
-      if (file != null && file.exists() && file.length() != lastPosition && lastPosition != 0) {
-        try (FileOutputStream fileOutputStream = new FileOutputStream(file, true)) {
-          FileChannel channel = fileOutputStream.getChannel();
+      if (file.exists() && file.length() != lastPosition) {
+        try (FileInputStream fileInputStream = new FileInputStream(file)) {
+          FileChannel channel = fileInputStream.getChannel();
           channel.truncate(lastPosition);
           channel.close();
         }
-      } else if (file != null && lastPosition == 0) {
-        FileUtils.delete(file.getPath());
-        resource.closeAndRemoveWriter(file);
       }
     }
     analyzer.setFileLastPositions(null);

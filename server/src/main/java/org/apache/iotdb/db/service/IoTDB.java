@@ -37,6 +37,7 @@ import org.apache.iotdb.db.query.udf.service.UDFClassLoaderManager;
 import org.apache.iotdb.db.query.udf.service.UDFRegistrationService;
 import org.apache.iotdb.db.rescon.PrimitiveArrayManager;
 import org.apache.iotdb.db.rescon.SystemInfo;
+import org.apache.iotdb.db.rescon.TVListAllocator;
 import org.apache.iotdb.db.sync.receiver.SyncServerManager;
 import org.apache.iotdb.db.writelog.manager.MultiFileLogNodeManager;
 
@@ -52,7 +53,6 @@ public class IoTDB implements IoTDBMBean {
       String.format("%s:%s=%s", IoTDBConstant.IOTDB_PACKAGE, IoTDBConstant.JMX_TYPE, "IoTDB");
   private RegisterManager registerManager = new RegisterManager();
   public static MManager metaManager = MManager.getInstance();
-  private static boolean clusterMode = false;
 
   public static IoTDB getInstance() {
     return IoTDBHolder.INSTANCE;
@@ -70,14 +70,6 @@ public class IoTDB implements IoTDBMBean {
 
   public static void setMetaManager(MManager metaManager) {
     IoTDB.metaManager = metaManager;
-  }
-
-  public static void setClusterMode() {
-    IoTDB.clusterMode = true;
-  }
-
-  public static boolean isClusterMode() {
-    return IoTDB.clusterMode;
   }
 
   public void active() {
@@ -112,6 +104,7 @@ public class IoTDB implements IoTDBMBean {
     registerManager.register(FlushManager.getInstance());
     registerManager.register(MultiFileLogNodeManager.getInstance());
     registerManager.register(Measurement.INSTANCE);
+    registerManager.register(TVListAllocator.getInstance());
     registerManager.register(CacheHitRatioMonitor.getInstance());
     registerManager.register(MergeManager.getINSTANCE());
     registerManager.register(CompactionMergeTaskPoolManager.getInstance());
@@ -166,9 +159,8 @@ public class IoTDB implements IoTDBMBean {
     long end = System.currentTimeMillis() - time;
     logger.info("spend {}ms to recover schema.", end);
     logger.info(
-        "After initializing, sequence tsFile threshold is {}, unsequence tsFile threshold is {}, memtableSize is {}",
-        IoTDBDescriptor.getInstance().getConfig().getSeqTsFileSize(),
-        IoTDBDescriptor.getInstance().getConfig().getUnSeqTsFileSize(),
+        "After initializing, tsFile threshold is {}, memtableSize is {}",
+        IoTDBDescriptor.getInstance().getConfig().getTsFileSizeThreshold(),
         IoTDBDescriptor.getInstance().getConfig().getMemtableSizeThreshold());
   }
 

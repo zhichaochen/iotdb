@@ -26,9 +26,6 @@ import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.TimeZone;
 
 import static org.junit.Assert.assertEquals;
 
@@ -44,10 +41,7 @@ public class FilterSerializeTest {
           ValueFilter.lt(0.1),
           ValueFilter.ltEq(0.01f),
           ValueFilter.not(ValueFilter.eq(true)),
-          ValueFilter.notEq(false),
-          ValueFilter.notEq(false),
-          ValueFilter.in(new HashSet<>(Arrays.asList("a", "b")), false),
-          ValueFilter.in(new HashSet<>(Arrays.asList("c", "d")), true),
+          ValueFilter.notEq(false)
         };
     for (Filter filter : filters) {
       validateSerialization(filter);
@@ -64,10 +58,7 @@ public class FilterSerializeTest {
           TimeFilter.lt(4),
           TimeFilter.ltEq(5),
           TimeFilter.not(ValueFilter.eq(6)),
-          TimeFilter.notEq(7),
-          TimeFilter.notEq(7),
-          TimeFilter.in(new HashSet<>(Arrays.asList(1L, 2L)), false),
-          TimeFilter.in(new HashSet<>(Arrays.asList(3L, 4L)), true),
+          TimeFilter.notEq(7)
         };
     for (Filter filter : filters) {
       validateSerialization(filter);
@@ -91,18 +82,6 @@ public class FilterSerializeTest {
     Filter[] filters =
         new Filter[] {
           new GroupByFilter(1, 2, 3, 4), new GroupByFilter(4, 3, 2, 1),
-        };
-    for (Filter filter : filters) {
-      validateSerialization(filter);
-    }
-  }
-
-  @Test
-  public void testGroupByMonthFilter() {
-    Filter[] filters =
-        new Filter[] {
-          new GroupByMonthFilter(1, 2, 3, 4, true, false, TimeZone.getTimeZone("Asia/Shanghai")),
-          new GroupByMonthFilter(4, 3, 2, 1, false, true, TimeZone.getTimeZone("Atlantic/Faeroe")),
         };
     for (Filter filter : filters) {
       validateSerialization(filter);

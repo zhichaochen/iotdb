@@ -143,7 +143,9 @@ public class Measurement implements MeasurementMBean, IService {
       if (consumeFuture != null && !consumeFuture.isCancelled()) {
         logger.info("The consuming task in measurement stat module is already running...");
       } else {
-        consumeFuture = service.schedule(new QueueConsumerThread(), 0, TimeUnit.MILLISECONDS);
+        consumeFuture =
+            service.scheduleWithFixedDelay(
+                new Measurement.DisplayRunnable(), 20, displayIntervalInMs, TimeUnit.MILLISECONDS);
       }
     } catch (Exception e) {
       logger.error("Find error when start performance statistic thread, ", e);

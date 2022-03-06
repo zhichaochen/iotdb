@@ -23,7 +23,6 @@ import org.apache.iotdb.cluster.rpc.thrift.Node;
 import org.apache.iotdb.cluster.rpc.thrift.TSMetaService.Client;
 import org.apache.iotdb.cluster.server.RaftServer;
 import org.apache.iotdb.rpc.RpcTransportFactory;
-import org.apache.iotdb.rpc.TConfigurationConst;
 
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
@@ -53,7 +52,6 @@ public class SyncMetaClient extends Client implements Closeable {
         protocolFactory.getProtocol(
             RpcTransportFactory.INSTANCE.getTransport(
                 new TSocket(
-                    TConfigurationConst.defaultTConfiguration,
                     node.getInternalIp(),
                     node.getMetaPort(),
                     RaftServer.getConnectionTimeoutInMS()))));

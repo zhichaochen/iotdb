@@ -43,8 +43,8 @@ import org.apache.iotdb.db.exception.LoadFileException;
 import org.apache.iotdb.db.exception.StorageEngineException;
 import org.apache.iotdb.db.exception.metadata.IllegalPathException;
 import org.apache.iotdb.db.metadata.PartialPath;
+import org.apache.iotdb.db.utils.FilePathUtils;
 import org.apache.iotdb.db.utils.SchemaUtils;
-import org.apache.iotdb.tsfile.utils.FilePathUtils;
 import org.apache.iotdb.tsfile.utils.Pair;
 import org.apache.iotdb.tsfile.write.schema.TimeseriesSchema;
 
@@ -300,8 +300,7 @@ public class FileSnapshot extends Snapshot implements TimeseriesSchemaSnapshot {
      */
     private boolean isFileAlreadyPulled(RemoteTsFileResource resource) throws IllegalPathException {
       Pair<String, Long> sgNameAndTimePartitionIdPair =
-          FilePathUtils.getLogicalSgNameAndTimePartitionIdPair(
-              resource.getTsFile().getAbsolutePath());
+          FilePathUtils.getLogicalSgNameAndTimePartitionIdPair(resource);
       return StorageEngine.getInstance()
           .isFileAlreadyExist(
               resource,
@@ -393,8 +392,7 @@ public class FileSnapshot extends Snapshot implements TimeseriesSchemaSnapshot {
       // remote/<nodeIdentifier>/<FilePathUtils.getTsFilePrefixPath(resource)>/<tsfile>
       // you can see FilePathUtils.splitTsFilePath() method for details.
       PartialPath storageGroupName =
-          new PartialPath(
-              FilePathUtils.getLogicalStorageGroupName(resource.getTsFile().getAbsolutePath()));
+          new PartialPath(FilePathUtils.getLogicalStorageGroupName(resource));
       File remoteModFile =
           new File(resource.getTsFile().getAbsoluteFile() + ModificationFile.FILE_SUFFIX);
       try {
@@ -449,12 +447,11 @@ public class FileSnapshot extends Snapshot implements TimeseriesSchemaSnapshot {
       // the new file is stored at:
       // remote/<nodeIdentifier>/<FilePathUtils.getTsFilePrefixPath(resource)>/<newTsFile>
       // you can see FilePathUtils.splitTsFilePath() method for details.
-      String tempFileName =
-          FilePathUtils.getTsFileNameWithoutHardLink(resource.getTsFile().getAbsolutePath());
+      String tempFileName = FilePathUtils.getTsFileNameWithoutHardLink(resource);
       String tempFilePath =
           node.getNodeIdentifier()
               + File.separator
-              + FilePathUtils.getTsFilePrefixPath(resource.getTsFile().getAbsolutePath())
+              + FilePathUtils.getTsFilePrefixPath(resource)
               + File.separator
               + tempFileName;
       File tempFile = new File(REMOTE_FILE_TEMP_DIR, tempFilePath);

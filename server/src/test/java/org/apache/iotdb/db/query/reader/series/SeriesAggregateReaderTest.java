@@ -19,6 +19,7 @@
 
 package org.apache.iotdb.db.query.reader.series;
 
+import org.apache.iotdb.db.engine.querycontext.QueryDataSource;
 import org.apache.iotdb.db.engine.storagegroup.TsFileResource;
 import org.apache.iotdb.db.exception.metadata.IllegalPathException;
 import org.apache.iotdb.db.exception.metadata.MetadataException;
@@ -43,13 +44,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class SeriesAggregateReaderTest {
 
-  private static final String SERIES_READER_TEST_SG = "root.sg1";
+  private static final String SERIES_READER_TEST_SG = "root.seriesReaderTest";
   private List<String> deviceIds = new ArrayList<>();
   private List<MeasurementSchema> measurementSchemas = new ArrayList<>();
 
@@ -72,14 +71,15 @@ public class SeriesAggregateReaderTest {
       PartialPath path = new PartialPath(SERIES_READER_TEST_SG + ".device0.sensor0");
       Set<String> allSensors = new HashSet<>();
       allSensors.add("sensor0");
+      QueryDataSource queryDataSource = new QueryDataSource(path, seqResources, unseqResources);
       SeriesAggregateReader seriesReader =
           new SeriesAggregateReader(
               path,
               allSensors,
               TSDataType.INT32,
               new QueryContext(),
-              seqResources,
-              unseqResources,
+              queryDataSource,
+              null,
               null,
               null,
               true);

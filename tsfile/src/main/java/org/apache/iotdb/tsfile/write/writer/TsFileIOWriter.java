@@ -161,16 +161,6 @@ public class TsFileIOWriter {
   }
 
   /**
-   * For TsFileReWriteTool / UpgradeTool. Use this method to determine if needs to start a
-   * ChunkGroup.
-   *
-   * @return isWritingChunkGroup
-   */
-  public boolean isWritingChunkGroup() {
-    return currentChunkGroupDeviceId != null;
-  }
-
-  /**
    * start a {@linkplain ChunkMetadata ChunkMetaData}.
    *
    * @param measurementSchema - schema of this time series
@@ -377,11 +367,11 @@ public class TsFileIOWriter {
     out.close();
   }
 
-  public void writeSeparatorMaskForTest() throws IOException {
+  void writeSeparatorMaskForTest() throws IOException {
     out.write(new byte[] {MetaMarker.SEPARATOR});
   }
 
-  public void writeChunkGroupMarkerForTest() throws IOException {
+  void writeChunkGroupMarkerForTest() throws IOException {
     out.write(new byte[] {MetaMarker.CHUNK_GROUP_HEADER});
   }
 

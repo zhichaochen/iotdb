@@ -43,8 +43,6 @@ import org.apache.iotdb.rpc.TSStatusCode;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.read.TimeValuePair;
 import org.apache.iotdb.tsfile.read.expression.IExpression;
-import org.apache.iotdb.tsfile.read.expression.impl.GlobalTimeExpression;
-import org.apache.iotdb.tsfile.read.filter.basic.Filter;
 import org.apache.iotdb.tsfile.utils.Pair;
 
 import org.apache.thrift.TException;
@@ -76,7 +74,7 @@ public class ClusterLastQueryExecutor extends LastQueryExecutor {
   }
 
   @Override
-  public List<Pair<Boolean, TimeValuePair>> calculateLastPairForSeries(
+  protected List<Pair<Boolean, TimeValuePair>> calculateLastPairForSeries(
       List<PartialPath> seriesPaths,
       List<TSDataType> dataTypes,
       QueryContext context,
@@ -246,17 +244,13 @@ public class ClusterLastQueryExecutor extends LastQueryExecutor {
                 .getClientProvider()
                 .getAsyncDataClient(node, RaftServer.getReadOperationTimeoutMS());
       } catch (IOException e) {
-        logger.warn("can not get client for node= {}", node);
         return null;
       }
-      Filter timeFilter =
-          (expression == null) ? null : ((GlobalTimeExpression) expression).getFilter();
       buffer =
           SyncClientAdaptor.last(
               asyncDataClient,
               seriesPaths,
               dataTypeOrdinals,
-              timeFilter,
               context,
               queryPlan.getDeviceToMeasurements(),
               group.getHeader());
@@ -264,27 +258,19 @@ public class ClusterLastQueryExecutor extends LastQueryExecutor {
     }
 
     private ByteBuffer lastSync(Node node, QueryContext context) throws TException {
-      try (SyncDataClient client =
+      try (SyncDataClient syncDataClient =
           metaGroupMember
               .getClientProvider()
               .getSyncDataClient(node, RaftServer.getReadOperationTimeoutMS())) {
-        LastQueryRequest lastQueryRequest =
+
+        return syncDataClient.last(
             new LastQueryRequest(
                 PartialPath.toStringList(seriesPaths),
                 dataTypeOrdinals,
                 context.getQueryId(),
                 queryPlan.getDeviceToMeasurements(),
                 group.getHeader(),
-                client.getNode());
-        Filter timeFilter =
-            (expression == null) ? null : ((GlobalTimeExpression) expression).getFilter();
-        if (timeFilter != null) {
-          lastQueryRequest.setFilterBytes(SerializeUtils.serializeFilter(timeFilter));
-        }
-        return client.last(lastQueryRequest);
-      } catch (IOException e) {
-        logger.warn("can not get client for node= {}", node);
-        return null;
+                syncDataClient.getNode()));
       }
     }
   }

@@ -97,6 +97,8 @@ public class DataSourceInfo {
         if (newReaderId != null) {
           logger.debug("get a readerId {} for {} from {}", newReaderId, request.path, node);
           if (newReaderId != -1) {
+            // register the node so the remote resources can be released
+            context.registerRemoteNode(node, partitionGroup.getHeader());
             this.readerId = newReaderId;
             this.curSource = node;
             this.curPos = nextNodePos;
@@ -114,9 +116,6 @@ public class DataSourceInfo {
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         logger.error("Cannot query {} from {}", this.request.path, node, e);
-      } finally {
-        // register the node so the remote resources can be released
-        context.registerRemoteNode(node, partitionGroup.getHeader());
       }
       nextNodePos = (nextNodePos + 1) % this.nodes.size();
       if (nextNodePos == this.curPos) {
@@ -154,31 +153,27 @@ public class DataSourceInfo {
   }
 
   private Long applyForReaderIdSync(Node node, boolean byTimestamp, long timestamp)
-      throws TException, IOException {
-    long newReaderId;
+      throws TException {
+
+    Long newReaderId;
     try (SyncDataClient client =
         this.metaGroupMember
             .getClientProvider()
             .getSyncDataClient(node, RaftServer.getReadOperationTimeoutMS())) {
-      try {
-        if (byTimestamp) {
-          newReaderId = client.querySingleSeriesByTimestamp(request);
+
+      if (byTimestamp) {
+        newReaderId = client.querySingleSeriesByTimestamp(request);
+      } else {
+        Filter newFilter;
+        // add timestamp to as a timeFilter to skip the data which has been read
+        if (request.isSetTimeFilterBytes()) {
+          Filter timeFilter = FilterFactory.deserialize(request.timeFilterBytes);
+          newFilter = new AndFilter(timeFilter, TimeFilter.gt(timestamp));
         } else {
-          Filter newFilter;
-          // add timestamp to as a timeFilter to skip the data which has been read
-          if (request.isSetTimeFilterBytes()) {
-            Filter timeFilter = FilterFactory.deserialize(request.timeFilterBytes);
-            newFilter = new AndFilter(timeFilter, TimeFilter.gt(timestamp));
-          } else {
-            newFilter = TimeFilter.gt(timestamp);
-          }
-          request.setTimeFilterBytes(SerializeUtils.serializeFilter(newFilter));
-          newReaderId = client.querySingleSeries(request);
+          newFilter = TimeFilter.gt(timestamp);
         }
-      } catch (TException e) {
-        // the connection may be broken, close it to avoid it being reused
-        client.getInputProtocol().getTransport().close();
-        throw e;
+        request.setTimeFilterBytes(SerializeUtils.serializeFilter(newFilter));
+        newReaderId = client.querySingleSeries(request);
       }
       return newReaderId;
     }
@@ -206,7 +201,7 @@ public class DataSourceInfo {
         : metaGroupMember.getClientProvider().getAsyncDataClient(this.curSource, timeout);
   }
 
-  SyncDataClient getCurSyncClient(int timeout) throws IOException {
+  SyncDataClient getCurSyncClient(int timeout) throws TException {
     return isNoClient
         ? null
         : metaGroupMember.getClientProvider().getSyncDataClient(this.curSource, timeout);

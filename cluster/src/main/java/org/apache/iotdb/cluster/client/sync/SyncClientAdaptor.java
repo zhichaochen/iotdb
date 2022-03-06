@@ -368,16 +368,6 @@ public class SyncClientAdaptor {
     return handler.getResult(RaftServer.getReadOperationTimeoutMS());
   }
 
-  public static Integer getDeviceCount(
-      AsyncDataClient client, Node header, List<String> pathsToQuery)
-      throws InterruptedException, TException {
-    AtomicReference<Integer> remoteResult = new AtomicReference<>(null);
-    GenericHandler<Integer> handler = new GenericHandler<>(client.getNode(), remoteResult);
-
-    client.getDeviceCount(header, pathsToQuery, handler);
-    return handler.getResult(RaftServer.getReadOperationTimeoutMS());
-  }
-
   public static Set<String> getAllDevices(
       AsyncDataClient client, Node header, List<String> pathsToQuery)
       throws InterruptedException, TException {
@@ -496,7 +486,6 @@ public class SyncClientAdaptor {
       AsyncDataClient client,
       List<PartialPath> seriesPaths,
       List<Integer> dataTypeOrdinals,
-      Filter timeFilter,
       QueryContext context,
       Map<String, Set<String>> deviceMeasurements,
       Node header)
@@ -511,9 +500,7 @@ public class SyncClientAdaptor {
             deviceMeasurements,
             header,
             client.getNode());
-    if (timeFilter != null) {
-      request.setFilterBytes(SerializeUtils.serializeFilter(timeFilter));
-    }
+
     client.last(request, handler);
     return handler.getResult(RaftServer.getReadOperationTimeoutMS());
   }

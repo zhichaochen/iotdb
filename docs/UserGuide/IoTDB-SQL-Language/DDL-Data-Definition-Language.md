@@ -26,11 +26,11 @@
 ### Stroage Group Management
 #### Create Storage Group
 
-According to the storage model we can set up the corresponding storage group. Two SQL statements are supported for creating storage groups, as follows:
+According to the storage model we can set up the corresponding storage group. The SQL statements for creating storage groups are as follows:
 
 ```
 IoTDB > set storage group to root.ln
-IoTDB > create storage group root.sgcc
+IoTDB > set storage group to root.sgcc
 ```
 
 We can thus create two storage groups using the above two SQL statements.
@@ -39,8 +39,6 @@ It is worth noting that when the path itself or the parent/child layer of the pa
 
 ```
 IoTDB> set storage group to root.ln.wf01
-Msg: 300: root.ln has already been set to storage group.
-IoTDB> create storage group root.ln.wf01
 Msg: 300: root.ln has already been set to storage group.
 ```
 The LayerName of storage group can only be characters, numbers, underscores and hyphens. 
@@ -377,7 +375,7 @@ Example：
 +------------+
 ```
 
-* return the child nodes of root.ln：show child nodes root.ln
+* return the child nodes of root.vehicle：show child nodes root.ln
 
 ```
 +------------+

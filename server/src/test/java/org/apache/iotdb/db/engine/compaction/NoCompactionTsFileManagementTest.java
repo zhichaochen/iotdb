@@ -30,7 +30,6 @@ import org.apache.iotdb.tsfile.exception.write.WriteProcessException;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -50,10 +49,8 @@ public class NoCompactionTsFileManagementTest extends LevelCompactionTest {
   @Before
   public void setUp() throws IOException, WriteProcessException, MetadataException {
     super.setUp();
-    tempSGDir = new File(TestConstant.OUTPUT_DATA_DIR);
-    if (!tempSGDir.exists()) {
-      Assert.assertTrue(tempSGDir.mkdirs());
-    }
+    tempSGDir = new File(TestConstant.BASE_OUTPUT_PATH.concat("tempSG"));
+    tempSGDir.mkdirs();
   }
 
   @Override
@@ -67,7 +64,7 @@ public class NoCompactionTsFileManagementTest extends LevelCompactionTest {
   @Test
   public void testAddRemoveAndIterator() {
     NoCompactionTsFileManagement noCompactionTsFileManagement =
-        new NoCompactionTsFileManagement(COMPACTION_TEST_SG, "0", tempSGDir.getPath());
+        new NoCompactionTsFileManagement(COMPACTION_TEST_SG, tempSGDir.getPath());
     for (TsFileResource tsFileResource : seqResources) {
       noCompactionTsFileManagement.add(tsFileResource, true);
     }
@@ -81,7 +78,7 @@ public class NoCompactionTsFileManagementTest extends LevelCompactionTest {
         noCompactionTsFileManagement.contains(
             new TsFileResource(
                 new File(
-                    TestConstant.OUTPUT_DATA_DIR.concat(
+                    TestConstant.BASE_OUTPUT_PATH.concat(
                         10
                             + IoTDBConstant.FILE_NAME_SEPARATOR
                             + 10
@@ -96,7 +93,7 @@ public class NoCompactionTsFileManagementTest extends LevelCompactionTest {
         noCompactionTsFileManagement.contains(
             new TsFileResource(
                 new File(
-                    TestConstant.OUTPUT_DATA_DIR.concat(
+                    TestConstant.BASE_OUTPUT_PATH.concat(
                         10
                             + IoTDBConstant.FILE_NAME_SEPARATOR
                             + 10
@@ -130,7 +127,7 @@ public class NoCompactionTsFileManagementTest extends LevelCompactionTest {
     noCompactionTsFileManagement.add(
         new TsFileResource(
             new File(
-                TestConstant.OUTPUT_DATA_DIR.concat(
+                TestConstant.BASE_OUTPUT_PATH.concat(
                     10
                         + IoTDBConstant.FILE_NAME_SEPARATOR
                         + 10
@@ -143,7 +140,7 @@ public class NoCompactionTsFileManagementTest extends LevelCompactionTest {
     noCompactionTsFileManagement.add(
         new TsFileResource(
             new File(
-                TestConstant.OUTPUT_DATA_DIR.concat(
+                TestConstant.BASE_OUTPUT_PATH.concat(
                     10
                         + IoTDBConstant.FILE_NAME_SEPARATOR
                         + 10
@@ -170,7 +167,7 @@ public class NoCompactionTsFileManagementTest extends LevelCompactionTest {
   @Test
   public void testIteratorRemove() {
     NoCompactionTsFileManagement noCompactionTsFileManagement =
-        new NoCompactionTsFileManagement(COMPACTION_TEST_SG, "0", tempSGDir.getPath());
+        new NoCompactionTsFileManagement(COMPACTION_TEST_SG, tempSGDir.getPath());
     for (TsFileResource tsFileResource : seqResources) {
       noCompactionTsFileManagement.add(tsFileResource, true);
     }
@@ -190,7 +187,7 @@ public class NoCompactionTsFileManagementTest extends LevelCompactionTest {
     TsFileResource tsFileResource1 =
         new TsFileResource(
             new File(
-                TestConstant.OUTPUT_DATA_DIR.concat(
+                TestConstant.BASE_OUTPUT_PATH.concat(
                     10
                         + IoTDBConstant.FILE_NAME_SEPARATOR
                         + 10
@@ -202,7 +199,7 @@ public class NoCompactionTsFileManagementTest extends LevelCompactionTest {
     TsFileResource tsFileResource2 =
         new TsFileResource(
             new File(
-                TestConstant.OUTPUT_DATA_DIR.concat(
+                TestConstant.BASE_OUTPUT_PATH.concat(
                     11
                         + IoTDBConstant.FILE_NAME_SEPARATOR
                         + 11
@@ -216,7 +213,7 @@ public class NoCompactionTsFileManagementTest extends LevelCompactionTest {
     TsFileResource tsFileResource3 =
         new TsFileResource(
             new File(
-                TestConstant.OUTPUT_DATA_DIR.concat(
+                TestConstant.BASE_OUTPUT_PATH.concat(
                     12
                         + IoTDBConstant.FILE_NAME_SEPARATOR
                         + 12

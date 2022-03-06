@@ -63,9 +63,8 @@ pip install apache-iotdb
 - Maven 3.5+
 - Flex
 - Bison 2.7+
-- Boost 1.56+
+- Boost
 - OpenSSL 1.0+
-- GCC 5.5.0+
 
 ### 安装方法
 
@@ -117,23 +116,20 @@ brew link boost
 
 Linux下需要确保g++已被安装。
 
-Ubuntu 20:
+一条命令安装所有依赖库：
 
-一条命令安装所有依赖库：  
-
-```
-sudo apt-get install gcc-9 g++-9 libstdc++-9-dev bison flex libboost-all-dev libssl-dev zlib1g-dev
-```
-
-CentOS 7.x:  
-
-在centos 7.x里，可用yum命令安装部分依赖。  
+Debian/Ubuntu:
 
 ```
-sudo yum install bison flex openssl-devel
+sudo apt-get install gcc g++ bison flex libboost-all-dev
 ```
 
-使用yum安装的GCC、boost版本过低，在编译时会报错，需自行安装或升级。  
+CentOS:
+
+```
+yum install gcc g++ bison flex boost-devel
+```
+
 
 
 #### 在Windows上编译Thrift

@@ -102,6 +102,8 @@ public class MultDataSourceInfo {
         if (newReaderId != null) {
           logger.debug("get a readerId {} for {} from {}", newReaderId, request.path, node);
           if (newReaderId != -1) {
+            // register the node so the remote resources can be released
+            context.registerRemoteNode(node, partitionGroup.getHeader());
             this.readerId = newReaderId;
             this.curSource = node;
             this.curPos = nextNodePos;
@@ -119,9 +121,6 @@ public class MultDataSourceInfo {
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         logger.error("Cannot query {} from {}", this.request.path, node, e);
-      } finally {
-        // register the node so the remote resources can be released
-        context.registerRemoteNode(node, partitionGroup.getHeader());
       }
       nextNodePos = (nextNodePos + 1) % this.nodes.size();
       if (nextNodePos == this.curPos) {
@@ -173,8 +172,9 @@ public class MultDataSourceInfo {
     return result.get();
   }
 
-  private Long applyForReaderIdSync(Node node, long timestamp) throws TException, IOException {
-    long newReaderId;
+  private Long applyForReaderIdSync(Node node, long timestamp) throws TException {
+
+    Long newReaderId;
     try (SyncDataClient client =
         this.metaGroupMember
             .getClientProvider()
@@ -189,13 +189,7 @@ public class MultDataSourceInfo {
         newFilter = TimeFilter.gt(timestamp);
       }
       request.setTimeFilterBytes(SerializeUtils.serializeFilter(newFilter));
-      try {
-        newReaderId = client.queryMultSeries(request);
-      } catch (TException e) {
-        // the connection may be broken, close it to avoid it being reused
-        client.getInputProtocol().getTransport().close();
-        throw e;
-      }
+      newReaderId = client.queryMultSeries(request);
       return newReaderId;
     }
   }
@@ -218,7 +212,7 @@ public class MultDataSourceInfo {
         : metaGroupMember.getClientProvider().getAsyncDataClient(this.curSource, timeout);
   }
 
-  SyncDataClient getCurSyncClient(int timeout) throws IOException {
+  SyncDataClient getCurSyncClient(int timeout) throws TException {
     return isNoClient
         ? null
         : metaGroupMember.getClientProvider().getSyncDataClient(this.curSource, timeout);

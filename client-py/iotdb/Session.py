@@ -649,7 +649,6 @@ class Session(object):
             resp.columnNameIndexMap,
             resp.queryId,
             self.__client,
-            self.__statement_id,
             self.__session_id,
             resp.queryDataSet,
             resp.ignoreTimeStamp,

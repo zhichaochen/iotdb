@@ -187,16 +187,17 @@ void insertRecords() {
     vector<vector<string>> measurementsList;
     vector<vector<string>> valuesList;
     vector<int64_t> timestamps;
+    vector<string>* values;
 
     for (int64_t time = 0; time < 500; time++) {
-        vector<string> values;
-        values.push_back("1");
-        values.push_back("2");
-        values.push_back("3");
+        values = new vector<string>();
+        values->push_back("1");
+        values->push_back("2");
+        values->push_back("3");
 
         deviceIds.push_back(deviceId);
         measurementsList.push_back(measurements);
-        valuesList.push_back(values);
+        valuesList.push_back(*values);
         timestamps.push_back(time);
         if (time != 0 && time % 100 == 0) {
             session->insertRecords(deviceIds, timestamps, measurementsList, valuesList);
@@ -262,7 +263,6 @@ void queryLast() {
     while (dataSet->hasNext()) {
         cout << dataSet->next()->toString();
     }
-    dataSet->closeOperationHandle();
 }
 
 int main() {
@@ -303,8 +303,6 @@ int main() {
     deleteTimeseries();
 
     session->close();
-
-    delete session;
-
+    
     return 0;
 }

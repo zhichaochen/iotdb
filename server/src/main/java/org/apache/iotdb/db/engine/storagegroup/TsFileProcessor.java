@@ -47,7 +47,6 @@ import org.apache.iotdb.db.query.context.QueryContext;
 import org.apache.iotdb.db.rescon.MemTableManager;
 import org.apache.iotdb.db.rescon.PrimitiveArrayManager;
 import org.apache.iotdb.db.rescon.SystemInfo;
-import org.apache.iotdb.db.service.IoTDB;
 import org.apache.iotdb.db.utils.MemUtils;
 import org.apache.iotdb.db.utils.QueryUtils;
 import org.apache.iotdb.db.utils.datastructure.TVList;
@@ -59,10 +58,10 @@ import org.apache.iotdb.rpc.TSStatusCode;
 import org.apache.iotdb.service.rpc.thrift.TSStatus;
 import org.apache.iotdb.tsfile.file.metadata.ChunkMetadata;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
+import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
 import org.apache.iotdb.tsfile.read.common.TimeRange;
 import org.apache.iotdb.tsfile.utils.Binary;
 import org.apache.iotdb.tsfile.utils.Pair;
-import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
 import org.apache.iotdb.tsfile.write.writer.RestorableTsFileIOWriter;
 
 import org.slf4j.Logger;
@@ -72,7 +71,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -114,9 +112,6 @@ public class TsFileProcessor {
   private volatile boolean shouldClose;
 
   private IMemTable workMemTable;
-
-  /** last flush time to flush the working memtable */
-  private long lastWorkMemtableFlushTime;
 
   /** this callback is called before the workMemtable is added into the flushingMemTables. */
   private final UpdateEndTimeCallBack updateLatestFlushTimeCallback;
@@ -182,25 +177,24 @@ public class TsFileProcessor {
 
     if (workMemTable == null) {
       if (enableMemControl) {
-        workMemTable = new PrimitiveMemTable(enableMemControl);
+        workMemTable = new PrimitiveMemTable(enableMemControl, sequence);
         MemTableManager.getInstance().addMemtableNumber();
       } else {
-        workMemTable = MemTableManager.getInstance().getAvailableMemTable(storageGroupName);
+        workMemTable =
+            MemTableManager.getInstance().getAvailableMemTable(storageGroupName, sequence);
       }
     }
 
-    long[] memIncrements = null;
     if (enableMemControl) {
-      memIncrements = checkMemCostAndAddToTspInfo(insertRowPlan);
+      checkMemCostAndAddToTspInfo(insertRowPlan);
     }
+
+    workMemTable.insert(insertRowPlan);
 
     if (IoTDBDescriptor.getInstance().getConfig().isEnableWal()) {
       try {
         getLogNode().write(insertRowPlan);
       } catch (Exception e) {
-        if (enableMemControl && memIncrements != null) {
-          rollbackMemoryInfo(memIncrements);
-        }
         throw new WriteProcessException(
             String.format(
                 "%s: %s write WAL failed",
@@ -208,8 +202,6 @@ public class TsFileProcessor {
             e);
       }
     }
-
-    workMemTable.insert(insertRowPlan);
 
     // update start time of this memtable
     tsFileResource.updateStartTime(
@@ -238,17 +230,17 @@ public class TsFileProcessor {
 
     if (workMemTable == null) {
       if (enableMemControl) {
-        workMemTable = new PrimitiveMemTable(enableMemControl);
+        workMemTable = new PrimitiveMemTable(enableMemControl, sequence);
         MemTableManager.getInstance().addMemtableNumber();
       } else {
-        workMemTable = MemTableManager.getInstance().getAvailableMemTable(storageGroupName);
+        workMemTable =
+            MemTableManager.getInstance().getAvailableMemTable(storageGroupName, sequence);
       }
     }
 
-    long[] memIncrements = null;
     try {
       if (enableMemControl) {
-        memIncrements = checkMemCostAndAddToTspInfo(insertTabletPlan, start, end);
+        checkMemCostAndAddToTspInfo(insertTabletPlan, start, end);
       }
     } catch (WriteProcessException e) {
       for (int i = start; i < end; i++) {
@@ -256,8 +248,8 @@ public class TsFileProcessor {
       }
       throw new WriteProcessException(e);
     }
-
     try {
+      workMemTable.insertTablet(insertTabletPlan, start, end);
       if (IoTDBDescriptor.getInstance().getConfig().isEnableWal()) {
         insertTabletPlan.setStart(start);
         insertTabletPlan.setEnd(end);
@@ -267,21 +259,8 @@ public class TsFileProcessor {
       for (int i = start; i < end; i++) {
         results[i] = RpcUtils.getStatus(TSStatusCode.INTERNAL_SERVER_ERROR, e.getMessage());
       }
-      if (enableMemControl && memIncrements != null) {
-        rollbackMemoryInfo(memIncrements);
-      }
       throw new WriteProcessException(e);
     }
-
-    try {
-      workMemTable.insertTablet(insertTabletPlan, start, end);
-    } catch (WriteProcessException e) {
-      for (int i = start; i < end; i++) {
-        results[i] = RpcUtils.getStatus(TSStatusCode.INTERNAL_SERVER_ERROR, e.getMessage());
-      }
-      throw new WriteProcessException(e);
-    }
-
     for (int i = start; i < end; i++) {
       results[i] = RpcUtils.SUCCESS_STATUS;
     }
@@ -297,7 +276,7 @@ public class TsFileProcessor {
     tsFileResource.updatePlanIndexes(insertTabletPlan.getIndex());
   }
 
-  private long[] checkMemCostAndAddToTspInfo(InsertRowPlan insertRowPlan)
+  private void checkMemCostAndAddToTspInfo(InsertRowPlan insertRowPlan)
       throws WriteProcessException {
     // memory of increased PrimitiveArray and TEXT values, e.g., add a long[128], add 128*8
     long memTableIncrement = 0L;
@@ -314,14 +293,14 @@ public class TsFileProcessor {
         chunkMetadataIncrement +=
             ChunkMetadata.calculateRamSize(
                 insertRowPlan.getMeasurements()[i], insertRowPlan.getDataTypes()[i]);
-        memTableIncrement += TVList.tvListArrayMemCost(insertRowPlan.getDataTypes()[i]);
+        memTableIncrement += TVList.tvListArrayMemSize(insertRowPlan.getDataTypes()[i]);
       } else {
         // here currentChunkPointNum >= 1
         int currentChunkPointNum =
             workMemTable.getCurrentChunkPointNum(deviceId, insertRowPlan.getMeasurements()[i]);
         memTableIncrement +=
             (currentChunkPointNum % PrimitiveArrayManager.ARRAY_SIZE) == 0
-                ? TVList.tvListArrayMemCost(insertRowPlan.getDataTypes()[i])
+                ? TVList.tvListArrayMemSize(insertRowPlan.getDataTypes()[i])
                 : 0;
       }
       // TEXT data mem size
@@ -330,13 +309,12 @@ public class TsFileProcessor {
       }
     }
     updateMemoryInfo(memTableIncrement, chunkMetadataIncrement, textDataIncrement);
-    return new long[] {memTableIncrement, textDataIncrement, chunkMetadataIncrement};
   }
 
-  private long[] checkMemCostAndAddToTspInfo(InsertTabletPlan insertTabletPlan, int start, int end)
+  private void checkMemCostAndAddToTspInfo(InsertTabletPlan insertTabletPlan, int start, int end)
       throws WriteProcessException {
     if (start >= end) {
-      return new long[] {0, 0, 0};
+      return;
     }
     long[] memIncrements = new long[3]; // memTable, text, chunk metadata
 
@@ -356,7 +334,6 @@ public class TsFileProcessor {
     long textDataIncrement = memIncrements[1];
     long chunkMetadataIncrement = memIncrements[2];
     updateMemoryInfo(memTableIncrement, chunkMetadataIncrement, textDataIncrement);
-    return memIncrements;
   }
 
   private void updateMemCost(
@@ -374,19 +351,19 @@ public class TsFileProcessor {
       memIncrements[2] += ChunkMetadata.calculateRamSize(measurement, dataType);
       memIncrements[0] +=
           ((end - start) / PrimitiveArrayManager.ARRAY_SIZE + 1)
-              * TVList.tvListArrayMemCost(dataType);
+              * TVList.tvListArrayMemSize(dataType);
     } else {
       int currentChunkPointNum = workMemTable.getCurrentChunkPointNum(deviceId, measurement);
       if (currentChunkPointNum % PrimitiveArrayManager.ARRAY_SIZE == 0) {
         memIncrements[0] +=
             ((end - start) / PrimitiveArrayManager.ARRAY_SIZE + 1)
-                * TVList.tvListArrayMemCost(dataType);
+                * TVList.tvListArrayMemSize(dataType);
       } else {
         int acquireArray =
             (end - start - 1 + (currentChunkPointNum % PrimitiveArrayManager.ARRAY_SIZE))
                 / PrimitiveArrayManager.ARRAY_SIZE;
         memIncrements[0] +=
-            acquireArray == 0 ? 0 : acquireArray * TVList.tvListArrayMemCost(dataType);
+            acquireArray == 0 ? 0 : acquireArray * TVList.tvListArrayMemSize(dataType);
       }
     }
     // TEXT data size
@@ -418,19 +395,6 @@ public class TsFileProcessor {
     workMemTable.addTextDataSize(textDataIncrement);
   }
 
-  private void rollbackMemoryInfo(long[] memIncrements) {
-    long memTableIncrement = memIncrements[0];
-    long textDataIncrement = memIncrements[1];
-    long chunkMetadataIncrement = memIncrements[2];
-
-    memTableIncrement += textDataIncrement;
-    storageGroupInfo.releaseStorageGroupMemCost(memTableIncrement);
-    tsFileProcessorInfo.releaseTSPMemCost(chunkMetadataIncrement);
-    SystemInfo.getInstance().resetStorageGroupStatus(storageGroupInfo);
-    workMemTable.releaseTVListRamCost(memTableIncrement);
-    workMemTable.releaseTextDataSize(textDataIncrement);
-  }
-
   /**
    * Delete data which belongs to the timeseries `deviceId.measurementId` and the timestamp of which
    * <= 'timestamp' in the deletion. <br>
@@ -448,6 +412,11 @@ public class TsFileProcessor {
         for (PartialPath device : devicePaths) {
           workMemTable.delete(
               deletion.getPath(), device, deletion.getStartTime(), deletion.getEndTime());
+          logger.info(
+              "[Deletion] Delete in-memory data with deletion path: {}, time:{}-{}.",
+              deletion.getPath(),
+              deletion.getStartTime(),
+              deletion.getEndTime());
         }
       }
       // flushing memTables are immutable, only record this deletion in these memTables for query
@@ -501,13 +470,7 @@ public class TsFileProcessor {
 
   public boolean shouldClose() {
     long fileSize = tsFileResource.getTsFileSize();
-    long fileSizeThreshold;
-    if (sequence) {
-      fileSizeThreshold = IoTDBDescriptor.getInstance().getConfig().getSeqTsFileSize();
-    } else {
-      fileSizeThreshold = IoTDBDescriptor.getInstance().getConfig().getUnSeqTsFileSize();
-    }
-
+    long fileSizeThreshold = IoTDBDescriptor.getInstance().getConfig().getTsFileSizeThreshold();
     if (fileSize >= fileSizeThreshold) {
       logger.info(
           "{} fileSize {} >= fileSizeThreshold {}",
@@ -740,7 +703,6 @@ public class TsFileProcessor {
       totalMemTableSize += tobeFlushed.memSize();
     }
     workMemTable = null;
-    lastWorkMemtableFlushTime = System.currentTimeMillis();
     FlushManager.getInstance().registerTsFileProcessor(this);
   }
 
@@ -1089,94 +1051,95 @@ public class TsFileProcessor {
    * memtables and then compact them into one TimeValuePairSorter). Then get the related
    * ChunkMetadata of data on disk.
    *
-   * @param seriesPaths selected paths
+   * @param deviceId device id
+   * @param measurementId measurements id
+   * @param dataType data type
+   * @param encoding encoding
    */
+  @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
   public void query(
-      List<PartialPath> seriesPaths,
+      String deviceId,
+      String measurementId,
+      TSDataType dataType,
+      TSEncoding encoding,
+      Map<String, String> props,
       QueryContext context,
       List<TsFileResource> tsfileResourcesForQuery)
-      throws IOException {
-    Map<PartialPath, List<ChunkMetadata>> pathToChunkMetadataListMap = new HashMap<>();
-    Map<PartialPath, List<ReadOnlyMemChunk>> pathToReadOnlyMemChunkMap = new HashMap<>();
-    for (PartialPath seriesPath : seriesPaths) {
-      String deviceId = seriesPath.getDevice();
-      String measurementId = seriesPath.getMeasurement();
-
-      flushQueryLock.readLock().lock();
-      try {
-        MeasurementSchema schema = IoTDB.metaManager.getSeriesSchema(seriesPath);
-        List<ReadOnlyMemChunk> readOnlyMemChunks = new ArrayList<>();
-        for (IMemTable flushingMemTable : flushingMemTables) {
-          if (flushingMemTable.isSignalMemTable()) {
-            continue;
-          }
-          List<TimeRange> deletionList =
-              constructDeletionList(
-                  flushingMemTable, deviceId, measurementId, context.getQueryTimeLowerBound());
-          ReadOnlyMemChunk memChunk =
-              flushingMemTable.query(
-                  deviceId,
-                  measurementId,
-                  schema.getType(),
-                  schema.getEncodingType(),
-                  schema.getProps(),
-                  context.getQueryTimeLowerBound(),
-                  deletionList);
-          if (memChunk != null) {
-            readOnlyMemChunks.add(memChunk);
-          }
+      throws IOException, MetadataException {
+    if (logger.isDebugEnabled()) {
+      logger.debug(
+          "{}: {} get flushQueryLock and hotCompactionMergeLock read lock",
+          storageGroupName,
+          tsFileResource.getTsFile().getName());
+    }
+    flushQueryLock.readLock().lock();
+    try {
+      List<ReadOnlyMemChunk> readOnlyMemChunks = new ArrayList<>();
+      for (IMemTable flushingMemTable : flushingMemTables) {
+        if (flushingMemTable.isSignalMemTable()) {
+          continue;
         }
-        if (workMemTable != null) {
-          ReadOnlyMemChunk memChunk =
-              workMemTable.query(
-                  deviceId,
-                  measurementId,
-                  schema.getType(),
-                  schema.getEncodingType(),
-                  schema.getProps(),
-                  context.getQueryTimeLowerBound(),
-                  null);
-          if (memChunk != null) {
-            readOnlyMemChunks.add(memChunk);
-          }
-        }
-
-        ModificationFile modificationFile = tsFileResource.getModFile();
-        List<Modification> modifications =
-            context.getPathModifications(
-                modificationFile,
-                new PartialPath(deviceId + IoTDBConstant.PATH_SEPARATOR + measurementId));
-
-        List<ChunkMetadata> chunkMetadataList =
-            writer.getVisibleMetadataList(deviceId, measurementId, schema.getType());
-        QueryUtils.modifyChunkMetaData(chunkMetadataList, modifications);
-        chunkMetadataList.removeIf(context::chunkNotSatisfy);
-
-        // get in memory data
-        if (!readOnlyMemChunks.isEmpty() || !chunkMetadataList.isEmpty()) {
-          pathToReadOnlyMemChunkMap.put(seriesPath, readOnlyMemChunks);
-          pathToChunkMetadataListMap.put(seriesPath, chunkMetadataList);
-        }
-      } catch (QueryProcessException | MetadataException e) {
-        logger.error(
-            "{}: {} get ReadOnlyMemChunk has error",
-            storageGroupName,
-            tsFileResource.getTsFile().getName(),
-            e);
-      } finally {
-        flushQueryLock.readLock().unlock();
-        if (logger.isDebugEnabled()) {
-          logger.debug(
-              "{}: {} release flushQueryLock",
-              storageGroupName,
-              tsFileResource.getTsFile().getName());
+        List<TimeRange> deletionList =
+            constructDeletionList(
+                flushingMemTable, deviceId, measurementId, context.getQueryTimeLowerBound());
+        ReadOnlyMemChunk memChunk =
+            flushingMemTable.query(
+                deviceId,
+                measurementId,
+                dataType,
+                encoding,
+                props,
+                context.getQueryTimeLowerBound(),
+                deletionList);
+        if (memChunk != null) {
+          readOnlyMemChunks.add(memChunk);
         }
       }
-    }
-    if (!pathToReadOnlyMemChunkMap.isEmpty() || !pathToChunkMetadataListMap.isEmpty()) {
-      tsfileResourcesForQuery.add(
-          new TsFileResource(
-              pathToReadOnlyMemChunkMap, pathToChunkMetadataListMap, tsFileResource));
+      if (workMemTable != null) {
+        ReadOnlyMemChunk memChunk =
+            workMemTable.query(
+                deviceId,
+                measurementId,
+                dataType,
+                encoding,
+                props,
+                context.getQueryTimeLowerBound(),
+                null);
+        if (memChunk != null) {
+          readOnlyMemChunks.add(memChunk);
+        }
+      }
+
+      ModificationFile modificationFile = tsFileResource.getModFile();
+      List<Modification> modifications =
+          context.getPathModifications(
+              modificationFile,
+              new PartialPath(deviceId + IoTDBConstant.PATH_SEPARATOR + measurementId));
+
+      List<ChunkMetadata> chunkMetadataList =
+          writer.getVisibleMetadataList(deviceId, measurementId, dataType);
+      QueryUtils.modifyChunkMetaData(chunkMetadataList, modifications);
+      chunkMetadataList.removeIf(context::chunkNotSatisfy);
+
+      // get in memory data
+      if (!readOnlyMemChunks.isEmpty() || !chunkMetadataList.isEmpty()) {
+        tsfileResourcesForQuery.add(
+            new TsFileResource(readOnlyMemChunks, chunkMetadataList, tsFileResource));
+      }
+    } catch (QueryProcessException e) {
+      logger.error(
+          "{}: {} get ReadOnlyMemChunk has error",
+          storageGroupName,
+          tsFileResource.getTsFile().getName(),
+          e);
+    } finally {
+      flushQueryLock.readLock().unlock();
+      if (logger.isDebugEnabled()) {
+        logger.debug(
+            "{}: {} release flushQueryLock",
+            storageGroupName,
+            tsFileResource.getTsFile().getName());
+      }
     }
   }
 
@@ -1210,15 +1173,6 @@ public class TsFileProcessor {
 
   public long getWorkMemTableRamCost() {
     return workMemTable != null ? workMemTable.getTVListsRamCost() : 0;
-  }
-
-  /** Return Long.MAX_VALUE if workMemTable is null */
-  public long getWorkMemTableCreatedTime() {
-    return workMemTable != null ? workMemTable.getCreatedTime() : Long.MAX_VALUE;
-  }
-
-  public long getLastWorkMemtableFlushTime() {
-    return lastWorkMemtableFlushTime;
   }
 
   public boolean isSequence() {

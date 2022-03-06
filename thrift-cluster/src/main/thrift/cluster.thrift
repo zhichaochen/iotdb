@@ -261,8 +261,6 @@ struct GetAllPathsResult {
   2: optional list<string> aliasList
 }
 
-struct RefreshReuqest {}
-
 
 service RaftService {
   /**
@@ -338,9 +336,7 @@ service RaftService {
   * When a follower finds that it already has a file in a snapshot locally, it calls this
   * interface to notify the leader to remove the associated hardlink.
   **/
-  void removeHardLink(1:string hardLinkPath)
-
-  void refreshConnection(1:RefreshReuqest request)
+  void removeHardLink(1: string hardLinkPath)
 }
 
 
@@ -462,8 +458,6 @@ service TSDataService extends RaftService {
   binary last(1: LastQueryRequest request)
 
   int getPathCount(1: Node header 2: list<string> pathsToQuery 3: int level)
-
-  int getDeviceCount(1: Node header, 2: list<string> pathsToQuery)
 
   /**
   * During slot transfer, when a member has pulled snapshot from a group, the member will use this

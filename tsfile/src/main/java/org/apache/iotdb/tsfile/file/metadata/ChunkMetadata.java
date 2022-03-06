@@ -18,11 +18,11 @@
  */
 package org.apache.iotdb.tsfile.file.metadata;
 
+import org.apache.iotdb.tsfile.common.cache.Accountable;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.file.metadata.statistics.Statistics;
 import org.apache.iotdb.tsfile.read.common.TimeRange;
 import org.apache.iotdb.tsfile.read.controller.IChunkLoader;
-import org.apache.iotdb.tsfile.utils.FilePathUtils;
 import org.apache.iotdb.tsfile.utils.RamUsageEstimator;
 import org.apache.iotdb.tsfile.utils.ReadWriteIOUtils;
 
@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Objects;
 
 /** Metadata of one chunk. */
-public class ChunkMetadata {
+public class ChunkMetadata implements Accountable {
 
   private String measurementUid;
 
@@ -63,15 +63,14 @@ public class ChunkMetadata {
 
   private boolean isFromOldTsFile = false;
 
-  private static final int CHUNK_METADATA_FIXED_RAM_SIZE = 84;
+  private long ramSize;
+
+  private static final int CHUNK_METADATA_FIXED_RAM_SIZE = 80;
 
   // used for SeriesReader to indicate whether it is a seq/unseq timeseries metadata
   private boolean isSeq = true;
   private boolean isClosed;
   private String filePath;
-
-  // used for ChunkCache, Eg:"root.sg1/0/0"
-  private String tsFilePrefixPath;
 
   private ChunkMetadata() {}
 
@@ -228,12 +227,16 @@ public class ChunkMetadata {
     ChunkMetadata that = (ChunkMetadata) o;
     return offsetOfChunkHeader == that.offsetOfChunkHeader
         && version == that.version
-        && tsFilePrefixPath.equals(that.tsFilePrefixPath);
+        && Objects.equals(measurementUid, that.measurementUid)
+        && tsDataType == that.tsDataType
+        && Objects.equals(deleteIntervalList, that.deleteIntervalList)
+        && Objects.equals(statistics, that.statistics);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(tsFilePrefixPath, version, offsetOfChunkHeader);
+    return Objects.hash(
+        measurementUid, deleteIntervalList, tsDataType, statistics, version, offsetOfChunkHeader);
   }
 
   public boolean isModified() {
@@ -254,7 +257,6 @@ public class ChunkMetadata {
 
   public long calculateRamSize() {
     return CHUNK_METADATA_FIXED_RAM_SIZE
-        + RamUsageEstimator.sizeOf(tsFilePrefixPath)
         + RamUsageEstimator.sizeOf(measurementUid)
         + statistics.calculateRamSize();
   }
@@ -265,8 +267,20 @@ public class ChunkMetadata {
         + Statistics.getSizeByType(dataType);
   }
 
+  @Override
+  public void setRamSize(long size) {
+    this.ramSize = size;
+  }
+
+  /** must use calculate ram size first */
+  @Override
+  public long getRamSize() {
+    return ramSize;
+  }
+
   public void mergeChunkMetadata(ChunkMetadata chunkMetadata) {
     this.statistics.mergeStatistics(chunkMetadata.getStatistics());
+    this.ramSize = calculateRamSize();
   }
 
   public void setSeq(boolean seq) {
@@ -291,8 +305,5 @@ public class ChunkMetadata {
 
   public void setFilePath(String filePath) {
     this.filePath = filePath;
-
-    // set tsFilePrefixPath
-    tsFilePrefixPath = FilePathUtils.getTsFilePrefixPath(filePath);
   }
 }

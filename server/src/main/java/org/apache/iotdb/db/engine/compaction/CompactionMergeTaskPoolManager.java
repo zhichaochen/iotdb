@@ -21,26 +21,27 @@ package org.apache.iotdb.db.engine.compaction;
 
 import org.apache.iotdb.db.concurrent.IoTDBThreadPoolFactory;
 import org.apache.iotdb.db.concurrent.ThreadName;
-import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.service.IService;
 import org.apache.iotdb.db.service.ServiceType;
+import org.apache.iotdb.db.utils.FilePathUtils;
 import org.apache.iotdb.db.utils.TestOnly;
 import org.apache.iotdb.tsfile.fileSystem.FSFactoryProducer;
-import org.apache.iotdb.tsfile.utils.FilePathUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.iotdb.db.engine.compaction.utils.CompactionLogger.COMPACTION_LOG_NAME;
@@ -52,11 +53,9 @@ public class CompactionMergeTaskPoolManager implements IService {
       LoggerFactory.getLogger(CompactionMergeTaskPoolManager.class);
   private static final CompactionMergeTaskPoolManager INSTANCE =
       new CompactionMergeTaskPoolManager();
-  private ScheduledExecutorService pool;
-  private Map<String, List<Future<Void>>> storageGroupTasks = new ConcurrentHashMap<>();
-  private static final IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
-
-  private static ConcurrentHashMap<String, Boolean> sgCompactionStatus = new ConcurrentHashMap<>();
+  private ExecutorService pool;
+  private Map<String, Set<Future<Void>>> storageGroupTasks = new ConcurrentHashMap<>();
+  public static long totalWriteCount = 0L;
 
   public static CompactionMergeTaskPoolManager getInstance() {
     return INSTANCE;
@@ -65,7 +64,7 @@ public class CompactionMergeTaskPoolManager implements IService {
   @Override
   public void start() {
     if (pool == null) {
-      pool =
+      this.pool =
           IoTDBThreadPoolFactory.newScheduledThreadPool(
               IoTDBDescriptor.getInstance().getConfig().getCompactionThreadNum(),
               ThreadName.COMPACTION_SERVICE.getName());
@@ -161,38 +160,31 @@ public class CompactionMergeTaskPoolManager implements IService {
     return ServiceType.COMPACTION_SERVICE;
   }
 
+  public void submitTask(String storageGroupName, Callable<Void> compactionMergeTask)
+      throws RejectedExecutionException {
+    if (pool != null && !pool.isTerminated()) {
+      Future<Void> future = pool.submit(compactionMergeTask);
+      storageGroupTasks
+          .computeIfAbsent(storageGroupName, k -> new ConcurrentSkipListSet<>())
+          .add(future);
+    }
+  }
+
   /**
    * Abort all compactions of a storage group. The caller must acquire the write lock of the
    * corresponding storage group.
    */
   public void abortCompaction(String storageGroup) {
-    List<Future<Void>> subTasks =
-        storageGroupTasks.getOrDefault(storageGroup, Collections.emptyList());
-    for (Future<Void> next : subTasks) {
+    Set<Future<Void>> subTasks =
+        storageGroupTasks.getOrDefault(storageGroup, Collections.emptySet());
+    Iterator<Future<Void>> subIterator = subTasks.iterator();
+    while (subIterator.hasNext()) {
+      Future<Void> next = subIterator.next();
       if (!next.isDone() && !next.isCancelled()) {
         next.cancel(true);
-        sgCompactionStatus.put(storageGroup, false);
       }
+      subIterator.remove();
     }
-    subTasks.clear();
-  }
-
-  public synchronized void clearCompactionStatus(String storageGroupName) {
-    // for test
-    if (sgCompactionStatus == null) {
-      sgCompactionStatus = new ConcurrentHashMap<>();
-    }
-    sgCompactionStatus.put(storageGroupName, false);
-  }
-
-  public void init(Runnable function) {
-    pool.scheduleWithFixedDelay(
-        function, 1000, config.getCompactionInterval(), TimeUnit.MILLISECONDS);
-  }
-
-  @TestOnly
-  public synchronized int getCompactionTaskNum() {
-    return ((ThreadPoolExecutor) pool).getActiveCount();
   }
 
   public boolean isTerminated() {

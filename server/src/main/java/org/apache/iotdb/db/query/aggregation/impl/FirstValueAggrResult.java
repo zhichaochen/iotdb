@@ -65,7 +65,13 @@ public class FirstValueAggrResult extends AggregateResult {
 
   @Override
   public void updateResultFromPageData(BatchData dataInThisPage) {
-    updateResultFromPageData(dataInThisPage, Long.MIN_VALUE, Long.MAX_VALUE);
+    if (hasFinalResult()) {
+      return;
+    }
+    if (dataInThisPage.hasCurrent()) {
+      setValue(dataInThisPage.currentValue());
+      timestamp = dataInThisPage.currentTime();
+    }
   }
 
   @Override

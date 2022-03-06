@@ -24,8 +24,8 @@ import org.apache.iotdb.db.exception.StorageEngineException;
 import org.apache.iotdb.db.exception.metadata.IllegalPathException;
 import org.apache.iotdb.db.metadata.PartialPath;
 import org.apache.iotdb.db.utils.EnvironmentUtils;
+import org.apache.iotdb.db.utils.FilePathUtils;
 import org.apache.iotdb.jdbc.Config;
-import org.apache.iotdb.tsfile.utils.FilePathUtils;
 import org.apache.iotdb.tsfile.utils.Pair;
 
 import org.junit.AfterClass;
@@ -83,13 +83,11 @@ public class IoTDBFilePathUtilsIT {
     Assert.assertNotNull(tsFileResources);
 
     for (TsFileResource tsFileResource : tsFileResources) {
-      String sgName =
-          FilePathUtils.getLogicalStorageGroupName(tsFileResource.getTsFile().getAbsolutePath());
+      String sgName = FilePathUtils.getLogicalStorageGroupName(tsFileResource);
       Assert.assertEquals(storageGroupName, sgName);
 
       Pair<String, Long> logicalSgNameAndTimePartitionIdPair =
-          FilePathUtils.getLogicalSgNameAndTimePartitionIdPair(
-              tsFileResource.getTsFile().getAbsolutePath());
+          FilePathUtils.getLogicalSgNameAndTimePartitionIdPair(tsFileResource);
       Assert.assertEquals(storageGroupName, logicalSgNameAndTimePartitionIdPair.left);
     }
   }

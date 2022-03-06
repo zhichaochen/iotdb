@@ -20,7 +20,6 @@ package org.apache.iotdb.db.qp.utils;
 
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.exception.query.LogicalOperatorException;
-import org.apache.iotdb.db.query.control.SessionManager;
 
 import java.time.DateTimeException;
 import java.time.Instant;
@@ -32,7 +31,6 @@ import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 import java.time.format.SignStyle;
 import java.time.temporal.ChronoField;
-import java.util.Calendar;
 
 public class DatetimeUtils {
 
@@ -508,15 +506,14 @@ public class DatetimeUtils {
   }
 
   /**
-   * convert duration string to time value. CurrentTime is used to calculate the days of natural *
-   * month. If it's set as -1, which means a context free situation, then '1mo' will be thought as *
-   * 30 days.
+   * convert duration string to time value.
    *
    * @param duration represent duration string like: 12d8m9ns, 1y1mo, etc.
    * @return time in milliseconds, microseconds, or nanoseconds depending on the profile
    */
   public static long convertDurationStrToLong(String duration) {
-    return convertDurationStrToLong(-1, duration);
+    String timestampPrecision = IoTDBDescriptor.getInstance().getConfig().getTimestampPrecision();
+    return convertDurationStrToLong(duration, timestampPrecision);
   }
 
   /**
@@ -525,8 +522,7 @@ public class DatetimeUtils {
    * @param duration represent duration string like: 12d8m9ns, 1y1mo, etc.
    * @return time in milliseconds, microseconds, or nanoseconds depending on the profile
    */
-  public static long convertDurationStrToLong(long currentTime, String duration) {
-    String timestampPrecision = IoTDBDescriptor.getInstance().getConfig().getTimestampPrecision();
+  public static long convertDurationStrToLong(String duration, String timestampPrecision) {
     long total = 0;
     long temp = 0;
     for (int i = 0; i < duration.length(); i++) {
@@ -542,24 +538,15 @@ public class DatetimeUtils {
           unit += duration.charAt(i);
         }
         total +=
-            DatetimeUtils.convertDurationStrToLong(
-                currentTime == -1 ? -1 : currentTime + total,
-                temp,
-                unit.toLowerCase(),
-                timestampPrecision);
+            DatetimeUtils.convertDurationStrToLong(temp, unit.toLowerCase(), timestampPrecision);
         temp = 0;
       }
     }
     return total;
   }
 
-  public static long convertDurationStrToLong(long value, String unit, String timestampPrecision) {
-    return convertDurationStrToLong(-1, value, unit, timestampPrecision);
-  }
-
   /** convert duration string to millisecond, microsecond or nanosecond. */
-  public static long convertDurationStrToLong(
-      long currentTime, long value, String unit, String timestampPrecision) {
+  public static long convertDurationStrToLong(long value, String unit, String timestampPrecision) {
     DurationUnit durationUnit = DurationUnit.valueOf(unit);
     long res = value;
     switch (durationUnit) {
@@ -567,15 +554,7 @@ public class DatetimeUtils {
         res *= 365 * 86_400_000L;
         break;
       case mo:
-        if (currentTime == -1) {
-          res *= 30 * 86_400_000L;
-        } else {
-          Calendar calendar = Calendar.getInstance();
-          calendar.setTimeZone(SessionManager.getInstance().getCurrSessionTimeZone());
-          calendar.setTimeInMillis(currentTime);
-          calendar.add(Calendar.MONTH, (int) (value));
-          res = calendar.getTimeInMillis() - currentTime;
-        }
+        res *= 30 * 86_400_000L;
         break;
       case w:
         res *= 7 * 86_400_000L;
@@ -620,19 +599,6 @@ public class DatetimeUtils {
       } else {
         return res;
       }
-    }
-  }
-
-  public static long currentTime() {
-    long startupNano = IoTDBDescriptor.getInstance().getConfig().getStartUpNanosecond();
-    String timePrecision = IoTDBDescriptor.getInstance().getConfig().getTimestampPrecision();
-    switch (timePrecision) {
-      case "ns":
-        return System.currentTimeMillis() * 1000_000 + (System.nanoTime() - startupNano) % 1000_000;
-      case "us":
-        return System.currentTimeMillis() * 1000 + (System.nanoTime() - startupNano) / 1000 % 1000;
-      default:
-        return System.currentTimeMillis();
     }
   }
 

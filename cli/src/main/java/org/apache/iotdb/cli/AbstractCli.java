@@ -21,7 +21,6 @@ package org.apache.iotdb.cli;
 import org.apache.iotdb.exception.ArgsErrorException;
 import org.apache.iotdb.jdbc.IoTDBConnection;
 import org.apache.iotdb.jdbc.IoTDBJDBCResultSet;
-import org.apache.iotdb.rpc.IoTDBConnectionException;
 import org.apache.iotdb.rpc.RpcUtils;
 import org.apache.iotdb.service.rpc.thrift.ServerProperties;
 import org.apache.iotdb.tool.ImportCsv;
@@ -289,9 +288,6 @@ public abstract class AbstractCli {
 
       execute = executeCommand.toString();
       hasExecuteSQL = true;
-      // When execute sql in CLI with -e mode, we should print all results by setting continuePrint
-      // is true.
-      continuePrint = true;
       args = Arrays.copyOfRange(args, 0, index);
       return args;
     }
@@ -479,17 +475,8 @@ public abstract class AbstractCli {
       return;
     }
     println(cmd.split(" ")[1]);
-    try {
-      ImportCsv.importFromTargetPath(
-          host,
-          Integer.valueOf(port),
-          username,
-          password,
-          cmd.split(" ")[1],
-          connection.getTimeZone());
-    } catch (IoTDBConnectionException e) {
-      e.printStackTrace();
-    }
+    ImportCsv.importCsvFromFile(
+        host, port, username, password, cmd.split(" ")[1], connection.getTimeZone());
   }
 
   private static void executeQuery(IoTDBConnection connection, String cmd) {

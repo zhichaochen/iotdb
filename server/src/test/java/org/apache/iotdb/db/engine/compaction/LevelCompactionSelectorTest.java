@@ -46,7 +46,7 @@ public class LevelCompactionSelectorTest extends LevelCompactionTest {
   @Before
   public void setUp() throws IOException, WriteProcessException, MetadataException {
     super.setUp();
-    tempSGDir = new File(TestConstant.OUTPUT_DATA_DIR.concat("tempSG"));
+    tempSGDir = new File(TestConstant.BASE_OUTPUT_PATH.concat("tempSG"));
     tempSGDir.mkdirs();
   }
 
@@ -59,10 +59,9 @@ public class LevelCompactionSelectorTest extends LevelCompactionTest {
 
   /** just compaction once */
   @Test
-  public void testCompactionSelector()
-      throws NoSuchFieldException, IllegalAccessException, IOException {
+  public void testCompactionSelector() throws NoSuchFieldException, IllegalAccessException {
     LevelCompactionTsFileManagement levelCompactionTsFileManagement =
-        new LevelCompactionTsFileManagement(COMPACTION_TEST_SG, "0", tempSGDir.getPath());
+        new LevelCompactionTsFileManagement(COMPACTION_TEST_SG, tempSGDir.getPath());
     levelCompactionTsFileManagement.addAll(seqResources, true);
     levelCompactionTsFileManagement.addAll(unseqResources, false);
     levelCompactionTsFileManagement.forkCurrentFileList(0);
