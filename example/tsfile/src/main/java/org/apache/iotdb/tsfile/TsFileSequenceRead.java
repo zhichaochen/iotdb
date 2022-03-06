@@ -45,7 +45,7 @@ public class TsFileSequenceRead {
     "squid:S106"
   }) // Suppress high Cognitive Complexity and Standard outputs warning
   public static void main(String[] args) throws IOException {
-    String filename = "test.tsfile";
+    String filename = "/Users/jackietien/Desktop/4418ec145b13604e7ca1f186a163f262.compaction-old-file";
     if (args.length >= 1) {
       filename = args[0];
     }
@@ -64,69 +64,80 @@ public class TsFileSequenceRead {
       System.out.println("[Chunk Group]");
       System.out.println("position: " + reader.position());
       byte marker;
-      while ((marker = reader.readMarker()) != MetaMarker.SEPARATOR) {
-        switch (marker) {
-          case MetaMarker.CHUNK_HEADER:
-          case MetaMarker.ONLY_ONE_PAGE_CHUNK_HEADER:
-            System.out.println("\t[Chunk]");
-            System.out.println("\tchunk type: " + marker);
-            System.out.println("\tposition: " + reader.position());
-            ChunkHeader header = reader.readChunkHeader(marker);
-            System.out.println("\tMeasurement: " + header.getMeasurementID());
-            Decoder defaultTimeDecoder =
-                Decoder.getDecoderByType(
-                    TSEncoding.valueOf(TSFileDescriptor.getInstance().getConfig().getTimeEncoder()),
-                    TSDataType.INT64);
-            Decoder valueDecoder =
-                Decoder.getDecoderByType(header.getEncodingType(), header.getDataType());
-            int dataSize = header.getDataSize();
-            while (dataSize > 0) {
-              valueDecoder.reset();
-              System.out.println("\t\t[Page]\n \t\tPage head position: " + reader.position());
-              PageHeader pageHeader =
-                  reader.readPageHeader(
-                      header.getDataType(), header.getChunkType() == MetaMarker.CHUNK_HEADER);
-              System.out.println("\t\tPage data position: " + reader.position());
-              ByteBuffer pageData = reader.readPage(pageHeader, header.getCompressionType());
-              System.out.println(
-                  "\t\tUncompressed page data size: " + pageHeader.getUncompressedSize());
-              PageReader reader1 =
-                  new PageReader(
-                      pageData, header.getDataType(), valueDecoder, defaultTimeDecoder, null);
-              BatchData batchData = reader1.getAllSatisfiedPageData();
-              if (header.getChunkType() == MetaMarker.CHUNK_HEADER) {
-                System.out.println("\t\tpoints in the page: " + pageHeader.getNumOfValues());
-              } else {
-                System.out.println("\t\tpoints in the page: " + batchData.length());
-              }
-              while (batchData.hasCurrent()) {
-                System.out.println(
-                    "\t\t\ttime, value: "
-                        + batchData.currentTime()
-                        + ", "
-                        + batchData.currentValue());
-                batchData.next();
-              }
-              dataSize -= pageHeader.getSerializedPageSize();
-            }
-            break;
-          case MetaMarker.CHUNK_GROUP_HEADER:
-            System.out.println("Chunk Group Header position: " + reader.position());
-            ChunkGroupHeader chunkGroupHeader = reader.readChunkGroupHeader();
-            System.out.println("device: " + chunkGroupHeader.getDeviceID());
-            break;
-          case MetaMarker.OPERATION_INDEX_RANGE:
-            reader.readPlanIndex();
-            System.out.println("minPlanIndex: " + reader.getMinPlanIndex());
-            System.out.println("maxPlanIndex: " + reader.getMaxPlanIndex());
-            break;
-          default:
-            MetaMarker.handleUnexpectedMarker(marker);
-        }
-      }
+      String deviceId = "";
+//      while ((marker = reader.readMarker()) != MetaMarker.SEPARATOR) {
+//        switch (marker) {
+//          case MetaMarker.CHUNK_HEADER:
+//          case MetaMarker.ONLY_ONE_PAGE_CHUNK_HEADER:
+//            System.out.println("\t[Chunk]");
+//            System.out.println("\tchunk type: " + marker);
+//            System.out.println("\tposition: " + reader.position());
+//            ChunkHeader header = reader.readChunkHeader(marker);
+//            System.out.println("\tMeasurement: " + header.getMeasurementID());
+//            Decoder defaultTimeDecoder =
+//                Decoder.getDecoderByType(
+//                    TSEncoding.valueOf(TSFileDescriptor.getInstance().getConfig().getTimeEncoder()),
+//                    TSDataType.INT64);
+//            Decoder valueDecoder =
+//                Decoder.getDecoderByType(header.getEncodingType(), header.getDataType());
+//            int dataSize = header.getDataSize();
+//            while (dataSize > 0) {
+//              valueDecoder.reset();
+//              System.out.println("\t\t[Page]\n \t\tPage head position: " + reader.position());
+//              PageHeader pageHeader =
+//                  reader.readPageHeader(
+//                      header.getDataType(), header.getChunkType() == MetaMarker.CHUNK_HEADER);
+//              System.out.println("\t\tPage data position: " + reader.position());
+//              try {
+//                ByteBuffer pageData = reader.readPage(pageHeader, header.getCompressionType());
+//                System.out.println(
+//                        "\t\tUncompressed page data size: " + pageHeader.getUncompressedSize());
+//                PageReader reader1 =
+//                        new PageReader(
+//                                pageData, header.getDataType(), valueDecoder, defaultTimeDecoder, null);
+//                BatchData batchData = reader1.getAllSatisfiedPageData();
+//                if (header.getChunkType() == MetaMarker.CHUNK_HEADER) {
+//                  System.out.println("\t\tpoints in the page: " + pageHeader.getNumOfValues());
+//                } else {
+//                  System.out.println("\t\tpoints in the page: " + batchData.length());
+//                }
+//                while (batchData.hasCurrent()) {
+//                  if ("root.Baoshan.S.310709M01.09.\"加速度\".5000.16384".equals(deviceId) && "Value".equals(header.getMeasurementID()))
+////                System.out.println(
+////                    "\t\t\ttime, value: "
+////                        + batchData.currentTime()
+////                        + ", "
+////                        + batchData.currentValue());
+//                  batchData.next();
+//                }
+//                dataSize -= pageHeader.getSerializedPageSize();
+//              } catch (IOException e) {
+//                System.out.println(pageHeader);
+//              }
+//            }
+//            break;
+//          case MetaMarker.CHUNK_GROUP_HEADER:
+//            System.out.println("Chunk Group Header position: " + reader.position());
+//            ChunkGroupHeader chunkGroupHeader = reader.readChunkGroupHeader();
+//            System.out.println("device: " + chunkGroupHeader.getDeviceID());
+//            deviceId = chunkGroupHeader.getDeviceID();
+//            break;
+//          case MetaMarker.OPERATION_INDEX_RANGE:
+//            reader.readPlanIndex();
+//            System.out.println("minPlanIndex: " + reader.getMinPlanIndex());
+//            System.out.println("maxPlanIndex: " + reader.getMaxPlanIndex());
+//            break;
+//          default:
+//            MetaMarker.handleUnexpectedMarker(marker);
+//        }
+//      }
       System.out.println("[Metadata]");
       for (String device : reader.getAllDevices()) {
+
         Map<String, List<ChunkMetadata>> seriesMetaData = reader.readChunkMetadataInDevice(device);
+        if ("root.Baoshan.S.310709M01.09.\"加速度\".5000.16384".equals(device)) {
+          System.out.println("ssss");
+        }
         System.out.printf(
             "\t[Device]Device %s, Number of Measurements %d%n", device, seriesMetaData.size());
         for (Map.Entry<String, List<ChunkMetadata>> serie : seriesMetaData.entrySet()) {
