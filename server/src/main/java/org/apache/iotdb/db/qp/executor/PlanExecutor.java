@@ -116,6 +116,7 @@ import org.apache.iotdb.db.query.executor.IQueryRouter;
 import org.apache.iotdb.db.query.executor.QueryRouter;
 import org.apache.iotdb.db.query.udf.service.UDFRegistrationInformation;
 import org.apache.iotdb.db.query.udf.service.UDFRegistrationService;
+import org.apache.iotdb.db.separation.statistics.Collector;
 import org.apache.iotdb.db.service.IoTDB;
 import org.apache.iotdb.db.tools.TsFileRewriteTool;
 import org.apache.iotdb.db.utils.AuthUtils;
@@ -214,7 +215,7 @@ public class PlanExecutor implements IPlanExecutor {
   @Override
   public QueryDataSet processQuery(PhysicalPlan queryPlan, QueryContext context)
       throws IOException, StorageEngineException, QueryFilterOptimizationException,
-          QueryProcessException, MetadataException, InterruptedException {
+      QueryProcessException, MetadataException, InterruptedException {
     if (queryPlan instanceof QueryPlan) {
       return processDataQuery((QueryPlan) queryPlan, context);
     } else if (queryPlan instanceof AuthorPlan) {
@@ -310,7 +311,7 @@ public class PlanExecutor implements IPlanExecutor {
         TimePartitionFilter filter =
             (storageGroupName, partitionId) ->
                 storageGroupName.equals(
-                        ((DeletePartitionPlan) plan).getStorageGroupName().getFullPath())
+                    ((DeletePartitionPlan) plan).getStorageGroupName().getFullPath())
                     && p.getPartitionId().contains(partitionId);
         StorageEngine.getInstance()
             .removePartitions(((DeletePartitionPlan) plan).getStorageGroupName(), filter);
@@ -415,7 +416,9 @@ public class PlanExecutor implements IPlanExecutor {
     }
   }
 
-  /** when tracing off need Close the stream */
+  /**
+   * when tracing off need Close the stream
+   */
   private void operateTracing(TracingPlan plan) {
     IoTDBDescriptor.getInstance().getConfig().setEnablePerformanceTracing(plan.isTracingOn());
     if (!plan.isTracingOn()) {
@@ -475,7 +478,7 @@ public class PlanExecutor implements IPlanExecutor {
 
   protected QueryDataSet processDataQuery(QueryPlan queryPlan, QueryContext context)
       throws StorageEngineException, QueryFilterOptimizationException, QueryProcessException,
-          IOException, InterruptedException {
+      IOException, InterruptedException {
     QueryDataSet queryDataSet;
     if (queryPlan instanceof AlignByDevicePlan) {
       queryDataSet = getAlignByDeviceDataSet((AlignByDevicePlan) queryPlan, context, queryRouter);
@@ -1231,6 +1234,12 @@ public class PlanExecutor implements IPlanExecutor {
       // check whether types are match
       getSeriesSchemas(insertRowPlan);
       insertRowPlan.transferType();
+//      if(IoTDBDescriptor.getInstance().getConfig().isEnableSeparationTuning()){
+//      Collector c = new Collector();
+      Long time = System.currentTimeMillis();
+      System.out.println(time);
+      Collector.collect(insertRowPlan.getTime(), time);
+//      }
       StorageEngine.getInstance().insert(insertRowPlan);
       if (insertRowPlan.getFailedMeasurements() != null) {
         checkFailedMeasurments(insertRowPlan);

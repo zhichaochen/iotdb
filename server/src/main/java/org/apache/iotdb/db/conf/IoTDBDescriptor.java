@@ -106,7 +106,9 @@ public class IoTDBDescriptor {
     }
   }
 
-  /** load an property file and set TsfileDBConfig variables. */
+  /**
+   * load an property file and set TsfileDBConfig variables.
+   */
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
   private void loadProps() {
     URL url = getPropsUrl();
@@ -338,6 +340,11 @@ public class IoTDBDescriptor {
           Boolean.parseBoolean(
               properties.getProperty(
                   "enable_unseq_compaction", Boolean.toString(conf.isEnableUnseqCompaction()))));
+
+      conf.setEnableSeparationTuning(
+          Boolean.parseBoolean(
+              properties.getProperty(
+                  "enable_separation_tuning", Boolean.toString(conf.isEnableSeparationTuning()))));
 
       conf.setEnableContinuousCompaction(
           Boolean.parseBoolean(
@@ -1172,7 +1179,9 @@ public class IoTDBDescriptor {
     }
   }
 
-  /** Get default encode algorithm by data type */
+  /**
+   * Get default encode algorithm by data type
+   */
   public TSEncoding getDefaultEncodingByType(TSDataType dataType) {
     switch (dataType) {
       case BOOLEAN:

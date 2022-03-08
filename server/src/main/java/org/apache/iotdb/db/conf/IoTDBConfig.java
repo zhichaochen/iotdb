@@ -659,6 +659,7 @@ public class IoTDBConfig {
 
   /** the number of virtual storage groups per user-defined storage group */
   private int virtualStorageGroupNum = 1;
+  private boolean enableSeparationTuning = false;
 
   public IoTDBConfig() {
     // empty constructor
@@ -1462,6 +1463,14 @@ public class IoTDBConfig {
 
   public void setMaxLevelNum(int maxLevelNum) {
     this.maxLevelNum = maxLevelNum;
+  }
+
+  public boolean isEnableSeparationTuning() {
+    return enableSeparationTuning;
+  }
+
+  public void setEnableSeparationTuning(boolean enableSeparationTuning) {
+    this.enableSeparationTuning = enableSeparationTuning;
   }
 
   public boolean isEnableUnseqCompaction() {
