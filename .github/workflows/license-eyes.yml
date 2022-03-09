@@ -21,7 +21,7 @@ on:
   pull_request:
   push:
     branches:
-      - master
+      - skywalking_eye
 jobs:
   license-check:
     name: "License Check"
