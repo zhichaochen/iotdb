@@ -6,8 +6,22 @@ header:
   paths-ignore:
     - 'dist'
     - 'licenses'
-    - '**/*.md'
     - 'LICENSE'
     - 'NOTICE'
+    - '.git*'
+    - '.licenserc.yaml'
+    - '.mvn/**'
+    - 'LICENSE-binary'
+    - 'NOTICE-binary'
+    - 'checkstyle.xml'
+    - '**/.gitignore'
+    - 'grafana-plugin/package.json'
+    - 'grafana-plugin/src/plugin.json'
+    - 'grafana-plugin/tsconfig.json'
+    - 'grafana-plugin/yarn.lock'
+    - 'site/src/main/.vuepress/redirects'
+    - 'site/src/main/package.json'
+    - 'zeppelin-interpreter/IoTDB-Zeppelin-Demo.zpln'
+    - 'zeppelin-interpreter/src/main/resources/interpreter-setting.json'
 
   comment: on-failure
