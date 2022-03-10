@@ -1793,6 +1793,13 @@ public class VirtualStorageGroupProcessor {
       if (filePathsManager != null) {
         filePathsManager.addUsedFilesForQuery(context.getQueryId(), dataSource);
       }
+      if (context.isDebug()) {
+        logger.info(
+            "QueryId: {}, sequence file list: {}, unsequence file list: {}",
+            context.getQueryId(),
+            dataSource.getSeqResources(),
+            dataSource.getUnseqResources());
+      }
       dataSource.setDataTTL(dataTTL);
       return dataSource;
     } catch (MetadataException e) {
