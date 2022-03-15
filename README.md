@@ -22,7 +22,7 @@
 
 
 # Compaction Policy Tuning Extension
-This is an extension of IoTDB, which implements the compaction policy tuning module. To use the module, several parameters of IoTDB would be used. The introduction of IoTDB can be found [here](https://github.com/apache/iotdb.git).
+This is an extension of IoTDB, which implements the compaction policy tuning module. To use the module, several parameters of IoTDB should be considered. The introduction of IoTDB can be found [here](https://github.com/apache/iotdb.git).
 
 ```aidl
 enable_separation_tuning=true   # to enable the tuning algorithm
