@@ -428,6 +428,31 @@ public class TraditionalLevelCompactionTsFileManagement extends TsFileManagement
   public void forkCurrentFileList(long timePartition) {
     readLock();
     try {
+      // separate and has data in 1 level unseq part
+      if (IoTDBDescriptor.getInstance().getConfig().isSeparate()
+          && unSequenceTsFileResources.get(timePartition).get(1).size() > 0) {
+        for (TsFileResource tsFileResource : unSequenceTsFileResources.get(timePartition).get(1)) {
+          sequenceTsFileResources
+              .computeIfAbsent(timePartition, this::newSequenceTsFileResources)
+              .get(0)
+              .add(tsFileResource);
+        }
+        unSequenceTsFileResources.get(timePartition).get(1).clear();
+      }
+      // separate and has data in seq part
+      else if (!IoTDBDescriptor.getInstance().getConfig().isSeparate() && !isEmpty(true)) {
+        List<SortedSet<TsFileResource>> sequenceTimePartitionTsFileResources =
+            sequenceTsFileResources.get(timePartition);
+        for (SortedSet<TsFileResource> tsFileResources : sequenceTimePartitionTsFileResources) {
+          for (TsFileResource tsFileResource : tsFileResources) {
+            unSequenceTsFileResources
+                .computeIfAbsent(timePartition, this::newUnSequenceTsFileResources)
+                .get(1)
+                .add(tsFileResource);
+          }
+          tsFileResources.clear();
+        }
+      }
       forkTsFileList(
           forkedSequenceTsFileResources,
           sequenceTsFileResources.computeIfAbsent(timePartition, this::newSequenceTsFileResources));
@@ -460,14 +485,18 @@ public class TraditionalLevelCompactionTsFileManagement extends TsFileManagement
   @Override
   protected void merge(long timePartition) {
     isMergeExecutedInCurrentTask = false;
-    if (enableUnseqCompaction && forkedUnSequenceTsFileResources.get(0).size() > 0) {
-      List<TsFileResource> unseqFiles = new ArrayList<>();
-      unseqFiles.add(forkedUnSequenceTsFileResources.get(0).get(0));
-      isMergeExecutedInCurrentTask =
-          merge(
-              new ArrayList<>(sequenceTsFileResources.get(timePartition).get(0)),
-              unseqFiles,
-              timePartition);
+    if (IoTDBDescriptor.getInstance().getConfig().isSeparate()) {
+      if (enableUnseqCompaction && forkedUnSequenceTsFileResources.get(0).size() > 0) {
+        List<TsFileResource> unseqFiles = new ArrayList<>();
+        unseqFiles.add(forkedUnSequenceTsFileResources.get(0).get(0));
+        isMergeExecutedInCurrentTask =
+            merge(
+                new ArrayList<>(sequenceTsFileResources.get(timePartition).get(0)),
+                unseqFiles,
+                timePartition);
+      }
+    } else {
+      isMergeExecutedInCurrentTask = merge(forkedUnSequenceTsFileResources, timePartition);
     }
   }
 
@@ -505,38 +534,7 @@ public class TraditionalLevelCompactionTsFileManagement extends TsFileManagement
       IMergeFileSelector fileSelector = getMergeFileSelector(budget, mergeResource);
       try {
         List[] mergeFiles = fileSelector.select();
-        if (mergeFiles.length == 0 || mergeFiles[0].size() == 0) {
-          //              writeLock();
-          //              try {
-          //                File newLevelFile =
-          //
-          // TsFileResource.modifyTsFileNameMergeCnt(toMergeTsFile.getTsFile());
-          //                fsFactory.moveFile(toMergeTsFile.getTsFile(), newLevelFile);
-          //                fsFactory.moveFile(
-          //                    fsFactory.getFile(
-          //                        toMergeTsFile.getTsFile().getAbsolutePath()
-          //                            + TsFileResource.RESOURCE_SUFFIX),
-          //                    fsFactory.getFile(
-          //                        newLevelFile.getAbsolutePath() +
-          // TsFileResource.RESOURCE_SUFFIX));
-          //                if (toMergeTsFile.getModFile().exists()) {
-          //                  fsFactory.moveFile(
-          //                      fsFactory.getFile(toMergeTsFile.getModFile().getFilePath()),
-          //                      fsFactory.getFile(
-          //                          newLevelFile.getAbsolutePath() +
-          // ModificationFile.FILE_SUFFIX));
-          //                }
-          //                toMergeTsFile.setFile(newLevelFile);
-          //                sequenceTsFileResources.get(timePartition).get(i +
-          // 1).add(toMergeTsFile);
-          //                deleteLevelFile(timePartition, toMergeTsFile, i, true);
-          //                if (mergeResources.size() > i + 1) {
-          //                  mergeResources.get(i + 1).add(toMergeTsFile);
-          //                }
-          //              } finally {
-          //                writeUnlock();
-          //              }
-        } else {
+        if (mergeFiles.length != 0 && mergeFiles[0].size() != 0) {
           List<TsFileResource> selectedSeqResources = mergeResource.getSeqFiles();
           List<TsFileResource> selectedUnseqResources = mergeResource.getUnseqFiles();
           List<TsFileResource> sourceResources = new ArrayList<>(selectedSeqResources);
@@ -574,6 +572,7 @@ public class TraditionalLevelCompactionTsFileManagement extends TsFileManagement
         logger.error("{} cannot select file for merge", storageGroupName, e);
         return false;
       }
+
     } catch (Exception e) {
       restoreCompaction();
       logger.error("Error occurred in Compaction Merge thread", e);
@@ -583,6 +582,133 @@ public class TraditionalLevelCompactionTsFileManagement extends TsFileManagement
           "{} [Compaction] merge end time isSeq = {}, consumption: {} ms",
           storageGroupName,
           true,
+          System.currentTimeMillis() - startTimeMillis);
+    }
+    return isMergeExecutedInCurrentTask;
+  }
+
+  private long getFileSizeThreshold(int levelIndex) {
+    long result = BASE_FILE_SIZE;
+    for (int i = 0; i < levelIndex; i++) {
+      result *= FILE_SIZE_RATE;
+    }
+    return result;
+  }
+
+  @SuppressWarnings("squid:S3776")
+  private boolean merge(List<List<TsFileResource>> mergeResources, long timePartition) {
+    long startTimeMillis = System.currentTimeMillis();
+    // whether execute merge chunk in the loop below
+    boolean isMergeExecutedInCurrentTask = false;
+    try {
+      logger.info("{} start to filter compaction condition", storageGroupName);
+      for (int i = 0; i < MAX_LEVEL_NUM - 1; i++) {
+        List<TsFileResource> currLevelTsFileResource = mergeResources.get(i);
+        long currTotalFileSize = 0L;
+        for (TsFileResource tsFileResource : currLevelTsFileResource) {
+          currTotalFileSize += tsFileResource.getTsFileSize();
+        }
+        if (currTotalFileSize >= getFileSizeThreshold(i)) {
+          // just merge part of the file
+          isMergeExecutedInCurrentTask = true;
+          // log source file list and target file for recover
+          TsFileResource toMergeTsFile = currLevelTsFileResource.get(0);
+          logger.info(
+              "{} [Compaction] merge TsFile {} to next level",
+              storageGroupName,
+              toMergeTsFile.getTsFile().getName());
+          long budget = IoTDBDescriptor.getInstance().getConfig().getMergeMemoryBudget();
+          long timeLowerBound = System.currentTimeMillis() - Long.MAX_VALUE;
+          List<TsFileResource> unSeqMergeList = new ArrayList<>();
+          unSeqMergeList.add(toMergeTsFile);
+          MergeResource mergeResource =
+              new MergeResource(mergeResources.get(i + 1), unSeqMergeList, timeLowerBound);
+          IMergeFileSelector fileSelector = getMergeFileSelector(budget, mergeResource);
+          try {
+            List[] mergeFiles = fileSelector.select();
+            if (mergeFiles.length == 0 || mergeFiles[0].size() == 0 || mergeFiles[1].size() == 0) {
+              writeLock();
+              try {
+                File newLevelFile =
+                    TsFileResource.modifyTsFileNameMergeCnt(toMergeTsFile.getTsFile());
+                fsFactory.moveFile(toMergeTsFile.getTsFile(), newLevelFile);
+                fsFactory.moveFile(
+                    fsFactory.getFile(
+                        toMergeTsFile.getTsFile().getAbsolutePath()
+                            + TsFileResource.RESOURCE_SUFFIX),
+                    fsFactory.getFile(
+                        newLevelFile.getAbsolutePath() + TsFileResource.RESOURCE_SUFFIX));
+                if (toMergeTsFile.getModFile().exists()) {
+                  fsFactory.moveFile(
+                      fsFactory.getFile(toMergeTsFile.getModFile().getFilePath()),
+                      fsFactory.getFile(
+                          newLevelFile.getAbsolutePath() + ModificationFile.FILE_SUFFIX));
+                }
+                toMergeTsFile.setFile(newLevelFile);
+                unSequenceTsFileResources.get(timePartition).get(i + 1).add(toMergeTsFile);
+                deleteLevelFile(timePartition, toMergeTsFile, i, false);
+                if (mergeResources.size() > i + 1) {
+                  mergeResources.get(i + 1).add(toMergeTsFile);
+                }
+              } finally {
+                writeUnlock();
+              }
+            } else {
+              List<TsFileResource> seqResources = mergeResource.getSeqFiles();
+              List<TsFileResource> unseqResources = mergeResource.getUnseqFiles();
+              List<TsFileResource> sourceResources = new ArrayList<>(seqResources);
+              sourceResources.addAll(unseqResources);
+              File newLevelFile =
+                  TsFileResource.modifyTsFileNameMergeCnt(mergeResources.get(i).get(0).getTsFile());
+              TsFileResource newResource = new TsFileResource(newLevelFile);
+              List<TsFileResource> targetTsFileResources =
+                  CompactionSeparateFileUtils.mergeWithFileSeparate(
+                      newResource, sourceResources, storageGroupName);
+              logger.info(
+                  "{} [Compaction] merged level-{}'s {} TsFiles to next level's {} TsFiles, and start to delete old files",
+                  storageGroupName,
+                  i,
+                  unseqResources.size(),
+                  targetTsFileResources.size());
+              writeLock();
+              try {
+                if (Thread.currentThread().isInterrupted()) {
+                  throw new InterruptedException(
+                      String.format("%s [Compaction] abort", storageGroupName));
+                }
+                unSequenceTsFileResources
+                    .get(timePartition)
+                    .get(i + 1)
+                    .addAll(targetTsFileResources);
+                deleteLevelFilesInList(timePartition, unSeqMergeList, i, false);
+                deleteLevelFilesInList(timePartition, seqResources, i + 1, false);
+                if (mergeResources.size() > i + 1) {
+                  mergeResources.get(i + 1).removeAll(seqResources);
+                  mergeResources.get(i + 1).addAll(targetTsFileResources);
+                }
+              } catch (InterruptedException interruptedException) {
+                interruptedException.printStackTrace();
+              } finally {
+                writeUnlock();
+              }
+              deleteLevelFilesInDisk(sourceResources);
+            }
+            // avoid pending tasks holds the metadata and streams
+            mergeResource.clear();
+          } catch (MergeException | IOException e) {
+            logger.error("{} cannot select file for merge", storageGroupName, e);
+            return false;
+          }
+        }
+      }
+    } catch (Exception e) {
+      logger.error("Error occurred in Compaction Merge thread", e);
+    } finally {
+      // reset the merge working state to false
+      logger.info(
+          "{} [Compaction] merge end time isSeq = {}, consumption: {} ms",
+          storageGroupName,
+          false,
           System.currentTimeMillis() - startTimeMillis);
     }
     return isMergeExecutedInCurrentTask;

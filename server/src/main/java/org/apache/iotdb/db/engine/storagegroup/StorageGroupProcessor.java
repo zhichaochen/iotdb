@@ -878,7 +878,12 @@ public class StorageGroupProcessor {
               || !IoTDBDescriptor.getInstance().getConfig().isEnableDiscardOutOfOrderData()) {
             noFailure =
                 insertTabletToTsFileProcessor(
-                        insertTabletPlan, before, loc, isSequence, results, beforeTimePartition)
+                        insertTabletPlan,
+                        before,
+                        loc,
+                        IoTDBDescriptor.getInstance().getConfig().isSeparate() && isSequence,
+                        results,
+                        beforeTimePartition)
                     && noFailure;
           }
           // re initialize
@@ -915,7 +920,12 @@ public class StorageGroupProcessor {
               || !IoTDBDescriptor.getInstance().getConfig().isEnableDiscardOutOfOrderData())) {
         noFailure =
             insertTabletToTsFileProcessor(
-                    insertTabletPlan, before, loc, isSequence, results, beforeTimePartition)
+                    insertTabletPlan,
+                    before,
+                    loc,
+                    IoTDBDescriptor.getInstance().getConfig().isSeparate() && isSequence,
+                    results,
+                    beforeTimePartition)
                 && noFailure;
       }
       long globalLatestFlushedTime =
@@ -1082,6 +1092,20 @@ public class StorageGroupProcessor {
             latestFlushedTime,
             null);
       }
+    }
+  }
+
+  public void syncFlushAllMemtablesWhenChangeMode() throws IOException {
+    writeLock();
+    try {
+      // conventional mode should do not have seq memtable in memory
+      if (!IoTDBDescriptor.getInstance().getConfig().isSeparate()) {
+        for (TsFileProcessor tsFileProcessor : workSequenceTsFileProcessors.values()) {
+          tsFileProcessor.syncFlush();
+        }
+      }
+    } finally {
+      writeUnlock();
     }
   }
 
@@ -1956,6 +1980,7 @@ public class StorageGroupProcessor {
           "{} submit a compaction merge task",
           logicalStorageGroupName + "-" + virtualStorageGroupId);
       try {
+        syncFlushAllMemtablesWhenChangeMode(); // first check memtable
         // fork and filter current tsfile, then commit then to compaction merge
         tsFileManagement.forkCurrentFileList(timePartition);
         tsFileManagement.setForceFullMerge(fullMerge);
@@ -2904,6 +2929,9 @@ public class StorageGroupProcessor {
         }
         latestTimeForEachDevice.computeIfAbsent(timePartitionId, l -> new HashMap<>());
         // insert to sequence or unSequence file
+        if (!IoTDBDescriptor.getInstance().getConfig().isSeparate()) {
+          isSequence = false; // if not separate, then write all data to unSequence part
+        }
         insertToTsFileProcessor(plan, isSequence, timePartitionId);
       }
     } finally {

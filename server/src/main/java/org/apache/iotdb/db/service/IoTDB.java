@@ -58,7 +58,7 @@ public class IoTDB implements IoTDBMBean {
   private RegisterManager registerManager = new RegisterManager();
   public static MManager metaManager = MManager.getInstance();
 
-  public static ConcurrentLinkedQueue<Double>  delayQueue = new ConcurrentLinkedQueue<>();
+  public static ConcurrentLinkedQueue<Double> delayQueue = new ConcurrentLinkedQueue<>();
 
   public static IoTDB getInstance() {
     return IoTDBHolder.INSTANCE;
@@ -149,16 +149,14 @@ public class IoTDB implements IoTDBMBean {
     registerManager.register(SyncServerManager.getInstance());
     registerManager.register(UpgradeSevice.getINSTANCE());
 
-//    if(IoTDBDescriptor.getInstance().getConfig().isEnableSeparationTuning()){
-    if(true){
+    if (IoTDBDescriptor.getInstance().getConfig().isEnableSeparationTuning()) {
+      logger.info("Separation tuning is enabled.");
       ExecutorService executorService = Executors.newSingleThreadExecutor();
       SeparationTuningClient tuningThread = new SeparationTuningClient();
       executorService.execute(tuningThread);
     }
 
     logger.info("Congratulation, IoTDB is set up successfully. Now, enjoy yourself!");
-
-
   }
 
   private void deactivate() {

@@ -344,6 +344,14 @@ public class IoTDBDescriptor {
               properties.getProperty(
                   "enable_separation_tuning", Boolean.toString(conf.isEnableSeparationTuning()))));
 
+      conf.setTotalCapacity(
+          Integer.parseInt(
+              properties.getProperty("total_capacity", Integer.toString(conf.getTotalCapacity()))));
+
+      conf.setDelayNum(
+          Integer.parseInt(
+              properties.getProperty("delay_num", Integer.toString(conf.getDelayNum()))));
+
       conf.setEnableContinuousCompaction(
           Boolean.parseBoolean(
               properties.getProperty(

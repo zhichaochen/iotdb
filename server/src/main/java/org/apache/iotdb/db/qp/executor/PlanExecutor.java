@@ -143,9 +143,7 @@ import org.apache.iotdb.tsfile.write.writer.RestorableTsFileIOWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -192,7 +190,6 @@ import static org.apache.iotdb.db.conf.IoTDBConstant.FUNCTION_TYPE_EXTERNAL_UDTF
 import static org.apache.iotdb.db.conf.IoTDBConstant.FUNCTION_TYPE_NATIVE;
 import static org.apache.iotdb.db.conf.IoTDBConstant.QUERY_ID;
 import static org.apache.iotdb.db.conf.IoTDBConstant.STATEMENT;
-import static org.apache.iotdb.db.service.IoTDB.delayQueue;
 import static org.apache.iotdb.tsfile.common.constant.TsFileConstant.TSFILE_SUFFIX;
 
 @SuppressWarnings("java:S1135") // ignore todos
@@ -1235,8 +1232,7 @@ public class PlanExecutor implements IPlanExecutor {
       // check whether types are match
       getSeriesSchemas(insertRowPlan);
       insertRowPlan.transferType();
-
-      if(IoTDBDescriptor.getInstance().getConfig().isEnableSeparationTuning()){
+      if (IoTDBDescriptor.getInstance().getConfig().isEnableSeparationTuning()) {
         Collector.collect(insertRowPlan.getTime(), System.currentTimeMillis());
       }
       StorageEngine.getInstance().insert(insertRowPlan);
@@ -1253,7 +1249,7 @@ public class PlanExecutor implements IPlanExecutor {
       if (IoTDBDescriptor.getInstance().getConfig().isEnableStatMonitor()) {
         StatMonitor.getInstance().updateFailedStatValue();
       }
-//      throw e;
+      //      throw e;
     }
   }
 

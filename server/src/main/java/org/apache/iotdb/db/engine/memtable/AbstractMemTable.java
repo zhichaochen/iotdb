@@ -51,10 +51,6 @@ public abstract class AbstractMemTable implements IMemTable {
   protected boolean disableMemControl = true;
 
   private boolean shouldFlush = false;
-  private int avgSeqSeriesPointNumThreshold =
-      IoTDBDescriptor.getInstance().getConfig().getAvgSeqSeriesPointNumberThreshold();
-  private int avgUnseqSeriesPointNumThreshold =
-      IoTDBDescriptor.getInstance().getConfig().getAvgUnseqSeriesPointNumberThreshold();
 
   /** memory size of data points, including TEXT values */
   private long memSize = 0;
@@ -108,9 +104,11 @@ public abstract class AbstractMemTable implements IMemTable {
         k -> {
           seriesNumber++;
           if (isSequence) {
-            totalPointsNumThreshold += avgSeqSeriesPointNumThreshold;
+            totalPointsNumThreshold +=
+                IoTDBDescriptor.getInstance().getConfig().getAvgSeqSeriesPointNumberThreshold();
           } else {
-            totalPointsNumThreshold += avgUnseqSeriesPointNumThreshold;
+            totalPointsNumThreshold +=
+                IoTDBDescriptor.getInstance().getConfig().getAvgUnseqSeriesPointNumberThreshold();
           }
           return genMemSeries(schema);
         });

@@ -266,16 +266,10 @@ public class IoTDBConfig {
   private String indexRootFolder = "data" + File.separator + "index";
 
   /** When a TsFile's file size (in byte) exceed this, the TsFile is forced closed. */
-  private long tsFileSizeThreshold = 1L;
+  private long tsFileSizeThreshold = 0L;
 
   /** When a memTable's size (in byte) exceeds this, the memtable is flushed to disk. */
   private long memtableSizeThreshold = 100000000 * 1024 * 1024L;
-
-  /** When average series point number reaches this, flush the memtable to disk */
-  private int avgSeqSeriesPointNumberThreshold = 2560;
-
-  /** When average series point number reaches this, flush the memtable to disk */
-  private int avgUnseqSeriesPointNumberThreshold = 2560;
 
   /**
    * Work when tsfile_manage_strategy is level_strategy. When merge point number reaches this, merge
@@ -294,9 +288,19 @@ public class IoTDBConfig {
   /** LEVEL_COMPACTION, NO_COMPACTION */
   private CompactionStrategy compactionStrategy = CompactionStrategy.TRADITIONAL_LEVEL_COMPACTION;
 
+  private boolean isSeparate = true;
+  private int delayNum = 10000;
+  private int totalCapacity = 512;
+
   private long baseFileSize = 2 * 1024 * 1024L;
   private int fileSizeRate = 5;
-  private int maxLevelNum = 10;
+  private int maxLevelNum = 2;
+
+  /** When average series point number reaches this, flush the memtable to disk */
+  private int avgSeqSeriesPointNumberThreshold = totalCapacity / 2;
+
+  /** When average series point number reaches this, flush the memtable to disk */
+  private int avgUnseqSeriesPointNumberThreshold = totalCapacity / 2;
 
   /**
    * Works when the compaction_strategy is LEVEL_COMPACTION. Whether to merge unseq files into seq
@@ -1442,6 +1446,22 @@ public class IoTDBConfig {
     this.compactionStrategy = compactionStrategy;
   }
 
+  public boolean isSeparate() {
+    return isSeparate;
+  }
+
+  public void setSeparate(boolean separate) {
+    isSeparate = separate;
+  }
+
+  public int getDelayNum() {
+    return this.delayNum;
+  }
+
+  public void setDelayNum(int delayNum) {
+    this.delayNum = delayNum;
+  }
+
   public long getBaseFileSize() {
     return baseFileSize;
   }
@@ -1879,6 +1899,14 @@ public class IoTDBConfig {
 
   void setDfsClientFailoverProxyProvider(String dfsClientFailoverProxyProvider) {
     this.dfsClientFailoverProxyProvider = dfsClientFailoverProxyProvider;
+  }
+
+  public int getTotalCapacity() {
+    return totalCapacity;
+  }
+
+  public void setTotalCapacity(int total_capacity) {
+    this.totalCapacity = total_capacity;
   }
 
   boolean isUseKerberos() {

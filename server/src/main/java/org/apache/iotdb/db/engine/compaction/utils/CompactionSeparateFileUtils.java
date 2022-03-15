@@ -166,7 +166,16 @@ public class CompactionSeparateFileUtils {
               .updateEndTime(device, timeValuePair.getTimestamp());
 
           currentWrittenPointNum++;
-          if (currentWrittenPointNum >= AVG_SERIES_POINT_NUMBER) {
+          int pointNumThreshold =
+              IoTDBDescriptor.getInstance().getConfig().isSeparate()
+                  ? IoTDBDescriptor.getInstance().getConfig().getAvgSeqSeriesPointNumberThreshold()
+                      + IoTDBDescriptor.getInstance()
+                          .getConfig()
+                          .getAvgUnseqSeriesPointNumberThreshold()
+                  : IoTDBDescriptor.getInstance()
+                      .getConfig()
+                      .getAvgUnseqSeriesPointNumberThreshold();
+          if (currentWrittenPointNum >= pointNumThreshold) {
             chunkWriter.writeToFileWriter(writer);
             writer.endChunkGroup();
             for (TsFileResource tsFileResource : tsFileResources) {
