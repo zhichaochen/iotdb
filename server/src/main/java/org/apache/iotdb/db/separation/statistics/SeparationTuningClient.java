@@ -19,8 +19,7 @@ public class SeparationTuningClient implements Runnable {
   private double rs = -1;
   private double rc = -1;
   private int seqSize = -1;
-  private int totalSize =
-      IoTDBDescriptor.getInstance().getConfig().getTotalCapacity();
+  private int totalSize = IoTDBDescriptor.getInstance().getConfig().getTotalCapacity();
 
   private void tune(double estimatedRc, double estimatedRs, int recSeqSize) {
     System.out.println("print total size:" + totalSize);
