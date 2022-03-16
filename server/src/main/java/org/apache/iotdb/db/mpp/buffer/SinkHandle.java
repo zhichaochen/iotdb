@@ -38,4 +38,18 @@ public interface SinkHandle {
    * is ignored. This can happen with limit queries.
    */
   void send(int partition, ByteBuffer tsBlock);
+
+  /**
+   * Notify buffer that no more pages will be added. Any future calls to enqueue a page are ignored.
+   */
+  void setNoMoreTsBlocks();
+
+  /** Destroys the buffer, discarding all pages. */
+  void destroy();
+
+  /**
+   * Abort the buffer, discarding all pages, but blocking readers. It is expected that readers will
+   * be unblocked when the failed query is cleaned up.
+   */
+  void abort();
 }
