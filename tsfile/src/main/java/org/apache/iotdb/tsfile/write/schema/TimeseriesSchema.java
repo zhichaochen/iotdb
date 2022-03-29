@@ -42,10 +42,10 @@ import java.util.Objects;
  * path.
  */
 public class TimeseriesSchema implements Comparable<TimeseriesSchema>, Serializable {
-  private String fullPath;
-  private TSDataType type;
-  private TSEncoding encoding;
-  private transient TSEncodingBuilder encodingConverter;
+  private String fullPath; // 全路径
+  private TSDataType type; // 数据类型
+  private TSEncoding encoding; // 编码
+  private transient TSEncodingBuilder encodingConverter; // 编码
   private CompressionType compressor;
   private Map<String, String> props = new HashMap<>();
 

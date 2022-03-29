@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 强制追加写入器
  * ForceAppendTsFileWriter opens a COMPLETE TsFile, reads and truncate its metadata to support
  * appending new data.
  */

@@ -31,6 +31,9 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
+/**
+ *
+ */
 public class LocalTsFileInput implements TsFileInput {
 
   private static final Logger logger = LoggerFactory.getLogger(LocalTsFileInput.class);

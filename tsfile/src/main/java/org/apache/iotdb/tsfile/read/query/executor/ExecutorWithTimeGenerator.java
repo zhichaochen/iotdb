@@ -40,8 +40,8 @@ import java.util.List;
 
 public class ExecutorWithTimeGenerator implements QueryExecutor {
 
-  private IMetadataQuerier metadataQuerier;
-  private IChunkLoader chunkLoader;
+  private IMetadataQuerier metadataQuerier; // 元数据查询器
+  private IChunkLoader chunkLoader; // chunk加载器
 
   public ExecutorWithTimeGenerator(IMetadataQuerier metadataQuerier, IChunkLoader chunkLoader) {
     this.metadataQuerier = metadataQuerier;
@@ -49,6 +49,7 @@ public class ExecutorWithTimeGenerator implements QueryExecutor {
   }
 
   /**
+   * queryExpression中queryFilter的所有叶节点都是序列过滤器，我们使用时间生成器来控制查询处理。有关更多信息，请参阅DataSetWithTimeGenerator
    * All leaf nodes of queryFilter in queryExpression are SeriesFilters, We use a TimeGenerator to
    * control query processing. for more information, see DataSetWithTimeGenerator
    *
@@ -57,14 +58,18 @@ public class ExecutorWithTimeGenerator implements QueryExecutor {
   @Override
   public DataSetWithTimeGenerator execute(QueryExpression queryExpression) throws IOException {
 
+    // 表达式
     IExpression expression = queryExpression.getExpression();
+    // 选择的时间序列
     List<Path> selectedPathList = queryExpression.getSelectedSeries();
 
     // get TimeGenerator by IExpression
+    // 时间生成器
     TimeGenerator timeGenerator = new TsFileTimeGenerator(expression, chunkLoader, metadataQuerier);
 
     // the size of hasFilter is equal to selectedPathList, if a series has a filter, it is true,
     // otherwise false
+    // 和selectedPathList的size是相同的，如果一个序列有过滤器则为true，否则为false
     List<Boolean> cached =
         markFilterdPaths(expression, selectedPathList, timeGenerator.hasOrNode());
     List<FileSeriesReaderByTimestamp> readersOfSelectedSeries = new ArrayList<>();
@@ -92,6 +97,7 @@ public class ExecutorWithTimeGenerator implements QueryExecutor {
       }
     }
 
+    //
     return new DataSetWithTimeGenerator(
         selectedPathList, cached, dataTypes, timeGenerator, readersOfSelectedSeries);
   }

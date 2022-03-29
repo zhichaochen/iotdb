@@ -32,10 +32,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+/**
+ * chunk块，首先记录在内存中
+ */
 public class WritableMemChunk implements IWritableMemChunk {
 
-  private IMeasurementSchema schema;
-  private TVList list;
+  private IMeasurementSchema schema; // 物理量schema，物理量的元信息
+  private TVList list; // 真正的数据
   private static final String UNSUPPORTED_TYPE = "Unsupported data type:";
   private static final Logger LOGGER = LoggerFactory.getLogger(WritableMemChunk.class);
 

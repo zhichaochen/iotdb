@@ -105,6 +105,7 @@ public class ServerTimeGenerator extends TimeGenerator {
   }
 
   /**
+   * 从表达式中收集PartialPath，并将isUnderAlignedEntity为true的MeasurementPath转换为AlignedPath
    * collect PartialPath from Expression and transform MeasurementPath whose isUnderAlignedEntity is
    * true to AlignedPath
    */

@@ -46,6 +46,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 刷写任务，刷写内存中的数据到磁盘
  * flush task to flush one memtable using a pipeline model to flush, which is sort memtable ->
  * encoding -> write to disk (io task)
  */
@@ -59,6 +60,7 @@ public class MemTableFlushTask {
   private final Future<?> ioTaskFuture;
   private RestorableTsFileIOWriter writer;
 
+  // 编码队列
   private final LinkedBlockingQueue<Object> encodingTaskQueue = new LinkedBlockingQueue<>();
   private final LinkedBlockingQueue<Object> ioTaskQueue =
       (config.isEnableMemControl() && SystemInfo.getInstance().isEncodingFasterThanIo())
@@ -109,8 +111,10 @@ public class MemTableFlushTask {
     long sortTime = 0;
 
     // for map do not use get(key) to iterate
+    // 遍历内存表维护的数据结构
     for (Map.Entry<IDeviceID, IWritableMemChunkGroup> memTableEntry :
         memTable.getMemTableMap().entrySet()) {
+      // 像编码队列中
       encodingTaskQueue.put(new StartFlushGroupIOTask(memTableEntry.getKey().toStringID()));
 
       final Map<String, IWritableMemChunk> value = memTableEntry.getValue().getMemChunkMap();

@@ -34,12 +34,14 @@ import org.apache.iotdb.db.service.metrics.MetricsService;
 import org.apache.iotdb.db.service.metrics.Tag;
 import org.apache.iotdb.metrics.config.MetricConfigDescriptor;
 import org.apache.iotdb.metrics.utils.MetricLevel;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+/**
+ * 持久化管理器
+ */
 public class FlushManager implements FlushManagerMBean, IService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FlushManager.class);
@@ -163,6 +165,7 @@ public class FlushManager implements FlushManagerMBean, IService {
                 tsFileProcessorQueue.size());
           }
           tsFileProcessor.setManagedByFlushManager(true);
+          // TODO 启动一个刷写线程
           flushPool.submit(new FlushThread());
         } else {
           if (LOGGER.isDebugEnabled()) {

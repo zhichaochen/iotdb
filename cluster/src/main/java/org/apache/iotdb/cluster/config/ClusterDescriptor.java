@@ -39,6 +39,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+/**
+ * 集群描述器
+ * 记录了当前集群的一些信息
+ */
 public class ClusterDescriptor {
 
   private static final Logger logger = LoggerFactory.getLogger(ClusterDescriptor.class);

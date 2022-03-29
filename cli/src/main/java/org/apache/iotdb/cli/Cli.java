@@ -92,6 +92,13 @@ public class Cli extends AbstractCli {
     serve();
   }
 
+  /**
+   * 解析命令行
+   * @param options
+   * @param newArgs
+   * @param hf
+   * @return
+   */
   private static boolean parseCommandLine(Options options, String[] newArgs, HelpFormatter hf) {
     try {
       CommandLineParser parser = new DefaultParser();

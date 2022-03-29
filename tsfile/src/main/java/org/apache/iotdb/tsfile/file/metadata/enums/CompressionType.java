@@ -18,6 +18,9 @@
  */
 package org.apache.iotdb.tsfile.file.metadata.enums;
 
+/**
+ * 压缩类型
+ */
 public enum CompressionType {
   /** Do not comprocess */
   UNCOMPRESSED("", (byte) 0),

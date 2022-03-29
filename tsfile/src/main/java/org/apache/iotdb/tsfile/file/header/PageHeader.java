@@ -28,13 +28,15 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
-
+/*
+ * Page的头信息
+ */
 public class PageHeader {
 
   private int uncompressedSize;
   private int compressedSize;
   private Statistics<? extends Serializable> statistics;
-  private boolean modified;
+  private boolean modified; // 当前Page是否被修改过，比如Page中有一部分数据已经被删除
 
   public PageHeader(
       int uncompressedSize, int compressedSize, Statistics<? extends Serializable> statistics) {

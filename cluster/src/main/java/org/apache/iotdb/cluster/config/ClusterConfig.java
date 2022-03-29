@@ -30,6 +30,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 集群配置
+ */
 public class ClusterConfig {
   private static Logger logger = LoggerFactory.getLogger(ClusterConfig.class);
   static final String CONFIG_NAME = "iotdb-cluster.properties";

@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 一个设备的一片数据，tablet包含设备的多个指标，这些指标共享相同的时间列
  * A tablet data of one device, the tablet contains multiple measurements of this device that share
  * the same time column.
  *

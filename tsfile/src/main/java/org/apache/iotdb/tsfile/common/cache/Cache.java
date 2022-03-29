@@ -22,6 +22,11 @@ import org.apache.iotdb.tsfile.exception.cache.CacheException;
 
 import java.io.IOException;
 
+/**
+ * 本地的一个缓存接口
+ * @param <K>
+ * @param <T>
+ */
 public interface Cache<K, T> {
 
   T get(K key) throws CacheException, IOException;

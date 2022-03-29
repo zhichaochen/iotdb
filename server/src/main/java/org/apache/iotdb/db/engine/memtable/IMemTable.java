@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 内存表
  * IMemTable is designed to store data points which are not flushed into TsFile yet. An instance of
  * IMemTable maintains all series belonging to one StorageGroup, corresponding to one
  * StorageGroupProcessor.<br>

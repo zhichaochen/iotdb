@@ -29,6 +29,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 元数据查询器
+ */
 public interface IMetadataQuerier {
 
   List<IChunkMetadata> getChunkMetaDataList(Path path) throws IOException;

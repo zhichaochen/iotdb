@@ -88,6 +88,10 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
+/**
+ * TsFile时间序列读取器
+ * 支持读取TsFile的各个数据结构
+ */
 public class TsFileSequenceReader implements AutoCloseable {
 
   private static final Logger logger = LoggerFactory.getLogger(TsFileSequenceReader.class);
@@ -98,9 +102,9 @@ public class TsFileSequenceReader implements AutoCloseable {
   private static final int MAX_READ_BUFFER_SIZE = 4 * 1024 * 1024;
   protected String file;
   protected TsFileInput tsFileInput;
-  protected long fileMetadataPos;
-  protected int fileMetadataSize;
-  private ByteBuffer markerBuffer = ByteBuffer.allocate(Byte.BYTES);
+  protected long fileMetadataPos; // 文件元数据开始位置
+  protected int fileMetadataSize; // 文件元数据的大小
+  private ByteBuffer markerBuffer = ByteBuffer.allocate(Byte.BYTES); //
   protected TsFileMetadata tsFileMetaData;
   // device -> measurement -> TimeseriesMetadata
   private Map<String, Map<String, TimeseriesMetadata>> cachedDeviceMetadata =
@@ -111,6 +115,7 @@ public class TsFileSequenceReader implements AutoCloseable {
   private long maxPlanIndex = Long.MIN_VALUE;
 
   /**
+   * 创建TsFileSequenceReader
    * Create a file reader of the given file. The reader will read the tail of the file to get the
    * file metadata size.Then the reader will skip the first
    * TSFileConfig.MAGIC_STRING.getBytes().length + TSFileConfig.NUMBER_VERSION.getBytes().length
@@ -134,8 +139,10 @@ public class TsFileSequenceReader implements AutoCloseable {
       resourceLogger.debug("{} reader is opened. {}", file, getClass().getName());
     }
     this.file = file;
+    // 通过路径加载一个TsFile
     tsFileInput = FSFactoryProducer.getFileInputFactory().getTsFileInput(file);
     try {
+      // 如果需要则加载元数据
       if (loadMetadataSize) {
         loadMetadataSize();
       }
@@ -198,15 +205,25 @@ public class TsFileSequenceReader implements AutoCloseable {
     this.fileMetadataSize = fileMetadataSize;
   }
 
+  /**
+   * 加载TsFile元数据
+   * @throws IOException
+   */
   public void loadMetadataSize() throws IOException {
+    // 分配一个Integer.BYTES大小的ByteBuffer
     ByteBuffer metadataSize = ByteBuffer.allocate(Integer.BYTES);
+    // 读取魔数，如果是一个TsFile文件
     if (readTailMagic().equals(TSFileConfig.MAGIC_STRING)) {
+      // 读取除了magic之外的的metadataSize长度的数据
       tsFileInput.read(
           metadataSize,
           tsFileInput.size() - TSFileConfig.MAGIC_STRING.getBytes().length - Integer.BYTES);
+      // 回复到开始读取的位置
       metadataSize.flip();
       // read file metadata size and position
+      // 读取一个int值，表示元数据的size
       fileMetadataSize = ReadWriteIOUtils.readInt(metadataSize);
+      // 计算元数据的开始位置
       fileMetadataPos =
           tsFileInput.size()
               - TSFileConfig.MAGIC_STRING.getBytes().length
@@ -263,6 +280,7 @@ public class TsFileSequenceReader implements AutoCloseable {
   }
 
   /**
+   * 读取文件元数据
    * this function does not modify the position of the file reader.
    *
    * @throws IOException io error
@@ -488,6 +506,13 @@ public class TsFileSequenceReader implements AutoCloseable {
     return metadataIndexPair;
   }
 
+  /**
+   * 读取时间序列元数据
+   * @param device
+   * @param measurements
+   * @return
+   * @throws IOException
+   */
   // This method is only used for TsFile
   public List<ITimeSeriesMetadata> readITimeseriesMetadata(String device, Set<String> measurements)
       throws IOException {
@@ -591,6 +616,7 @@ public class TsFileSequenceReader implements AutoCloseable {
 
   public List<String> getAllDevices() throws IOException {
     if (tsFileMetaData == null) {
+      // 如果为null, 读取文件元数据
       readFileMetadata();
     }
     return getAllDevices(tsFileMetaData.getMetadataIndex());
@@ -1064,8 +1090,11 @@ public class TsFileSequenceReader implements AutoCloseable {
    * @return -chunk
    */
   public Chunk readMemChunk(ChunkMetadata metaData) throws IOException {
+    // 计算chunk头的大小
     int chunkHeadSize = ChunkHeader.getSerializedSize(metaData.getMeasurementUid());
+    // 读取chunk头
     ChunkHeader header = readChunkHeader(metaData.getOffsetOfChunkHeader(), chunkHeadSize);
+    // 通过chunk头中记录的信息，读取chunk数据
     ByteBuffer buffer =
         readChunk(
             metaData.getOffsetOfChunkHeader() + header.getSerializedSize(), header.getDataSize());

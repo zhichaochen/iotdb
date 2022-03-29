@@ -22,11 +22,30 @@ import org.apache.iotdb.tsfile.read.common.BatchData;
 
 import java.io.IOException;
 
+/**
+ * 批量读取器
+ * 本质来说是读取一个page的数据，一个page就是一批数据
+ * Page是数据读取的最小单位
+ */
 public interface IBatchReader {
 
+  /**
+   * 是否有下一批次
+   * @return
+   * @throws IOException
+   */
   boolean hasNextBatch() throws IOException;
 
+  /**
+   * 下一批次
+   * @return
+   * @throws IOException
+   */
   BatchData nextBatch() throws IOException;
 
+  /**
+   * 关闭读取器
+   * @throws IOException
+   */
   void close() throws IOException;
 }

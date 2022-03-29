@@ -21,6 +21,9 @@ package org.apache.iotdb.tsfile.fileSystem.fileInputFactory;
 
 import org.apache.iotdb.tsfile.read.reader.TsFileInput;
 
+/**
+ * 文件写入工厂
+ */
 public interface FileInputFactory {
 
   TsFileInput getTsFileInput(String filePath);

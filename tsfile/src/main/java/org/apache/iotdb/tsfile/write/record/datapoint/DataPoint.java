@@ -28,6 +28,7 @@ import org.apache.iotdb.tsfile.write.chunk.ChunkWriterImpl;
 import java.io.IOException;
 
 /**
+ * 数据点，数据点，表示一个指标的值
  * This is a abstract class representing a data point. DataPoint consists of a measurement id and a
  * data type. subclass of DataPoint need override method {@code write(long time, IChunkWriter
  * writer)} .Every subclass has its data type and overrides a setting method for its data type.

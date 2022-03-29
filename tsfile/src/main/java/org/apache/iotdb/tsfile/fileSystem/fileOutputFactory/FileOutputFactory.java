@@ -21,6 +21,9 @@ package org.apache.iotdb.tsfile.fileSystem.fileOutputFactory;
 
 import org.apache.iotdb.tsfile.write.writer.TsFileOutput;
 
+/**
+ * 文件输出工厂
+ */
 public interface FileOutputFactory {
 
   TsFileOutput getTsFileOutput(String filePath, boolean append);

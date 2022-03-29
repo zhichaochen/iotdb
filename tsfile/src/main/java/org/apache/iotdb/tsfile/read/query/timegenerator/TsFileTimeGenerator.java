@@ -30,6 +30,9 @@ import org.apache.iotdb.tsfile.read.reader.series.FileSeriesReader;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * TsFile的时间生成器
+ */
 public class TsFileTimeGenerator extends TimeGenerator {
 
   private IChunkLoader chunkLoader;
@@ -41,6 +44,7 @@ public class TsFileTimeGenerator extends TimeGenerator {
     this.chunkLoader = chunkLoader;
     this.metadataQuerier = metadataQuerier;
 
+    // TODO 构造节点
     super.constructNode(iexpression);
   }
 

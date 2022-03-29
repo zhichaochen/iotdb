@@ -239,6 +239,7 @@ public class TsFileProcessor {
       }
     }
 
+    // 写入内存表
     if (insertRowPlan.isAligned()) {
       workMemTable.insertAlignedRow(insertRowPlan);
     } else {
@@ -700,6 +701,10 @@ public class TsFileProcessor {
     return config.getMemtableSizeThreshold();
   }
 
+  /**
+   * 是否应该关闭当前文件
+   * @return
+   */
   public boolean shouldClose() {
     long fileSize = tsFileResource.getTsFileSize();
     long fileSizeThreshold = sequence ? config.getSeqTsFileSize() : config.getUnSeqTsFileSize();
@@ -711,6 +716,7 @@ public class TsFileProcessor {
           fileSize,
           fileSizeThreshold);
     }
+    // 如果文件超过了设定的阈值，那么就应该关闭
     return fileSize >= fileSizeThreshold;
   }
 
@@ -1010,6 +1016,7 @@ public class TsFileProcessor {
 
     // signal memtable only may appear when calling asyncClose()
     if (!memTableToFlush.isSignalMemTable()) {
+      // 先同步刷盘
       try {
         writer.mark();
         MemTableFlushTask flushTask =
@@ -1088,6 +1095,7 @@ public class TsFileProcessor {
           memTableToFlush.isSignalMemTable());
     }
     // for sync flush
+    //
     synchronized (memTableToFlush) {
       releaseFlushedMemTable(memTableToFlush);
       memTableToFlush.notifyAll();
@@ -1101,6 +1109,7 @@ public class TsFileProcessor {
       }
     }
 
+    //
     if (shouldClose && flushingMemTables.isEmpty() && writer != null) {
       try {
         writer.mark();
@@ -1111,6 +1120,7 @@ public class TsFileProcessor {
               storageGroupName,
               tsFileResource.getTsFile().getName());
         }
+        // TODO 结束文件，在这里会更新元数据
         endFile();
         if (logger.isDebugEnabled()) {
           logger.debug("{} flushingMemtables is clear", storageGroupName);
@@ -1179,11 +1189,15 @@ public class TsFileProcessor {
     }
   }
 
-  /** end file and write some meta */
+  /**
+   * 结束文件并写入一些元数据
+   * end file and write some meta */
   private void endFile() throws IOException, TsFileProcessorException {
     logger.info("Start to end file {}", tsFileResource);
     long closeStartTime = System.currentTimeMillis();
+    // 写入元数据信息
     writer.endFile();
+    // 序列化.resource文件
     tsFileResource.serialize();
     logger.info("Ended file {}", tsFileResource);
 

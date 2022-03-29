@@ -38,6 +38,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 
 /**
+ * Page写入器
  * This writer is used to write time-value into a page. It consists of a time encoder, a value
  * encoder and respective OutputStream.
  */

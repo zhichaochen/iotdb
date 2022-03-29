@@ -75,7 +75,9 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 
-/** Coordinator of client non-query request */
+/**
+ * 协调器
+ * Coordinator of client non-query request */
 public class Coordinator {
 
   private static final Logger logger = LoggerFactory.getLogger(Coordinator.class);

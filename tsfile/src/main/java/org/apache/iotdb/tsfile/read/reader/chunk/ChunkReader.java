@@ -43,6 +43,9 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * chunk读取器
+ */
 public class ChunkReader implements IChunkReader {
 
   private ChunkHeader chunkHeader;
@@ -58,7 +61,9 @@ public class ChunkReader implements IChunkReader {
 
   private List<IPageReader> pageReaderList = new LinkedList<>();
 
-  /** A list of deleted intervals. */
+  /**
+   * 已经删除的时间区间
+   * A list of deleted intervals. */
   private List<TimeRange> deleteIntervalList;
 
   /**
@@ -74,6 +79,7 @@ public class ChunkReader implements IChunkReader {
     this.currentTimestamp = Long.MIN_VALUE;
     chunkHeader = chunk.getHeader();
     this.unCompressor = IUnCompressor.getUnCompressor(chunkHeader.getCompressionType());
+    // TODO 初始化当前chunk的所有page
     if (chunk.isFromOldFile()) {
       initAllPageReadersV2();
     } else {
@@ -110,6 +116,7 @@ public class ChunkReader implements IChunkReader {
         pageHeader = PageHeader.deserializeFrom(chunkDataBuffer, chunkHeader.getDataType());
       }
       // if the current page satisfies
+      // 当前page是否满足
       if (pageSatisfied(pageHeader)) {
         pageReaderList.add(constructPageReaderForNextPage(pageHeader));
       } else {
@@ -125,6 +132,7 @@ public class ChunkReader implements IChunkReader {
   }
 
   /**
+   * 下一个page
    * get next data batch.
    *
    * @return next data batch
@@ -142,25 +150,36 @@ public class ChunkReader implements IChunkReader {
     chunkDataBuffer.position(chunkDataBuffer.position() + length);
   }
 
+  /**
+   * 判断Page是否满足当前序列的过滤条件
+   * 依赖与PageHeader信息
+   * @param pageHeader
+   * @return
+   */
   protected boolean pageSatisfied(PageHeader pageHeader) {
     if (currentTimestamp > pageHeader.getEndTime()) {
       // used for chunk reader by timestamp
       return false;
     }
     if (deleteIntervalList != null) {
+      // 遍历已删除的时间间隔列表
       for (TimeRange range : deleteIntervalList) {
+        // 如果包含，说明已经删除了，则直接返回false
         if (range.contains(pageHeader.getStartTime(), pageHeader.getEndTime())) {
           return false;
         }
+        // 已删除的时间范围 和 当前page的时间范围是否重叠
         if (range.overlaps(new TimeRange(pageHeader.getStartTime(), pageHeader.getEndTime()))) {
+          // 表示当前page被修改过了
           pageHeader.setModified(true);
         }
       }
     }
+    // 通过page的统计信息，判断下当前page是否满足
     return filter == null || filter.satisfy(pageHeader.getStatistics());
   }
 
-  private PageReader constructPageReaderForNextPage(PageHeader pageHeader) throws IOException {
+  private PageReader constructPageReaderextPage(PageHeader pageHeader) throws IOException {
     int compressedPageBodyLength = pageHeader.getCompressedSize();
     byte[] compressedPageBody = new byte[compressedPageBodyLength];
 
@@ -175,7 +194,7 @@ public class ChunkReader implements IChunkReader {
 
     chunkDataBuffer.get(compressedPageBody);
     Decoder valueDecoder =
-        Decoder.getDecoderByType(chunkHeader.getEncodingType(), chunkHeader.getDataType());
+        Decoder.getDecoderByType(chunkHeader.ForNgetEncodingType(), chunkHeader.getDataType());
     byte[] uncompressedPageData = new byte[pageHeader.getUncompressedSize()];
     try {
       unCompressor.uncompress(
@@ -192,6 +211,7 @@ public class ChunkReader implements IChunkReader {
     }
 
     ByteBuffer pageData = ByteBuffer.wrap(uncompressedPageData);
+    // 构建Page读取器
     PageReader reader =
         new PageReader(
             pageHeader, pageData, chunkHeader.getDataType(), valueDecoder, timeDecoder, filter);
@@ -211,17 +231,27 @@ public class ChunkReader implements IChunkReader {
     return pageReaderList;
   }
 
+  /**
+   * 初始化chunk的所有page
+   * @throws IOException
+   */
   // For reading TsFile V2
   private void initAllPageReadersV2() throws IOException {
     // construct next satisfied page header
+    // 轮询chunk数据缓存，只要有剩余，就继续
     while (chunkDataBuffer.remaining() > 0) {
       // deserialize a PageHeader from chunkDataBuffer
+      // TODO chunk是由多个page组成的
+      // 反序列化一个page的page头
       PageHeader pageHeader =
           PageHeaderV2.deserializeFrom(chunkDataBuffer, chunkHeader.getDataType());
       // if the current page satisfies
+      // 如果当前page满足，则加入page列表
       if (pageSatisfied(pageHeader)) {
         pageReaderList.add(constructPageReaderForNextPageV2(pageHeader));
-      } else {
+      }
+      // 不满足，则跳过当前page数据，继续下一个page的解析
+      else {
         skipBytesInStreamByLength(pageHeader.getCompressedSize());
       }
     }

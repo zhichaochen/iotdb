@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 可恢复的TsFile写入器
  * This writer is for opening and recover a TsFile
  *
  * <p>(1) If the TsFile is closed normally, hasCrashed()=false and canWrite()=false

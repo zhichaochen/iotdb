@@ -59,6 +59,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
+/**
+ * 连接器
+ */
 public class IoTDBConnection implements Connection {
 
   private static final Logger logger = LoggerFactory.getLogger(IoTDBConnection.class);
@@ -185,6 +188,11 @@ public class IoTDBConnection implements Connection {
     throw new SQLException("Does not support createSQLXML");
   }
 
+  /**
+   * 创建语句对象
+   * @return
+   * @throws SQLException
+   */
   @Override
   public Statement createStatement() throws SQLException {
     if (isClosed) {

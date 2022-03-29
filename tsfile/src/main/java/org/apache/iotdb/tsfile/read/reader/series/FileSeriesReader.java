@@ -32,6 +32,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 文件时间序列读取器
+ * TODO 和TsFileSequenceReader有什么区别？？？
+ * FileSeriesReader：专注于时间序列，专注于chunk的查询，一个时间序列的查询本质来说就是对Chunk的查询
+ * TsFileSequenceReader： 专注于整个TsFile的读取，对整个TsFile的各个部分的读取都提供了对应的方法
+ *
+ * 时间序列读取器，被用于查询一个tsFile的一条时间序列，
  * Series reader is used to query one series of one TsFile, and this reader has a filter operating
  * on the same series.
  */
@@ -45,9 +51,13 @@ public class FileSeriesReader extends AbstractFileSeriesReader {
   @Override
   protected void initChunkReader(IChunkMetadata chunkMetaData) throws IOException {
     if (chunkMetaData instanceof ChunkMetadata) {
+      // 加载chunk
       Chunk chunk = chunkLoader.loadChunk((ChunkMetadata) chunkMetaData);
+      // 更新chunk读取器
       this.chunkReader = new ChunkReader(chunk, filter);
-    } else {
+    }
+    // 对齐的chunk数据
+    else {
       AlignedChunkMetadata alignedChunkMetadata = (AlignedChunkMetadata) chunkMetaData;
       Chunk timeChunk =
           chunkLoader.loadChunk((ChunkMetadata) (alignedChunkMetadata.getTimeChunkMetadata()));
@@ -59,8 +69,14 @@ public class FileSeriesReader extends AbstractFileSeriesReader {
     }
   }
 
+  /**
+   * 当前chunk是否满足过滤条件
+   * @param chunkMetaData
+   * @return
+   */
   @Override
   protected boolean chunkSatisfied(IChunkMetadata chunkMetaData) {
+    // 通过chunkMetaData.getStatistics使用过滤器的条件进行过滤
     return filter == null || filter.satisfy(chunkMetaData.getStatistics());
   }
 }

@@ -23,12 +23,16 @@ import org.apache.iotdb.tsfile.read.reader.IBatchReader;
 
 import java.io.IOException;
 
+/**
+ * 叶子节点
+ */
 public class LeafNode implements Node {
 
-  private IBatchReader reader;
+  // TsFileSequenceReader
+  private IBatchReader reader; // 批量读取器，比如：FileSeriesReader
 
-  private BatchData cacheData;
-  private boolean hasCached;
+  private BatchData cacheData; // 缓存数据
+  private boolean hasCached; // 是否有已经缓存的数据
 
   private long cachedTime;
   private Object cachedValue;
@@ -39,16 +43,20 @@ public class LeafNode implements Node {
 
   @Override
   public boolean hasNext() throws IOException {
+    // 有缓存则返回true
     if (hasCached) {
       return true;
     }
+    // 如果缓存数据当前有数据，也返回true
     if (cacheData != null && cacheData.hasCurrent()) {
       cachedTime = cacheData.currentTime();
       cachedValue = cacheData.currentValue();
       hasCached = true;
       return true;
     }
+    // 走到这里就需要从reader中读取数据了
     while (reader.hasNextBatch()) {
+      // 使用reader读取一批数据
       cacheData = reader.nextBatch();
       if (cacheData.hasCurrent()) {
         cachedTime = cacheData.currentTime();

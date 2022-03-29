@@ -29,6 +29,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+/**
+ * ChunkGroup的头信息
+ */
 public class ChunkGroupHeader {
 
   private static final byte MARKER = MetaMarker.CHUNK_GROUP_HEADER;

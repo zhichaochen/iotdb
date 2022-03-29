@@ -25,6 +25,9 @@ import org.apache.iotdb.tsfile.read.filter.basic.Filter;
 
 import java.io.Serializable;
 
+/**
+ * 全局时间表达式，查询语句中包含 where time > XXX，就是全局时间表达式
+ */
 public class GlobalTimeExpression implements IUnaryExpression, Serializable {
 
   private static final long serialVersionUID = 1146132942359113670L;

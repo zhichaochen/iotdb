@@ -32,14 +32,17 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 表示的是设备或者物理量的索引节点
+ */
 public class MetadataIndexNode {
 
   private static final TSFileConfig config = TSFileDescriptor.getInstance().getConfig();
-  private final List<MetadataIndexEntry> children;
-  private long endOffset;
+  private final List<MetadataIndexEntry> children; // 子索引条目
+  private long endOffset; // 结束偏移量
 
   /** type of the child node at offset */
-  private final MetadataIndexNodeType nodeType;
+  private final MetadataIndexNodeType nodeType; // 节点类型
 
   public MetadataIndexNode(MetadataIndexNodeType nodeType) {
     children = new ArrayList<>();

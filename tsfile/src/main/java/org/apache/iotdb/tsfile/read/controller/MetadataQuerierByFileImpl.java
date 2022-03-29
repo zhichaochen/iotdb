@@ -30,14 +30,18 @@ import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
 
+/**
+ * 元数据查询器
+ */
 public class MetadataQuerierByFileImpl implements IMetadataQuerier {
 
   // number of cache entries (path -> List<ChunkMetadata>)
-  private static final int CACHED_ENTRY_NUMBER = 1000;
+  private static final int CACHED_ENTRY_NUMBER = 1000; // 缓存的条目数量
 
-  private TsFileMetadata fileMetaData;
+  private TsFileMetadata fileMetaData; // TsFile元数据
 
   // TimeseriesPath -> List<IChunkMetadata>
+  // 时间序列路径 -> chunk元数据列表
   private LRUCache<Path, List<IChunkMetadata>> chunkMetaDataCache;
 
   private TsFileSequenceReader tsFileReader;
@@ -77,10 +81,16 @@ public class MetadataQuerierByFileImpl implements IMetadataQuerier {
     return fileMetaData;
   }
 
+  /**
+   *
+   * @param paths
+   * @throws IOException
+   */
   @Override
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
   public void loadChunkMetaDatas(List<Path> paths) throws IOException {
     // group measurements by device
+    // 通过设备对物理量进行分组
     TreeMap<String, Set<String>> deviceMeasurementsMap = new TreeMap<>();
     for (Path path : paths) {
       if (!deviceMeasurementsMap.containsKey(path.getDevice())) {
@@ -90,20 +100,29 @@ public class MetadataQuerierByFileImpl implements IMetadataQuerier {
     }
     int count = 0;
     boolean enough = false;
+    // 遍历deviceMeasurementsMap
     for (Map.Entry<String, Set<String>> deviceMeasurements : deviceMeasurementsMap.entrySet()) {
       if (enough) {
         break;
       }
+      // 设备
       String selectedDevice = deviceMeasurements.getKey();
+      // 设备下的物理量列表
       Set<String> selectedMeasurements = deviceMeasurements.getValue();
+      // 获取当前TsFile中所有的设备
       List<String> devices = this.tsFileReader.getAllDevices();
+      // 转化成数组
       String[] deviceNames = devices.toArray(new String[0]);
+      // 二分查找是否包含当前设备
       if (Arrays.binarySearch(deviceNames, selectedDevice) < 0) {
         continue;
       }
 
+      // TODO 直接记录时间序列数据会很大，记录设备还是时间序列，参数：MetadataIndexConstructor
+      // 当前设备下的时间序列
       List<ITimeSeriesMetadata> timeseriesMetaDataList =
           tsFileReader.readITimeseriesMetadata(selectedDevice, selectedMeasurements);
+      // 遍历时间序列
       for (ITimeSeriesMetadata timeseriesMetadata : timeseriesMetaDataList) {
         List<IChunkMetadata> chunkMetadataList =
             tsFileReader.readIChunkMetaDataList(timeseriesMetadata);
@@ -117,6 +136,7 @@ public class MetadataQuerierByFileImpl implements IMetadataQuerier {
         } else {
           measurementId = ((TimeseriesMetadata) timeseriesMetadata).getMeasurementId();
         }
+        // 加入chunk缓存
         this.chunkMetaDataCache.put(new Path(selectedDevice, measurementId), chunkMetadataList);
         count += chunkMetadataList.size();
         if (count == CACHED_ENTRY_NUMBER) {

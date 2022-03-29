@@ -45,6 +45,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * 相当于插入一行数据
+ * 插入一个设备的多个物理量，这些物理量可能时间并不是对齐的。而是各有各的时间。
+ * 相当于一下子插入设备的多个字段，但是这些字段并不是同一时间产生的。所以下面的times字段是多个时间
+ */
 @SuppressWarnings("java:S1135") // ignore todos
 public class InsertTabletPlan extends InsertPlan {
 
@@ -61,8 +66,8 @@ public class InsertTabletPlan extends InsertPlan {
   // without data loss in cluster version
   boolean isExecuting = false;
   private List<PartialPath> paths;
-  private int start;
-  private int end;
+  private int start; //
+  private int end; //
   // when this plan is sub-plan split from another InsertTabletPlan, this indicates the original
   // positions of values in
   // this plan. For example, if the plan contains 5 timestamps, and range = [1,4,10,12], then it

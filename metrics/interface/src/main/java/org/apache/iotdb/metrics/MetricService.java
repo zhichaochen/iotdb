@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ServiceLoader;
 
 /**
+ * 指标服务
  * MetricService is the entry to manage all Metric system, include MetricManager and MetricReporter.
  */
 public abstract class MetricService {
@@ -49,7 +50,9 @@ public abstract class MetricService {
 
   public MetricService() {}
 
-  /** Start all reporter. if is disabled, do nothing */
+  /**
+   * 开始服务
+   * Start all reporter. if is disabled, do nothing */
   public void startService() {
     // load manager
     loadManager();

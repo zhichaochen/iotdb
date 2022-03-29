@@ -41,6 +41,7 @@ public class ExpressionOptimizer {
   }
 
   /**
+   *
    * try to remove GlobalTimeExpression.
    *
    * @param expression IExpression to be transferred
