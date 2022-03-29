@@ -161,6 +161,8 @@ public abstract class AbstractMemTable implements IMemTable {
       dataTypes.add(schema.getType());
     }
     memSize += MemUtils.getRecordsSize(dataTypes, values, disableMemControl);
+    // TODO 一个chunk，就代表一列数据，也就是一个物理量的数组
+    // 将物理量写入内存
     write(insertRowPlan.getDeviceID(), schemaList, insertRowPlan.getTime(), values);
 
     int pointsInserted =

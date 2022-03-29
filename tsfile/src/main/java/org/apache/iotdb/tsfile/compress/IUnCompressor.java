@@ -32,7 +32,9 @@ import org.xerial.snappy.Snappy;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-/** uncompress data according to type in metadata. */
+/**
+ * 解压缩
+ * uncompress data according to type in metadata. */
 public interface IUnCompressor {
 
   /**

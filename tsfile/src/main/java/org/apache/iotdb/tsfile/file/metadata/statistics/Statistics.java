@@ -43,6 +43,17 @@ import java.util.Objects;
  * <br>
  * For the statistics in the Unseq file TimeSeriesMetadata, only firstValue, lastValue, startTime
  * and endTime can be used.</br>
+ *
+ *  统计信息
+ *  page、chunk、TimeseriesMetadata等的统计信息
+ *  统计信息，注意一个chunk只包含一个物理量，所以其实是记录的某个物理量开始、结束时间
+ *
+ *  TODO 一个statistic一定包含以下这些值
+ *  startTime、endTime
+ *  maxValue、minValue
+ *  firstValue、lastValue
+ *  那么过滤条件首先从这些统计信息中过滤一遍
+ *  以及type进行过滤
  */
 public abstract class Statistics<T extends Serializable> {
 

@@ -23,6 +23,7 @@ import org.apache.iotdb.tsfile.common.constant.TsFileConstant;
 import java.io.Serializable;
 
 /**
+ *
  * This class represent a time series in TsFile, which is usually defined by a device and a
  * measurement.
  *
@@ -32,9 +33,9 @@ import java.io.Serializable;
 public class Path implements Serializable, Comparable<Path> {
 
   private static final long serialVersionUID = 3405277066329298200L;
-  private String measurement;
-  protected String device;
-  protected String fullPath;
+  private String measurement; // 度量
+  protected String device; // 设备
+  protected String fullPath; // 全路径
   private static final String ILLEGAL_PATH_ARGUMENT = "Path parameter is null";
 
   public Path() {}

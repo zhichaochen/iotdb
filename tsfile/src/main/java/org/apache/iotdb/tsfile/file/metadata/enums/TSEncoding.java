@@ -18,6 +18,9 @@
  */
 package org.apache.iotdb.tsfile.file.metadata.enums;
 
+/**
+ * 编码方式
+ */
 public enum TSEncoding {
   PLAIN((byte) 0),
   DICTIONARY((byte) 1),

@@ -34,7 +34,9 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 
-/** Read one Chunk and cache it into a LRUCache, only used in tsfile module. */
+/**
+ * 读取一个chunk并缓存它到一个LRUCache
+ * Read one Chunk and cache it into a LRUCache, only used in tsfile module. */
 public class CachedChunkLoaderImpl implements IChunkLoader {
 
   private static final int DEFAULT_CHUNK_CACHE_SIZE = 1000;

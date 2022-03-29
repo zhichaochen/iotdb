@@ -29,15 +29,18 @@ import org.apache.iotdb.tsfile.read.reader.IChunkReader;
 import java.io.IOException;
 import java.util.List;
 
-/** Series reader is used to query one series of one tsfile. */
+/**
+ * 文件的时间序列读取器
+ * 被用于查询一个tsfile中的一个时间序列
+ * Series reader is used to query one series of one tsfile. */
 public abstract class AbstractFileSeriesReader implements IBatchReader {
 
-  protected IChunkLoader chunkLoader;
-  protected List<IChunkMetadata> chunkMetadataList;
-  protected IChunkReader chunkReader;
-  private int chunkToRead;
+  protected IChunkLoader chunkLoader; // chunk加载器
+  protected List<IChunkMetadata> chunkMetadataList; // chunk元数据列表
+  protected IChunkReader chunkReader; // chunk读取器
+  private int chunkToRead; // 从第几个chunk开始读
 
-  protected Filter filter;
+  protected Filter filter; // 当前序列的过滤条件
 
   /** constructor of FileSeriesReader. */
   public AbstractFileSeriesReader(
@@ -48,22 +51,34 @@ public abstract class AbstractFileSeriesReader implements IBatchReader {
     this.chunkToRead = 0;
   }
 
+  /**
+   * 是否有下一批次
+   * 在这个过程中，会通过chunk元数据，加载chunk，读取page
+   * @return
+   * @throws IOException
+   */
   @Override
   public boolean hasNextBatch() throws IOException {
 
     // current chunk has additional batch
+    // 当前chunk有额外的page没有读取，直接返回true
     if (chunkReader != null && chunkReader.hasNextSatisfiedPage()) {
       return true;
     }
 
     // current chunk does not have additional batch, init new chunk reader
+    // 没有额外的批次，需要初始化chunk读取器
     while (chunkToRead < chunkMetadataList.size()) {
 
+      // 下一个chunk的元数据
       IChunkMetadata chunkMetaData = nextChunkMeta();
+      // chunk是否满足序列的过滤条件
       if (chunkSatisfied(chunkMetaData)) {
         // chunk metadata satisfy the condition
+        // 初始化chunk读取器，其实就是通过chunk元数据，加载chunk数据，将其放入chunk reader中
         initChunkReader(chunkMetaData);
 
+        // 是否有满足过滤条件的下一个Page
         if (chunkReader.hasNextSatisfiedPage()) {
           return true;
         }
@@ -72,13 +87,20 @@ public abstract class AbstractFileSeriesReader implements IBatchReader {
     return false;
   }
 
+  /**
+   * 下一批次，读取下一个page的数据
+   * @return
+   * @throws IOException
+   */
   @Override
   public BatchData nextBatch() throws IOException {
+    // 下一个page数据
     return chunkReader.nextPageData();
   }
 
   protected abstract void initChunkReader(IChunkMetadata chunkMetaData) throws IOException;
 
+  /*当前chunk是否满足时间序列的过滤条件*/
   protected abstract boolean chunkSatisfied(IChunkMetadata chunkMetaData);
 
   @Override
@@ -86,6 +108,10 @@ public abstract class AbstractFileSeriesReader implements IBatchReader {
     chunkLoader.close();
   }
 
+  /**
+   * 下一批次
+   * @return
+   */
   private IChunkMetadata nextChunkMeta() {
     return chunkMetadataList.get(chunkToRead++);
   }

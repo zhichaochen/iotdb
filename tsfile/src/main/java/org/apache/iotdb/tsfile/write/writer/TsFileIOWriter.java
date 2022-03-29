@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
+ * 写入器
  * TsFileIOWriter is used to construct metadata and write data stored in memory to output stream.
  */
 public class TsFileIOWriter implements AutoCloseable {
@@ -86,10 +87,12 @@ public class TsFileIOWriter implements AutoCloseable {
   private String currentChunkGroupDeviceId;
 
   // for upgrade tool and split tool
+  // 设备、及其对应的时间序列
   Map<String, List<TimeseriesMetadata>> deviceTimeseriesMetadataMap;
 
   // the two longs marks the index range of operations in current MemTable
   // and are serialized after MetaMarker.OPERATION_INDEX_RANGE to recover file-level range
+  // 这两个long标记当前MemTable中操作的索引范围，并在MetaMarker之后序列化。恢复文件级别范围的操作索引范围
   private long minPlanIndex;
   private long maxPlanIndex;
 
@@ -137,7 +140,12 @@ public class TsFileIOWriter implements AutoCloseable {
     bytes.writeTo(out.wrapAsStream());
   }
 
+  /**
+   *
+   * @throws IOException
+   */
   protected void startFile() throws IOException {
+    // 写入魔术和版本号
     out.write(MAGIC_STRING_BYTES);
     out.write(VERSION_NUMBER_BYTE);
   }
@@ -247,12 +255,15 @@ public class TsFileIOWriter implements AutoCloseable {
    */
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
   public void endFile() throws IOException {
+    // 记录元数据的开始位置
     long metaOffset = out.getPosition();
 
     // serialize the SEPARATOR of MetaData
+    // 写入元数据的分隔符
     ReadWriteIOUtils.write(MetaMarker.SEPARATOR, out.wrapAsStream());
 
     // group ChunkMetadata by series
+    // 通过时间序列对ChunkMetadata进行分组
     Map<Path, List<IChunkMetadata>> chunkMetadataListMap = new TreeMap<>();
 
     for (ChunkGroupMetadata chunkGroupMetadata : chunkGroupMetadataList) {
@@ -263,35 +274,46 @@ public class TsFileIOWriter implements AutoCloseable {
       }
     }
 
+    // 构建MetadataIndexNode
+    // TODO 核心还是在这里
     MetadataIndexNode metadataIndex = flushMetadataIndex(chunkMetadataListMap);
+    // 创建TsFileMetadata
     TsFileMetadata tsFileMetaData = new TsFileMetadata();
+    // 设置MetadataIndexNode
     tsFileMetaData.setMetadataIndex(metadataIndex);
+    // 设置元数据开始索引
     tsFileMetaData.setMetaOffset(metaOffset);
 
+    // 文件footer的开始索引
     long footerIndex = out.getPosition();
     if (logger.isDebugEnabled()) {
       logger.debug("start to flush the footer,file pos:{}", footerIndex);
     }
 
     // write TsFileMetaData
+    // 写入TsFileMetaData
     int size = tsFileMetaData.serializeTo(out.wrapAsStream());
     if (logger.isDebugEnabled()) {
       logger.debug("finish flushing the footer {}, file pos:{}", tsFileMetaData, out.getPosition());
     }
 
     // write bloom filter
+    // 写入布隆过滤器
     size += tsFileMetaData.serializeBloomFilter(out.wrapAsStream(), chunkMetadataListMap.keySet());
     if (logger.isDebugEnabled()) {
       logger.debug("finish flushing the bloom filter file pos:{}", out.getPosition());
     }
 
     // write TsFileMetaData size
+    // 写入TsFileMetaData大小
     ReadWriteIOUtils.write(size, out.wrapAsStream()); // write the size of the file metadata.
 
     // write magic string
+    // 在文件的末尾写入魔数
     out.write(MAGIC_STRING_BYTES);
 
     // close file
+    // 关闭文件
     out.close();
     if (resourceLogger.isDebugEnabled() && file != null) {
       resourceLogger.debug("{} writer is closed.", file.getName());
@@ -300,6 +322,7 @@ public class TsFileIOWriter implements AutoCloseable {
   }
 
   /**
+   * 刷写TsFile元数据
    * Flush TsFileMetadata, including ChunkMetadataList and TimeseriesMetaData
    *
    * @param chunkMetadataListMap chunkMetadata that Path.mask == 0
@@ -309,18 +332,22 @@ public class TsFileIOWriter implements AutoCloseable {
       throws IOException {
 
     // convert ChunkMetadataList to this field
+    // 设备和时间序列的映射
     deviceTimeseriesMetadataMap = new LinkedHashMap<>();
     // create device -> TimeseriesMetaDataList Map
+    //
     for (Map.Entry<Path, List<IChunkMetadata>> entry : chunkMetadataListMap.entrySet()) {
       // for ordinary path
       flushOneChunkMetadata(entry.getKey(), entry.getValue());
     }
 
     // construct TsFileMetadata and return
+    // TODO 构造TsFileMetadata MetadataIndexNode并返回
     return MetadataIndexConstructor.constructMetadataIndex(deviceTimeseriesMetadataMap, out);
   }
 
   /**
+   * 刷写chunk元数据
    * Flush one chunkMetadata
    *
    * @param path Path of chunk
@@ -341,9 +368,11 @@ public class TsFileIOWriter implements AutoCloseable {
         continue;
       }
       chunkMetadataListLength += chunkMetadata.serializeTo(publicBAOS, serializeStatistic);
+      // merge统计信息
       seriesStatistics.mergeStatistics(chunkMetadata.getStatistics());
     }
 
+    // 创建时间序列
     TimeseriesMetadata timeseriesMetadata =
         new TimeseriesMetadata(
             (byte)
@@ -353,6 +382,8 @@ public class TsFileIOWriter implements AutoCloseable {
             dataType,
             seriesStatistics,
             publicBAOS);
+
+    // 建立device -> TimeseriesMetadata的映射
     deviceTimeseriesMetadataMap
         .computeIfAbsent(path.getDevice(), k -> new ArrayList<>())
         .add(timeseriesMetadata);

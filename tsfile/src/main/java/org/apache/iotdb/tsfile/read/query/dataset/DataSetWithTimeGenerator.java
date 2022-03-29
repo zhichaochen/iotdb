@@ -29,14 +29,21 @@ import java.io.IOException;
 import java.util.List;
 
 /**
+ * 查询数据集，依赖TimeGenerator生成时间戳
+ *
+ * TODO 与DataSetWithoutTimeGenerator有什么区别呢？
+ *
+ *
+ * DataSetWithTimeGenerator是一个QueryDataSet数据类型
+ * 查询处理：（1）按具有筛选器的序列生成时间（2）获取不具有筛选器的序列的值（3）构造行记录。
  * query processing: (1) generate time by series that has filter (2) get value of series that does
  * not have filter (3) construct RowRecord.
  */
 public class DataSetWithTimeGenerator extends QueryDataSet {
-
-  private TimeGenerator timeGenerator;
-  private List<FileSeriesReaderByTimestamp> readers;
-  private List<Boolean> cached;
+  // TODO 注意：这些列表都是与时间序列的列表一一对应的。
+  private TimeGenerator timeGenerator; // 时间生成器（TsFileTimeGenerator）
+  private List<FileSeriesReaderByTimestamp> readers; // 时间序列读取器列表;
+  private List<Boolean> cached; // 时间序列是否有过滤器
 
   /**
    * constructor of DataSetWithTimeGenerator.
@@ -64,14 +71,22 @@ public class DataSetWithTimeGenerator extends QueryDataSet {
     return timeGenerator.hasNext();
   }
 
+  /**
+   * 没有约束地获取一行记录
+   * @return
+   * @throws IOException
+   */
   @Override
   public RowRecord nextWithoutConstraint() throws IOException {
+    // TODO 通过时间生成器生成一个时间戳
     long timestamp = timeGenerator.next();
+    // 一行数据
     RowRecord rowRecord = new RowRecord(timestamp);
 
+    // 遍历所有序列
     for (int i = 0; i < paths.size(); i++) {
-
       // get value from readers in time generator
+      // 如果有过滤条件，则通过时间生成器获取值
       if (cached.get(i)) {
         Object value = timeGenerator.getValue(paths.get(i));
         if (dataTypes.get(i) == TSDataType.VECTOR) {
@@ -84,8 +99,11 @@ public class DataSetWithTimeGenerator extends QueryDataSet {
       }
 
       // get value from series reader without filter
+      // 如果没有过滤条件，则
       FileSeriesReaderByTimestamp fileSeriesReaderByTimestamp = readers.get(i);
+      // 通过时间戳获取值
       Object value = fileSeriesReaderByTimestamp.getValueInTimestamp(timestamp);
+      // 添加一个字段
       if (dataTypes.get(i) == TSDataType.VECTOR) {
         TsPrimitiveType v = ((TsPrimitiveType[]) value)[0];
         rowRecord.addField(v.getValue(), v.getDataType());

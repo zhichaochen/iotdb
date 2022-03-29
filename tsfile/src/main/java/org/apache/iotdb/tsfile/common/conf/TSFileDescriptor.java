@@ -34,7 +34,10 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
+/**
+ * TSFile描述器
+ * TSFileDescriptor被用于加载TSFileConfig和提供配置信息
+ */
 /** TSFileDescriptor is used to load TSFileConfig and provide configure information. */
 public class TSFileDescriptor {
 

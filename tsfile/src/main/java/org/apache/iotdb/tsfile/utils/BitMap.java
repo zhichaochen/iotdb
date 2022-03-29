@@ -21,6 +21,9 @@ package org.apache.iotdb.tsfile.utils;
 
 import java.util.Arrays;
 
+/**
+ * BitMap
+ */
 public class BitMap {
   private static final byte[] BIT_UTIL = new byte[] {1, 2, 4, 8, 16, 32, 64, -128};
   private static final byte[] UNMARK_BIT_UTIL =

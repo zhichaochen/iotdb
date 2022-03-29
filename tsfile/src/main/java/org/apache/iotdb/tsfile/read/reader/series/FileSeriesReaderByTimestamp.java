@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 是一个FileSeriesReader，但是时间戳必须相同，通过时间戳进行查找，如果时间戳相同，则返回。
  * Series reader is used to query one series of one tsfile, using this reader to query the value of
  * a series with given timestamps.
  */

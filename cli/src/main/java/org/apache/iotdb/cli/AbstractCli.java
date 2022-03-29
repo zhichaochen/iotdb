@@ -507,12 +507,20 @@ public abstract class AbstractCli {
     }
   }
 
+  /**
+   * 执行查询
+   * @param connection
+   * @param cmd
+   * @return
+   */
   private static int executeQuery(IoTDBConnection connection, String cmd) {
     int executeStatus = CODE_OK;
     long startTime = System.currentTimeMillis();
+    // 创建statement
     try (Statement statement = connection.createStatement()) {
       ZoneId zoneId = ZoneId.of(connection.getTimeZone());
       statement.setFetchSize(fetchSize);
+      // 执行
       boolean hasResultSet = statement.execute(cmd.trim());
       if (hasResultSet) {
         // print the result
@@ -754,6 +762,12 @@ public abstract class AbstractCli {
     NO_OPER
   }
 
+  /**
+   * 处理命令
+   * @param s
+   * @param connection
+   * @return
+   */
   static boolean processCommand(String s, IoTDBConnection connection) {
     if (s == null) {
       return true;

@@ -24,6 +24,9 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+/**
+ * Ts数据类型
+ */
 public enum TSDataType {
   /** BOOLEAN */
   BOOLEAN((byte) 0),

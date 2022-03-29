@@ -27,9 +27,13 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 
+/**
+ * 表示一个TsFile的引用，用于读取
+ */
 public interface TsFileInput {
 
   /**
+   * 返回本次输入的size
    * Returns the current size of this input.
    *
    * @return The current size of this input, measured in bytes
@@ -39,6 +43,7 @@ public interface TsFileInput {
   long size() throws IOException;
 
   /**
+   * 返回本次输入的当前位置
    * Returns this input's current position.
    *
    * @return This input's current position, a non-negative integer counting the number of bytes from
@@ -49,6 +54,7 @@ public interface TsFileInput {
   long position() throws IOException;
 
   /**
+   * 设置这个输入的位置
    * Sets this input's position.
    *
    * <p>Setting the position to a value that is greater than the input's current size is legal but

@@ -25,15 +25,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * TSRecord是TsFile接收的一种格式。TSRecord包含时间戳、设备ID和数据点列表。
  * TSRecord is a kind of format that TsFile receives.TSRecord contains timestamp, deviceId and a
  * list of data points.
  */
 public class TSRecord {
 
   /** timestamp of this TSRecord. */
-  public long time;
+  public long time; // 时间戳
   /** deviceId of this TSRecord. */
-  public String deviceId;
+  public String deviceId; // 设备Id
   /** all value of this TSRecord. */
   public List<DataPoint> dataPointList = new ArrayList<>();
 

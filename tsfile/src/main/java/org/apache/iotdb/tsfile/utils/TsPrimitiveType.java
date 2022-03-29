@@ -24,6 +24,11 @@ import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import java.io.Serializable;
 import java.util.Arrays;
 
+/**
+ * 时间序列的原始类型
+ * 存储的是真正的不同类型的数据值
+ * TSDataType：存储的是数据的引用，通过计算可以得到真正的值
+ */
 public abstract class TsPrimitiveType implements Serializable {
 
   /**

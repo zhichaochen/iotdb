@@ -27,6 +27,9 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
+/**
+ * HDFS输入工厂
+ */
 public class HDFSInputFactory implements FileInputFactory {
 
   private static final Logger logger = LoggerFactory.getLogger(HDFSInputFactory.class);

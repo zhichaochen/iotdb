@@ -24,6 +24,10 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Objects;
 
+/**
+ * 布隆过滤器
+ * 如果为0，表示当前文件一定不包含改时间序列，为0：可能包含改时间序列，因为可能存在hash冲突的可能性
+ */
 public class BloomFilter {
 
   private static final int MINIMAL_SIZE = 256;

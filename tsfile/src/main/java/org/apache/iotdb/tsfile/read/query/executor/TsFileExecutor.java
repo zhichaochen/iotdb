@@ -43,6 +43,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * TsFileExecutor 查询的入口
+ */
 public class TsFileExecutor implements QueryExecutor {
 
   private IMetadataQuerier metadataQuerier;
@@ -53,10 +56,17 @@ public class TsFileExecutor implements QueryExecutor {
     this.chunkLoader = chunkLoader;
   }
 
+  /**
+   * 接收一个查询表达式，返回一个查询数据集
+   * @param queryExpression
+   * @return
+   * @throws IOException
+   */
   @Override
   public QueryDataSet execute(QueryExpression queryExpression) throws IOException {
     // bloom filter
     BloomFilter bloomFilter = metadataQuerier.getWholeFileMetadata().getBloomFilter();
+    // 使用bloom过滤器判断当前文件可能包含的时间序列
     List<Path> filteredSeriesPath = new ArrayList<>();
     if (bloomFilter != null) {
       for (Path path : queryExpression.getSelectedSeries()) {
@@ -64,29 +74,38 @@ public class TsFileExecutor implements QueryExecutor {
           filteredSeriesPath.add(path);
         }
       }
+      // 设置当前文件需要查询的时间序列
       queryExpression.setSelectSeries(filteredSeriesPath);
     }
 
+    // 加载chunk的元数据，将其放入chunkMetaDataCache
     metadataQuerier.loadChunkMetaDatas(queryExpression.getSelectedSeries());
+    // 是否有查询过滤器
     if (queryExpression.hasQueryFilter()) {
       try {
         IExpression expression = queryExpression.getExpression();
+        // 优化表达式
         IExpression regularIExpression =
             ExpressionOptimizer.getInstance()
                 .optimize(expression, queryExpression.getSelectedSeries());
         queryExpression.setExpression(regularIExpression);
 
+        // 如果是全局时间表达式
         if (regularIExpression instanceof GlobalTimeExpression) {
           return execute(
               queryExpression.getSelectedSeries(), (GlobalTimeExpression) regularIExpression);
-        } else {
+        }
+        // 其他的：表示包含值（也可能有时间戳）的走该分支
+        else {
           return new ExecutorWithTimeGenerator(metadataQuerier, chunkLoader)
               .execute(queryExpression);
         }
       } catch (QueryFilterOptimizationException | NoMeasurementException e) {
         throw new IOException(e);
       }
-    } else {
+    }
+    // 如果没有过滤器执行该分支
+    else {
       try {
         return execute(queryExpression.getSelectedSeries());
       } catch (NoMeasurementException e) {

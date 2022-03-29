@@ -33,19 +33,26 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+/**
+ * Chunk的头信息
+ */
 public class ChunkHeader {
 
   /**
+   * 1表示该区块有多个页面，因此每个页面都有自己的页面统计信息。
+   * 5意味着此区块只有一个页面，而此页面没有页面统计信息。
+   *
    * 1 means this chunk has more than one page, so each page has its own page statistic. 5 means
    * this chunk has only one page, and this page has no page statistic.
    *
    * <p>if the 8th bit of this byte is 1 means this chunk is a time chunk of one vector if the 7th
    * bit of this byte is 1 means this chunk is a value chunk of one vector
    */
-  private byte chunkType;
 
-  private String measurementID;
-  private int dataSize;
+  private byte chunkType; // 区块类型
+
+  private String measurementID; // 指标ID
+  private int dataSize; //
   private TSDataType dataType;
   private CompressionType compressionType;
   private TSEncoding encodingType;

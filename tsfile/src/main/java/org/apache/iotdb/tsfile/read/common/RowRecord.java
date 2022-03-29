@@ -23,15 +23,18 @@ import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 行记录，表示一行返回数据
+ */
 public class RowRecord {
 
-  private long timestamp;
-  private final List<Field> fields;
+  private long timestamp; // 行的时间戳
+  private final List<Field> fields; // 一行的多个字段
   /** if any column is null, this field should be set to true; otherwise false */
-  private boolean hasNullField = false;
+  private boolean hasNullField = false; // 是否有为null的字段
 
   /** if any column is not null, this field should be set to false; otherwise true */
-  private boolean allNull = true;
+  private boolean allNull = true; // 所有字段都为null
 
   public RowRecord(long timestamp) {
     this.timestamp = timestamp;
@@ -58,6 +61,10 @@ public class RowRecord {
     }
   }
 
+  /**
+   * 添加一个字段
+   * @param f
+   */
   public void addField(Field f) {
     this.fields.add(f);
     if (f == null || f.getDataType() == null) {

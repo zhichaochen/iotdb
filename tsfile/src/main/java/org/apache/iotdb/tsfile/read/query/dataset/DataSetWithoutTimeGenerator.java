@@ -29,7 +29,12 @@ import org.apache.iotdb.tsfile.read.reader.series.AbstractFileSeriesReader;
 import java.io.IOException;
 import java.util.*;
 
-/** multi-way merging data set, no need to use TimeGenerator. */
+/**
+ * 多路归并数据集，不需要使用时间生成器
+ * TODO 什么是多路归并
+ * 核心思想是将多批次数据都加入优先队列，然后时间从小到大就进行排列了，然后逐条提取。
+ *
+ * multi-way merging data set, no need to use TimeGenerator. */
 public class DataSetWithoutTimeGenerator extends QueryDataSet {
 
   private List<AbstractFileSeriesReader> readers;
@@ -39,9 +44,10 @@ public class DataSetWithoutTimeGenerator extends QueryDataSet {
   private List<Boolean> hasDataRemaining;
 
   /** heap only need to store time. */
+  // 时间最小堆，对通过比较器进行排序，没有设置比较器默认从小到大排序
   private PriorityQueue<Long> timeHeap;
 
-  private Set<Long> timeSet;
+  private Set<Long> timeSet; // 时间Set，可以对时间去重
 
   /**
    * constructor of DataSetWithoutTimeGenerator.
@@ -76,7 +82,9 @@ public class DataSetWithoutTimeGenerator extends QueryDataSet {
       }
     }
 
+    // 遍历所有Page数据
     for (BatchData data : batchDataList) {
+      // 将其加入时间戳的优先队列，注意：不会存储到相同的时间
       if (data.hasCurrent()) {
         timeHeapPut(data.currentTime());
       }
@@ -131,7 +139,9 @@ public class DataSetWithoutTimeGenerator extends QueryDataSet {
     return record;
   }
 
-  /** keep heap from storing duplicate time. */
+  /**
+   * 防止堆存储重复的时间。
+   * keep heap from storing duplicate time. */
   private void timeHeapPut(long time) {
     if (!timeSet.contains(time)) {
       timeSet.add(time);

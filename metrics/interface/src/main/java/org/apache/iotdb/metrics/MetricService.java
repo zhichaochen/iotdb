@@ -35,6 +35,7 @@ import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * 指标服务
  * MetricService is the entry to manage all Metric system, include MetricManager and MetricReporter.
  */
 public abstract class MetricService {
@@ -52,7 +53,9 @@ public abstract class MetricService {
 
   public MetricService() {}
 
-  /** Start metric service without start reporter. if is disabled, do nothing */
+  /**
+   * 开始服务
+   * / Start metric service without start reporter. if is disabled, do nothing */
   public void startService() {
     // load manager
     loadManager();

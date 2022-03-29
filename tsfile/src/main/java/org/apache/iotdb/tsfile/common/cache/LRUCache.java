@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * 实现的LRU缓存
+ */
 /** This class is not thread safe. */
 public abstract class LRUCache<K, T> implements Cache<K, T> {
 

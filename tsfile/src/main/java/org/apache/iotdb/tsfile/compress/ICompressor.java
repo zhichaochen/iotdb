@@ -39,7 +39,9 @@ import static org.apache.iotdb.tsfile.file.metadata.enums.CompressionType.GZIP;
 import static org.apache.iotdb.tsfile.file.metadata.enums.CompressionType.LZ4;
 import static org.apache.iotdb.tsfile.file.metadata.enums.CompressionType.SNAPPY;
 
-/** compress data according to type in schema. */
+/**
+ * 根据schema中的类型压缩数据
+ * compress data according to type in schema. */
 public interface ICompressor extends Serializable {
 
   static ICompressor getCompressor(String name) {

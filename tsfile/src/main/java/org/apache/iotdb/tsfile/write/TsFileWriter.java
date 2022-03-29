@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 文件写入器
  * TsFileWriter is the entrance for writing processing. It receives a record and send it to
  * responding chunk group write. It checks memory size for all writing processing along its strategy
  * and flush data stored in memory to OutputStream. At the end of writing, user should call {@code
@@ -90,6 +91,7 @@ public class TsFileWriter implements AutoCloseable {
   private long chunkGroupSizeThreshold;
 
   /**
+   * 写入TsFile
    * init this TsFileWriter.
    *
    * @param file the File to be written by this TsFileWriter

@@ -35,7 +35,7 @@ import java.util.Set;
 
 public class SeriesRawDataBatchReader implements ManagedSeriesReader {
 
-  private final SeriesReader seriesReader;
+  private final SeriesReader seriesReader; // SeriesReader
 
   private boolean hasRemaining;
   private boolean managedByQueryManager;

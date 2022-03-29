@@ -23,13 +23,37 @@ import org.apache.iotdb.tsfile.read.common.BatchData;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * chunk读取器
+ * 1、接受一个chunk，对chunk的数据结构进行解析
+ * 2、主要对chunk中的page进行处理，比如：迭代chunk中的page
+ */
 public interface IChunkReader {
 
+  /**
+   * 是否有下一个满足条件的page
+   * @return
+   * @throws IOException
+   */
   boolean hasNextSatisfiedPage() throws IOException;
 
+  /**
+   * 下一个page
+   * @return
+   * @throws IOException
+   */
   BatchData nextPageData() throws IOException;
 
+  /**
+   * 关闭chunk读取器
+   * @throws IOException
+   */
   void close() throws IOException;
 
+  /**
+   * 获取多个page对应的page读取器列表
+   * @return
+   * @throws IOException
+   */
   List<IPageReader> loadPageReaderList() throws IOException;
 }

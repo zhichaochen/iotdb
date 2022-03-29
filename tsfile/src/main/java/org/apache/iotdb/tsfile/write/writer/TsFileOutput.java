@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+/**
+ * 表示一个可写的TsFIle
+ */
 public interface TsFileOutput {
 
   /**

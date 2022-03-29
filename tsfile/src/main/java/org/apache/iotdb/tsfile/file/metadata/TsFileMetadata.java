@@ -78,6 +78,7 @@ public class TsFileMetadata {
   }
 
   /**
+   *
    * use the given outputStream to serialize.
    *
    * @param outputStream -output stream to determine byte length

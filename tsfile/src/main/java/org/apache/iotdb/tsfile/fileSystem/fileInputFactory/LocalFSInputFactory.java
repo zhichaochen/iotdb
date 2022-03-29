@@ -28,6 +28,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Paths;
 
+/**
+ * 本地文件输入工厂
+ */
 public class LocalFSInputFactory implements FileInputFactory {
 
   private static final Logger logger = LoggerFactory.getLogger(LocalFSInputFactory.class);

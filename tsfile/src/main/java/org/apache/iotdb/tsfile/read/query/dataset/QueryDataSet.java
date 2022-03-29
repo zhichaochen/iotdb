@@ -27,13 +27,16 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * 查询数据集
+ */
 public abstract class QueryDataSet {
 
-  protected List<Path> paths;
-  protected List<TSDataType> dataTypes;
+  protected List<Path> paths; // 查询用到的时间序列
+  protected List<TSDataType> dataTypes; // 数据类型
 
   protected int rowLimit = 0; // rowLimit > 0 means the LIMIT constraint exists
-  protected int rowOffset = 0;
+  protected int rowOffset = 0; //
   protected int alreadyReturnedRowNum = 0;
   protected int fetchSize = 10000;
   protected boolean ascending;
@@ -55,7 +58,9 @@ public abstract class QueryDataSet {
 
   protected int columnNum;
 
-  /** For redirect query. Need keep consistent with EndPoint in rpc.thrift. */
+  /**
+   * 端点
+   * For redirect query. Need keep consistent with EndPoint in rpc.thrift. */
   public static class EndPoint {
     private String ip = null;
     private int port = 0;
@@ -91,6 +96,11 @@ public abstract class QueryDataSet {
 
   public QueryDataSet() {}
 
+  /**
+   * 子类会super调用到改方法
+   * @param paths
+   * @param dataTypes
+   */
   public QueryDataSet(List<Path> paths, List<TSDataType> dataTypes) {
     initQueryDataSetFields(paths, dataTypes, true);
   }
@@ -101,10 +111,10 @@ public abstract class QueryDataSet {
 
   protected void initQueryDataSetFields(
       List<Path> paths, List<TSDataType> dataTypes, boolean ascending) {
-    this.paths = paths;
+    this.paths = paths; // 多个时间序列
     this.dataTypes = dataTypes;
     this.ascending = ascending;
-    this.columnNum = 0;
+    this.columnNum = 0; // 列的数量，对齐的时间序列可能有多个，默认一个
     if (paths != null) {
       for (Path p : paths) {
         columnNum += p.getColumnNum();
@@ -120,12 +130,20 @@ public abstract class QueryDataSet {
     this.withoutNullColumnsIndex = withoutNullColumnsIndex;
   }
 
+  /**
+   * 是否有下一个
+   * @return
+   * @throws IOException
+   */
   public boolean hasNext() throws IOException {
     // proceed to the OFFSET row by skipping rows
     while (rowOffset > 0) {
+      // 有下一个没有约束
       if (hasNextWithoutConstraint()) {
+        //
         RowRecord rowRecord = nextWithoutConstraint(); // DO NOT use next()
         // filter rows whose columns are null according to the rule
+        // 根据规则筛选列为空的行
         if (withoutNullFilter(rowRecord)) {
           continue;
         }
@@ -144,6 +162,8 @@ public abstract class QueryDataSet {
   }
 
   /**
+   * 没有null的过滤器
+   * 也就是有了null值则过滤器
    * check rowRecord whether satisfy without null condition
    *
    * @param rowRecord rowRecord
@@ -180,6 +200,7 @@ public abstract class QueryDataSet {
     return (withoutAllNull && allNullFlag) || (withoutAnyNull && anyNullFlag);
   }
 
+  //
   public abstract boolean hasNextWithoutConstraint() throws IOException;
 
   /** This method is used for batch query, return RowRecord. */

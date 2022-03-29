@@ -101,6 +101,10 @@ public class BatchData {
     return count == 0;
   }
 
+  /**
+   * 当前是否有数据
+   * @return
+   */
   public boolean hasCurrent() {
     if (readCurListIndex == writeCurListIndex) {
       return readCurArrayIndex < writeCurArrayIndex;

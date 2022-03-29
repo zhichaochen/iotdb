@@ -58,67 +58,74 @@ import java.util.Set;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 
+/**
+ * 时间序列读取器
+ */
 public class SeriesReader {
 
   // inner class of SeriesReader for order purpose
-  protected TimeOrderUtils orderUtils;
+  protected TimeOrderUtils orderUtils; // 时间排序工具类
 
-  protected final PartialPath seriesPath;
+  protected final PartialPath seriesPath; // 时间序列路径
 
   // all the sensors in this device;
-  protected final Set<String> allSensors;
-  protected final TSDataType dataType;
-  protected final QueryContext context;
+  protected final Set<String> allSensors; // 所有传感器
+  protected final TSDataType dataType; // 数据类型
+  protected final QueryContext context; // 查询上下文
 
   /*
+   * timeFilter和valueFilter之间最多有一个值不为null
    * There is at most one is not null between timeFilter and valueFilter
    *
+   * timeFilter被下推到所有页面（seq、unseq），没有正确性问题
    * timeFilter is pushed down to all pages (seq, unseq) without correctness problem
    *
+   * valueFilter仅下推至非折叠页面
    * valueFilter is pushed down to non-overlapped page only
    */
-  protected final Filter timeFilter;
-  protected final Filter valueFilter;
-  protected final TsFileFilter fileFilter;
+  protected final Filter timeFilter; // 时间过滤器
+  protected final Filter valueFilter; // 值过滤器
+  protected final TsFileFilter fileFilter; // 文件过滤器
 
-  protected final QueryDataSource dataSource;
+  protected final QueryDataSource dataSource; // 查询数据源
 
   /*
    * file index
    */
-  protected int curSeqFileIndex;
-  protected int curUnseqFileIndex;
+  protected int curSeqFileIndex; // 当前有序TsFile下标
+  protected int curUnseqFileIndex; // 当前无序TsFile下标
 
   /*
-   * TimeSeriesMetadata cache
+   * TimeSeriesMetadata cache 时间序列元数据缓存
    */
   protected ITimeSeriesMetadata firstTimeSeriesMetadata;
   protected final List<ITimeSeriesMetadata> seqTimeSeriesMetadata = new LinkedList<>();
+  // 优先级队列，通过时间进行优先级排序
   protected final PriorityQueue<ITimeSeriesMetadata> unSeqTimeSeriesMetadata;
 
   /*
-   * chunk cache
+   * chunk cache chunk缓存
    */
   protected IChunkMetadata firstChunkMetadata;
   protected final PriorityQueue<IChunkMetadata> cachedChunkMetadata;
 
   /*
-   * page cache
+   * page cache page缓存
    */
   protected VersionPageReader firstPageReader;
   protected final List<VersionPageReader> seqPageReaders = new LinkedList<>();
   protected final PriorityQueue<VersionPageReader> unSeqPageReaders;
 
   /*
-   * point cache
+   * point cache 数据点缓存
    */
   protected final PriorityMergeReader mergeReader;
 
   /*
-   * result cache
+   * result cache 结果缓存
    */
-  protected boolean hasCachedNextOverlappedPage;
-  protected BatchData cachedBatchData;
+  protected boolean hasCachedNextOverlappedPage; // 已经缓存了下一个折叠页
+  protected BatchData cachedBatchData; // 已缓存批次数据
 
   /**
    * @param seriesPath For querying aligned series, the seriesPath should be AlignedPath. All
@@ -229,7 +236,13 @@ public class SeriesReader {
     return !(hasNextPage() || hasNextChunk() || hasNextFile());
   }
 
+  /**
+   * 是否有下一个文件
+   * @return
+   * @throws IOException
+   */
   boolean hasNextFile() throws IOException {
+    // 检查查询是否存活，也就是查询是否超时
     if (!QueryTimeManager.checkQueryAlive(context.getQueryId())) {
       return false;
     }
@@ -260,18 +273,26 @@ public class SeriesReader {
             || !seqTimeSeriesMetadata.isEmpty()
             || !unSeqTimeSeriesMetadata.isEmpty())) {
       // init first time series metadata whose startTime is minimum
+      // 初始化开始时间最小的第一个时间序列元数据
       tryToUnpackAllOverlappedFilesToTimeSeriesMetadata();
     }
 
     return firstTimeSeriesMetadata != null;
   }
 
+  /**
+   * 文件是否已经是重叠
+   * @return
+   * @throws IOException
+   */
   boolean isFileOverlapped() throws IOException {
     if (firstTimeSeriesMetadata == null) {
       throw new IOException("no first file");
     }
 
+    // 第一个时间序列的元数据信息
     Statistics fileStatistics = firstTimeSeriesMetadata.getStatistics();
+    // 如果时间序列元数据不为空且
     return !seqTimeSeriesMetadata.isEmpty()
             && orderUtils.isOverlapped(fileStatistics, seqTimeSeriesMetadata.get(0).getStatistics())
         || !unSeqTimeSeriesMetadata.isEmpty()
@@ -339,7 +360,9 @@ public class SeriesReader {
     return firstChunkMetadata != null;
   }
 
-  /** construct first chunk metadata */
+  /**
+   * 构造第一个chunk元数据
+   * construct first chunk metadata */
   private void initFirstChunkMetadata() throws IOException {
     if (firstTimeSeriesMetadata != null) {
       /*
@@ -459,6 +482,8 @@ public class SeriesReader {
   }
 
   /**
+   * 是否有下一页
+   * 这个方法应该在hasNextChunk()之后调用，直到没有下一个page，确保所有重叠的page都被使用
    * This method should be called after hasNextChunk() until no next page, make sure that all
    * overlapped pages are consumed
    */
@@ -470,6 +495,7 @@ public class SeriesReader {
     }
 
     /*
+     * 在有折叠数据之前
      * has overlapped data before
      */
     if (hasCachedNextOverlappedPage) {
@@ -705,10 +731,12 @@ public class SeriesReader {
   /** This method should only be used when the method isPageOverlapped() return true. */
   BatchData nextPage() throws IOException {
 
+    // 如果没有下一个page了，则抛出异常
     if (!hasNextPage() && QueryTimeManager.checkQueryAlive(context.getQueryId())) {
       throw new IOException("no next page, neither non-overlapped nor overlapped");
     }
 
+    //
     if (hasCachedNextOverlappedPage) {
       hasCachedNextOverlappedPage = false;
       return cachedBatchData;
@@ -728,6 +756,8 @@ public class SeriesReader {
   }
 
   /**
+   * 是否有下一个折叠页
+   * 在mergeReader中读取重叠数据直到currentLargestEndTime，如果当前批次不包含数据，则再次读取直到下一个currentLargestEndTime
    * read overlapped data till currentLargestEndTime in mergeReader, if current batch does not
    * contain data, read till next currentLargestEndTime again
    */
@@ -916,17 +946,27 @@ public class SeriesReader {
     unpackAllOverlappedUnseqPageReadersToMergeReader(currentPageEndpointTime);
   }
 
+  /**
+   *
+   * @throws IOException
+   */
   private void initFirstPageReader() throws IOException {
     while (this.firstPageReader == null) {
       VersionPageReader firstPageReader = getFirstPageReaderFromCachedReaders();
 
       // unpack overlapped page using current page reader
+      // 使用当前的page读取器打开折叠的page
       if (firstPageReader != null) {
+        // 折叠检查时间
         long overlapCheckTime = orderUtils.getOverlapCheckTime(firstPageReader.getStatistics());
+        // 打开所有折叠的TsFiles到TimeSeriesMetadata
         unpackAllOverlappedTsFilesToTimeSeriesMetadata(overlapCheckTime);
+        // 打开所有的折叠的TimeSeriesMetadata去缓存ChunkMetadata
         unpackAllOverlappedTimeSeriesMetadataToCachedChunkMetadata(overlapCheckTime, false);
+        // 打开所有的折叠的ChunkMetadata到page读取器
         unpackAllOverlappedChunkMetadataToPageReaders(overlapCheckTime, false);
 
+        // 打开包装后的这一页必须是第一页
         // this page after unpacking must be the first page
         if (firstPageReader.equals(getFirstPageReaderFromCachedReaders())) {
           this.firstPageReader = firstPageReader;
@@ -1000,8 +1040,11 @@ public class SeriesReader {
   }
 
   /**
+   * 解压所有重叠的seq/unseq文件，找到第一个TimeSeriesMetadata
    * unpack all overlapped seq/unseq files and find the first TimeSeriesMetadata
    *
+   * 因为在用户使用的场景中可能有太多的文件，我们无法一次打开所有的块，这可能会导致OOM，
+   * 因此我们只能在需要时一次解包一个文件。这种方法可能无处不在，但它可以让系统平稳运行
    * <p>Because there may be too many files in the scenario used by the user, we cannot open all the
    * chunks at once, which may cause OOM, so we can only unpack one file at a time when needed. This
    * approach is likely to be ubiquitous, but it keeps the system running smoothly
@@ -1009,6 +1052,7 @@ public class SeriesReader {
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
   protected void tryToUnpackAllOverlappedFilesToTimeSeriesMetadata() throws IOException {
     /*
+       填充序列时间序列数据列表，直到它不为空
      * Fill sequence TimeSeriesMetadata List until it is not empty
      */
     while (seqTimeSeriesMetadata.isEmpty() && orderUtils.hasNextSeqResource()) {
@@ -1016,6 +1060,7 @@ public class SeriesReader {
     }
 
     /*
+     * 填充无序的TimeSeriesMetadata优先级队列，知道它不为空
      * Fill unSequence TimeSeriesMetadata Priority Queue until it is not empty
      */
     while (unSeqTimeSeriesMetadata.isEmpty() && orderUtils.hasNextUnseqResource()) {
@@ -1023,6 +1068,7 @@ public class SeriesReader {
     }
 
     /*
+     * 查询第一个TimeSeriesMetadata的结束时间
      * find end time of the first TimeSeriesMetadata
      */
     long endTime = -1L;
@@ -1041,6 +1087,7 @@ public class SeriesReader {
     }
 
     /*
+     * 使用first TimeSeriesMetadata解包所有直接重叠的seq/unseq文件
      * unpack all directly overlapped seq/unseq files with first TimeSeriesMetadata
      */
     if (endTime != -1) {
@@ -1075,12 +1122,19 @@ public class SeriesReader {
     }
   }
 
+  /**
+   * 打开所有的折叠的TsFIle到时间序列元数据
+   * @param endpointTime
+   * @throws IOException
+   */
   protected void unpackAllOverlappedTsFilesToTimeSeriesMetadata(long endpointTime)
       throws IOException {
+    // 打开无序的TsFile资源
     while (orderUtils.hasNextUnseqResource()
         && orderUtils.isOverlapped(endpointTime, orderUtils.getNextUnseqFileResource(false))) {
       unpackUnseqTsFileResource();
     }
+    // 打开有序的TsFile资源
     while (orderUtils.hasNextSeqResource()
         && orderUtils.isOverlapped(endpointTime, orderUtils.getNextSeqFileResource(false))) {
       unpackSeqTsFileResource();
@@ -1102,6 +1156,7 @@ public class SeriesReader {
   }
 
   protected void unpackUnseqTsFileResource() throws IOException {
+    // 加载时间序列元数据
     ITimeSeriesMetadata timeseriesMetadata =
         loadTimeSeriesMetadata(
             orderUtils.getNextUnseqFileResource(true),
@@ -1139,6 +1194,9 @@ public class SeriesReader {
     return timeFilter;
   }
 
+  /**
+   * page 读取器
+   */
   private class VersionPageReader {
 
     protected PriorityMergeReader.MergeReaderPriority version;

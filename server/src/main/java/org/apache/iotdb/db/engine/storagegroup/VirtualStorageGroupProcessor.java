@@ -909,6 +909,8 @@ public class VirtualStorageGroupProcessor {
   }
 
   /**
+   * 插入一个tablet到这个存储组
+   * tablet ：多个行属于相同的设备s
    * Insert a tablet (rows belonging to the same devices) into this storage group.
    *
    * @throws BatchProcessException if some of the rows failed to be inserted
@@ -1033,6 +1035,7 @@ public class VirtualStorageGroupProcessor {
   }
 
   /**
+   *
    * insert batch to tsfile processor thread-safety that the caller need to guarantee The rows to be
    * inserted are in the range [start, end) Null value in each column values will be replaced by the
    * subsequent non-null value, e.g., {1, null, 3, null, 5} will be {1, 3, 5, null, 5}
