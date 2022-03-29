@@ -18,16 +18,20 @@
  */
 package org.apache.iotdb.db.mpp.sql.planner.plan.node.source;
 
-import org.apache.iotdb.db.mpp.common.DataRegion;
+import org.apache.iotdb.commons.partition.DataRegionReplicaSet;
+import org.apache.iotdb.commons.utils.TestOnly;
 import org.apache.iotdb.db.mpp.common.GroupByTimeParameter;
 import org.apache.iotdb.db.mpp.sql.planner.plan.node.PlanNode;
 import org.apache.iotdb.db.mpp.sql.planner.plan.node.PlanNodeId;
 import org.apache.iotdb.db.mpp.sql.planner.plan.node.PlanVisitor;
 import org.apache.iotdb.db.query.expression.unary.FunctionExpression;
 import org.apache.iotdb.tsfile.read.filter.basic.Filter;
+import org.apache.iotdb.tsfile.utils.Pair;
 
 import com.google.common.collect.ImmutableList;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -61,7 +65,7 @@ public class SeriesAggregateScanNode extends SourceNode {
   private String columnName;
 
   // The id of DataRegion where the node will run
-  private DataRegion dataRegion;
+  private DataRegionReplicaSet dataRegionReplicaSet;
 
   public SeriesAggregateScanNode(PlanNodeId id) {
     super(id);
@@ -71,6 +75,9 @@ public class SeriesAggregateScanNode extends SourceNode {
   public List<PlanNode> getChildren() {
     return ImmutableList.of();
   }
+
+  @Override
+  public void addChildren(PlanNode child) {}
 
   @Override
   public PlanNode clone() {
@@ -102,21 +109,52 @@ public class SeriesAggregateScanNode extends SourceNode {
   public void open() throws Exception {}
 
   @Override
-  public void close() throws Exception {}
-
-  public DataRegion getDataRegion() {
-    return dataRegion;
+  public DataRegionReplicaSet getDataRegionReplicaSet() {
+    return this.dataRegionReplicaSet;
   }
+
+  @Override
+  public void setDataRegionReplicaSet(DataRegionReplicaSet dataRegionReplicaSet) {
+    this.dataRegionReplicaSet = dataRegionReplicaSet;
+  }
+
+  @Override
+  public String getDeviceName() {
+    return aggregateFunc.getPaths().get(0).getDevice();
+  }
+
+  @Override
+  protected String getExpressionString() {
+    return aggregateFunc.getExpressionString();
+  }
+
+  @Override
+  public void close() throws Exception {}
 
   @Override
   public <R, C> R accept(PlanVisitor<R, C> visitor, C context) {
     return visitor.visitSeriesAggregate(this, context);
   }
 
+  public static SeriesAggregateScanNode deserialize(ByteBuffer byteBuffer) {
+    return null;
+  }
+
+  @Override
+  public void serialize(ByteBuffer byteBuffer) {}
+
   // This method is used when do the PredicatePushDown.
   // The filter is not put in the constructor because the filter is only clear in the predicate
   // push-down stage
   public void setFilter(Filter filter) {
     this.filter = filter;
+  }
+
+  @TestOnly
+  public Pair<String, List<String>> print() {
+    String title = String.format("[SeriesAggregateScanNode (%s)]", this.getId());
+    List<String> attributes = new ArrayList<>();
+    attributes.add("AggregateFunction: " + this.getExpressionString());
+    return new Pair<>(title, attributes);
   }
 }
