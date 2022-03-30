@@ -41,6 +41,9 @@ import javax.servlet.DispatcherType;
 
 import java.util.EnumSet;
 
+/**
+ * Rest服务
+ */
 public class RestService implements IService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RestService.class);

@@ -28,6 +28,9 @@ import org.apache.iotdb.db.query.udf.api.exception.UDFInputSeriesNumberNotValidE
 import org.apache.iotdb.db.query.udf.api.exception.UDFParameterNotValidException;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 
+/**
+ * UDF参数校验器
+ */
 public class UDFParameterValidator {
 
   private final UDFParameters parameters;

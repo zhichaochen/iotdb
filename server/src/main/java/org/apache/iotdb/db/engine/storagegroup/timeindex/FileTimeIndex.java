@@ -40,6 +40,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * TsFile时间索引
+ * 按存储组分组（每个文件一个索引条目）
+ */
 public class FileTimeIndex implements ITimeIndex {
 
   private static final Logger logger = LoggerFactory.getLogger(FileTimeIndex.class);
@@ -47,10 +51,10 @@ public class FileTimeIndex implements ITimeIndex {
   private static final FileReaderManager FILE_READER_MANAGER = FileReaderManager.getInstance();
 
   /** start time */
-  protected long startTime;
+  protected long startTime; // 开始时间
 
   /** end times. The value is Long.MIN_VALUE if it's an unsealed sequence tsfile */
-  protected long endTime;
+  protected long endTime; // 结束时间，这个值很长。如果是未密封的序列文件，最小值
 
   public FileTimeIndex() {
     this.startTime = Long.MAX_VALUE;

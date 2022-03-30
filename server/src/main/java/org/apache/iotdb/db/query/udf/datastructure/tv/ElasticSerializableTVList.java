@@ -33,6 +33,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 关键字的，都表示可扩容的
+ */
 public class ElasticSerializableTVList implements PointCollector {
 
   public static ElasticSerializableTVList newElasticSerializableTVList(
@@ -50,8 +53,8 @@ public class ElasticSerializableTVList implements PointCollector {
   protected int internalTVListCapacity;
   protected int cacheSize;
 
-  protected LRUCache cache;
-  protected List<SerializableTVList> tvLists;
+  protected LRUCache cache; //
+  protected List<SerializableTVList> tvLists; // tvList
   /**
    * the bitmap used to indicate whether one value is null in the tvLists. The size of bitMap is the
    * same as tvLists and the length of whole bits is the same as tvLists' length.
@@ -258,8 +261,10 @@ public class ElasticSerializableTVList implements PointCollector {
     bitMaps.get((size - 1) / internalTVListCapacity).mark((size - 1) % internalTVListCapacity);
   }
 
+  /*检查扩展*/
   private void checkExpansion() {
     if (size % internalTVListCapacity == 0) {
+      // 创建新的SerializableTVList并加入tvLists
       tvLists.add(SerializableTVList.newSerializableTVList(dataType, queryId));
       bitMaps.add(new BitMap(internalTVListCapacity));
     }
@@ -345,8 +350,12 @@ public class ElasticSerializableTVList implements PointCollector {
     this.evictionUpperBound = evictionUpperBound;
   }
 
+  /**
+   * LRU缓存
+   */
   private class LRUCache extends Cache {
 
+    // 初始化容量
     LRUCache(int capacity) {
       super(capacity);
     }

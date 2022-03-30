@@ -20,11 +20,28 @@ package org.apache.iotdb.tsfile.read.query.timegenerator.node;
 
 import java.io.IOException;
 
+/**
+ * 时间生成器节点
+ */
 public interface Node {
 
+  /**
+   * 是否还有下一个节点
+   * @return
+   * @throws IOException
+   */
   boolean hasNext() throws IOException;
 
+  /**
+   * 下一个节点
+   * @return
+   * @throws IOException
+   */
   long next() throws IOException;
 
+  /**
+   * 节点类型
+   * @return
+   */
   NodeType getType();
 }

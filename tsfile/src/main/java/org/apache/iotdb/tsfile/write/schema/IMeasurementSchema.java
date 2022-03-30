@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
+ * 物理量元数据接口
  */
 public interface IMeasurementSchema {
 

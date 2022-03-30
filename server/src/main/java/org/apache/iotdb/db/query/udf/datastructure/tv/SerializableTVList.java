@@ -25,9 +25,14 @@ import org.apache.iotdb.tsfile.exception.write.UnSupportedDataTypeException;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.read.common.BatchData;
 
+/**
+ * 可序列化的TV列表
+ * T：时间，V：值
+ */
 public abstract class SerializableTVList extends BatchData implements SerializableList {
 
   public static SerializableTVList newSerializableTVList(TSDataType dataType, long queryId) {
+    // 序列化记录器
     SerializationRecorder recorder = new SerializationRecorder(queryId);
     switch (dataType) {
       case INT32:

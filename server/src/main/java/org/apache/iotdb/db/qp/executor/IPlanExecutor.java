@@ -41,6 +41,9 @@ import org.apache.thrift.TException;
 import java.io.IOException;
 import java.sql.SQLException;
 
+/**
+ * 计划执行器
+ */
 public interface IPlanExecutor {
 
   /**

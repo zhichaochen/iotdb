@@ -21,7 +21,9 @@ package org.apache.iotdb.db.metadata.idtable.entry;
 
 import java.util.Objects;
 
-/** Using device id path as id */
+/**
+ * 普通的设备ID，使用设备路径作为ID
+ * Using device id path as id */
 public class PlainDeviceID implements IDeviceID {
   String deviceID;
 

@@ -39,6 +39,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * BatchData是一种自定义数据结构，针对不同类型的值进行了优化。此类可以被视为比ArrayList更高效的集合。
+ *
  * <code>BatchData</code> is a self-defined data structure which is optimized for different type of
  * values. This class can be viewed as a collection which is more efficient than ArrayList.
  *
@@ -52,13 +54,16 @@ import java.util.List;
  *
  * <p>while (batchData.hasCurrent()) { long time = batchData.currentTime(); Object value =
  * batchData.currentValue(); batchData.next(); }
+ *
+ * 把它想成List即可
  */
 public class BatchData {
 
+  // 容量阈值1000
   protected static final int CAPACITY_THRESHOLD = TSFileConfig.ARRAY_CAPACITY_THRESHOLD;
-  protected int capacity = 16;
+  protected int capacity = 16; //
 
-  protected TSDataType dataType;
+  protected TSDataType dataType; // 当前
 
   protected BatchDataType batchDataType = BatchDataType.Ordinary;
 
@@ -73,10 +78,10 @@ public class BatchData {
   protected int writeCurArrayIndex;
 
   // the insert timestamp number of timeRet
-  protected int count;
+  protected int count; //
 
-  protected List<long[]> timeRet;
-  protected List<boolean[]> booleanRet;
+  protected List<long[]> timeRet; //
+  protected List<boolean[]> booleanRet; //
   protected List<int[]> intRet;
   protected List<long[]> longRet;
   protected List<float[]> floatRet;
@@ -94,6 +99,7 @@ public class BatchData {
    * @param type Data type to record for this BatchData
    */
   public BatchData(TSDataType type) {
+    // 初始化
     init(type);
   }
 
@@ -270,6 +276,7 @@ public class BatchData {
   }
 
   /**
+   * 存放int值
    * put int data.
    *
    * @param t timestamp

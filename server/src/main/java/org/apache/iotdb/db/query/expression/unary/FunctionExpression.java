@@ -59,9 +59,14 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * 函数表达式
+ */
 public class FunctionExpression extends Expression {
 
   /**
+   * true：聚合函数
+   * false ：时间序列生成函数
    * true: aggregation function<br>
    * false: time series generating function
    */
@@ -69,19 +74,20 @@ public class FunctionExpression extends Expression {
 
   private boolean isUserDefinedAggregationFunctionExpression;
 
-  private final String functionName;
-  private final Map<String, String> functionAttributes;
+  private final String functionName; // 函数名
+  private final Map<String, String> functionAttributes; // 函数属性
 
   /**
+   * 表达式集合
    * example: select udf(a, b, udf(c)) from root.sg.d;
    *
    * <p>3 expressions [root.sg.d.a, root.sg.d.b, udf(root.sg.d.c)] will be in this field.
    */
   private List<Expression> expressions;
 
-  private List<PartialPath> paths;
+  private List<PartialPath> paths; // 路径列表
 
-  private String parametersString;
+  private String parametersString; // 多个参数组成的字符串
 
   public FunctionExpression(String functionName) {
     this.functionName = functionName;
@@ -265,6 +271,9 @@ public class FunctionExpression extends Expression {
     }
   }
 
+  /**
+   * 构造中间层
+   */
   @Override
   public IntermediateLayer constructIntermediateLayer(
       long queryId,

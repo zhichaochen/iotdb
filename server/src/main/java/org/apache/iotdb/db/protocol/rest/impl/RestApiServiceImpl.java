@@ -46,6 +46,9 @@ import javax.ws.rs.core.SecurityContext;
 
 import java.time.ZoneId;
 
+/**
+ * 查询入口
+ */
 public class RestApiServiceImpl extends RestApiService {
 
   public static ServiceProvider serviceProvider = IoTDB.serviceProvider;
@@ -63,12 +66,21 @@ public class RestApiServiceImpl extends RestApiService {
         IoTDBRestServiceDescriptor.getInstance().getConfig().getRestQueryDefaultRowSizeLimit();
   }
 
+  /**
+   * 执行非query语句
+   * @param sql
+   * @param securityContext
+   * @return
+   */
   @Override
   public Response executeNonQueryStatement(SQL sql, SecurityContext securityContext) {
     try {
+      // 校验SQL
       RequestValidationHandler.validateSQL(sql);
 
+      // 解析Sql将其转换为物理计划
       PhysicalPlan physicalPlan = planner.parseSQLToPhysicalPlan(sql.getSql());
+      // 校验权限
       Response response = authorizationHandler.checkAuthority(securityContext, physicalPlan);
       if (response != null) {
         return response;
@@ -89,13 +101,21 @@ public class RestApiServiceImpl extends RestApiService {
     }
   }
 
+  /**
+   * 执行查询语句
+   * @param sql
+   * @param securityContext
+   * @return
+   */
   @Override
   public Response executeQueryStatement(SQL sql, SecurityContext securityContext) {
     try {
       RequestValidationHandler.validateSQL(sql);
 
+      // 生成物理计划
       PhysicalPlan physicalPlan =
           planner.parseSQLToRestQueryPlan(sql.getSql(), ZoneId.systemDefault());
+      // 设置登陆人名称
       physicalPlan.setLoginUserName(securityContext.getUserPrincipal().getName());
       if (!(physicalPlan instanceof QueryPlan)
           && !(physicalPlan instanceof ShowPlan)
@@ -108,13 +128,16 @@ public class RestApiServiceImpl extends RestApiService {
             .build();
       }
 
+      // 检查权限
       Response response = authorizationHandler.checkAuthority(securityContext, physicalPlan);
       if (response != null) {
         return response;
       }
 
+      // 查询ID
       final long queryId = ServiceProvider.SESSION_MANAGER.requestQueryId(true);
       try {
+        // 查询上下文
         QueryContext queryContext =
             serviceProvider.genQueryContext(
                 queryId,
@@ -122,10 +145,12 @@ public class RestApiServiceImpl extends RestApiService {
                 System.currentTimeMillis(),
                 sql.getSql(),
                 IoTDBConstant.DEFAULT_CONNECTION_TIMEOUT_MS);
+        // 查询数据集，TODO 这是核心逻辑
         QueryDataSet queryDataSet =
             serviceProvider.createQueryDataSet(
                 queryContext, physicalPlan, IoTDBConstant.DEFAULT_FETCH_SIZE);
         // set max row limit to avoid OOM
+        // 设置最大行限制，避免OOM
         return QueryDataSetHandler.fillQueryDataSet(
             queryDataSet,
             physicalPlan,

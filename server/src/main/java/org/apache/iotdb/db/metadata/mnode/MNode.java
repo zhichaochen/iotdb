@@ -25,15 +25,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * 元数据节点
+ * 表示在元数据结构中的一个节点，元数据以树形结构进行保存，每个元数据结构都是
+ */
 public abstract class MNode implements IMNode {
 
   /** Name of the MNode */
-  protected String name;
+  protected String name; // 当前元数据节点名称
 
-  protected IMNode parent;
+  protected IMNode parent; // 当前节点的父节点
 
-  /** from root to this node, only be set when used once for InternalMNode */
-  protected String fullPath;
+  /**
+   * 从根节点到该节点，仅当对InternalMNode使用一次时才能设置
+   * from root to this node, only be set when used once for InternalMNode */
+  protected String fullPath; // 全路径
 
   /** Constructor of MNode. */
   public MNode(IMNode parent, String name) {

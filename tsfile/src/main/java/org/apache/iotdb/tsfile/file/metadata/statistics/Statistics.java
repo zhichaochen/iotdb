@@ -36,6 +36,22 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
+ * 统计信息
+ * 此类用于在增量文件中记录每个测量的统计信息。在写入处理时，处理器记录统计信息。统计信息包括0.0.1版之前的最大值、最小值和空值计数
+ * 对于Unseq文件TimeSeriesMetadata中的统计信息，只能使用firstValue、lastValue、startTime和endTime
+ *
+ * 这里是statistics的详细信息：
+ *
+ * count	数据点个数
+ * startTime	开始时间
+ * endTime	结束时间
+ * minValue	最小值
+ * maxValue	最大值	double	float	int	long	-	-
+ * firstValue	第一个值	double	float	int	long	Binary	boolean
+ * lastValue	最后一个值	double	float	int	long	Binary	boolean
+ * sumValue	和	double	double	double	double	-	-
+ * extreme	极值	double	float	int	long	-	-
+ *
  * This class is used for recording statistic information of each measurement in a delta file. While
  * writing processing, the processor records the statistics information. Statistics includes
  * maximum, minimum and null value count up to version 0.0.1.<br>
@@ -159,24 +175,32 @@ public abstract class Statistics<T extends Serializable> {
   public abstract long getSumLongValue();
 
   /**
+   * 合并参数到统计信息
    * merge parameter to this statistic
    *
    * @throws StatisticsClassException cannot merge statistics
    */
   @SuppressWarnings("unchecked")
   public void mergeStatistics(Statistics<? extends Serializable> stats) {
+    // 如果是同一个Statistics对象
     if (this.getClass() == stats.getClass()) {
+      // 更新开始时间
       if (stats.startTime < this.startTime) {
         this.startTime = stats.startTime;
       }
+      // 更新结束时间
       if (stats.endTime > this.endTime) {
         this.endTime = stats.endTime;
       }
       // must be sure no overlap between two statistics
+      // 更新数据点数量
       this.count += stats.count;
+      // 合并统计值
       mergeStatisticsValue((Statistics<T>) stats);
       isEmpty = false;
-    } else {
+    }
+    // 如果不是同一个对象，则抛出异常
+    else {
       Class<?> thisClass = this.getClass();
       Class<?> statsClass = stats.getClass();
       LOG.warn("Statistics classes mismatched,no merge: {} v.s. {}", thisClass, statsClass);
@@ -345,12 +369,22 @@ public abstract class Statistics<T extends Serializable> {
     return statistics;
   }
 
+  /**
+   * 反序列化每个chunk的统计信息
+   * @param buffer
+   * @param dataType
+   * @return
+   */
   public static Statistics<? extends Serializable> deserialize(
       ByteBuffer buffer, TSDataType dataType) {
     Statistics<? extends Serializable> statistics = getStatsByType(dataType);
+    // 总数
     statistics.setCount(ReadWriteForEncodingUtils.readUnsignedVarInt(buffer));
+    // 开始时间
     statistics.setStartTime(ReadWriteIOUtils.readLong(buffer));
+    // 结束时间
     statistics.setEndTime(ReadWriteIOUtils.readLong(buffer));
+    // 反序列化不同数据类型独特的统计值
     statistics.deserialize(buffer);
     statistics.isEmpty = false;
     return statistics;

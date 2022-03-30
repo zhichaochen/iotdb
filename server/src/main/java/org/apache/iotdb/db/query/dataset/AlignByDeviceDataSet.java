@@ -50,7 +50,9 @@ import java.util.Map;
 
 import static org.apache.iotdb.db.qp.physical.crud.GroupByTimePlan.getTimeExpression;
 
-/** This QueryDataSet is used for ALIGN_BY_DEVICE query result. */
+/**
+ * 通过设备对其的时间序列
+ * This QueryDataSet is used for ALIGN_BY_DEVICE query result. */
 public class AlignByDeviceDataSet extends QueryDataSet {
 
   private DataSetType dataSetType;

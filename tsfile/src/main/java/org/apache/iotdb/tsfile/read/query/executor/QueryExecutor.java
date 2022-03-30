@@ -23,6 +23,10 @@ import org.apache.iotdb.tsfile.read.query.dataset.QueryDataSet;
 
 import java.io.IOException;
 
+/**
+ * 查询执行器
+ * 用于真正执行查询的操作
+ */
 public interface QueryExecutor {
 
   QueryDataSet execute(QueryExpression queryExpression) throws IOException;

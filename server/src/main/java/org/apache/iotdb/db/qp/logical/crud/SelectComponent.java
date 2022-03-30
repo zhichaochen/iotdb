@@ -29,19 +29,22 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
-/** this class maintains information from select clause. */
+/**
+ * select组件
+ * 这个类保留select子句信息
+ * this class maintains information from select clause. */
 public class SelectComponent {
 
-  private final ZoneId zoneId;
+  private final ZoneId zoneId; // 时区
 
-  private boolean hasPlainAggregationFunction = false;
-  private boolean hasTimeSeriesGeneratingFunction = false;
+  private boolean hasPlainAggregationFunction = false; //
+  private boolean hasTimeSeriesGeneratingFunction = false; // 有时间序列生成函数
   private boolean hasUserDefinedAggregationFunction = false;
 
   protected List<ResultColumn> resultColumns = new ArrayList<>();
 
-  private List<PartialPath> pathsCache;
-  private List<String> aggregationFunctionsCache;
+  private List<PartialPath> pathsCache; // 路径
+  private List<String> aggregationFunctionsCache; // 聚合函数
 
   /** init with tokenIntType, default operatorType is <code>OperatorType.SELECT</code>. */
   public SelectComponent(ZoneId zoneId) {

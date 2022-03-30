@@ -36,6 +36,7 @@ import org.apache.iotdb.tsfile.write.schema.MeasurementSchema;
 import java.util.Map;
 
 /**
+ *
  * Generated entity implements IMeasurementMNode interface to unify insert logic through id table
  * and SchemaProcessor
  */

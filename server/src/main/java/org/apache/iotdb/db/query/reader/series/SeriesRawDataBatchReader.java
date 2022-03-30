@@ -33,6 +33,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * 原始数据批量读取器
+ * 用于批量读取TsFIle中的原始数据
+ */
 public class SeriesRawDataBatchReader implements ManagedSeriesReader {
 
   private final SeriesReader seriesReader; // SeriesReader
@@ -105,6 +109,7 @@ public class SeriesRawDataBatchReader implements ManagedSeriesReader {
     }
 
     /*
+     * 首先消费page数据
      * consume page data firstly
      */
     if (readPageData()) {
@@ -113,6 +118,7 @@ public class SeriesRawDataBatchReader implements ManagedSeriesReader {
     }
 
     /*
+     * 其次消费chunk数据
      * consume chunk data secondly
      */
     if (readChunkData()) {
@@ -121,6 +127,7 @@ public class SeriesRawDataBatchReader implements ManagedSeriesReader {
     }
 
     /*
+     * 最后消费下一个文件
      * consume next file finally
      */
     while (seriesReader.hasNextFile()) {

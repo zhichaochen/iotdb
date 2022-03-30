@@ -70,6 +70,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
+ * 对其的路径
  * VectorPartialPath represents many fullPaths of aligned timeseries. In the AlignedPath, the nodes
  * in PartialPath is deviceId e.g. VectorPartialPath nodes=root.sg1.alignedD1 measurementList=[s1,
  * s2]

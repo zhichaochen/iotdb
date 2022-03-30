@@ -25,6 +25,9 @@ import org.apache.iotdb.tsfile.utils.Binary;
 
 import java.io.IOException;
 
+/**
+ * 数据点读取器
+ */
 public interface LayerPointReader {
 
   boolean isConstantPointReader();

@@ -34,6 +34,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 对齐的数据块写入器
+ */
 public class AlignedChunkWriterImpl implements IChunkWriter {
 
   private final TimeChunkWriter timeChunkWriter;

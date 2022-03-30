@@ -23,19 +23,22 @@ import org.apache.iotdb.db.metadata.mnode.IMNode;
 import org.apache.iotdb.db.metadata.mtree.traverser.Traverser;
 import org.apache.iotdb.db.metadata.path.PartialPath;
 
+// 遍历结果的收集器，不同的节点都继承了该方法，以时其具有了遍历
+
+// 此类将泛型resultSet定义为遍历结果，并对MTree遍历添加更多限制。
 // This class defines the generic resultSet as traversal result and add more restrictions on MTree
 // traversal.
 public abstract class CollectorTraverser<T> extends Traverser {
 
   // used for implement slimit and offset function in DDL
-  protected int limit;
-  protected int offset;
+  protected int limit; // limit
+  protected int offset; // offset
 
   protected boolean hasLimit = false;
-  protected int count = 0;
-  protected int curOffset = -1;
+  protected int count = 0; // 总数
+  protected int curOffset = -1; // 当前偏移量
 
-  protected T resultSet;
+  protected T resultSet; // 结果集
 
   public CollectorTraverser(IMNode startNode, PartialPath path) throws MetadataException {
     super(startNode, path);

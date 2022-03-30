@@ -28,7 +28,9 @@ import java.nio.charset.Charset;
 /**
  * TSFile配置信息
  */
-/** TSFileConfig is a configuration class. Every variable is public and has default value. */
+/**
+ * TsFile的配置信息
+ * TSFileConfig is a configuration class. Every variable is public and has default value. */
 public class TSFileConfig implements Serializable {
 
   /** encoding configuration */
@@ -72,11 +74,17 @@ public class TSFileConfig implements Serializable {
 
   /** The primitive array capacity threshold. */
   public static final int ARRAY_CAPACITY_THRESHOLD = 1000;
-  /** Memory size threshold for flushing to disk, default value is 128MB. */
+  /**
+   * 刷写到磁盘的内存阈值大小
+   * Memory size threshold for flushing to disk, default value is 128MB. */
   private int groupSizeInByte = 128 * 1024 * 1024;
-  /** The memory size for each series writer to pack page, default value is 64KB. */
+  /**
+   * 每个series writer打包页面的内存大小，默认值为64KB。
+   * The memory size for each series writer to pack page, default value is 64KB. */
   private int pageSizeInByte = 64 * 1024;
-  /** The maximum number of data points in a page, default value is 1024 * 1024. */
+  /**
+   * 每页的最大数据点，默认1024 * 1024
+   * The maximum number of data points in a page, default value is 1024 * 1024. */
   private int maxNumberOfPointsInPage = 1024 * 1024;
   /** The maximum degree of a metadataIndex node, default value is 256 */
   private int maxDegreeOfIndexNode = 256;
@@ -120,7 +128,10 @@ public class TSFileConfig implements Serializable {
   private int pageCheckSizeThreshold = 100;
   /** Default endian value is BIG_ENDIAN. */
   private String endian = "BIG_ENDIAN";
-  /** Default storage is in local file system */
+  /**
+   * 文件存储类型
+   * Default storage is in local file system
+   **/
   private FSType TSFileStorageFs = FSType.LOCAL;
   /** Default core-site.xml file path is /etc/hadoop/conf/core-site.xml */
   private String coreSitePath = "/etc/hadoop/conf/core-site.xml";

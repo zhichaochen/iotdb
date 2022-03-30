@@ -19,6 +19,9 @@
 
 package org.apache.iotdb.db.engine.flush;
 
+/**
+ * MBean Manager Bean: 描述一个可管理的资源
+ */
 public interface FlushManagerMBean {
 
   int getNumberOfWorkingTasks();

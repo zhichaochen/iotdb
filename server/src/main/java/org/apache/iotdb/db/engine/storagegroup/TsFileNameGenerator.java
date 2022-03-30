@@ -36,6 +36,9 @@ import java.util.regex.Pattern;
 import static org.apache.iotdb.commons.conf.IoTDBConstant.FILE_NAME_SEPARATOR;
 import static org.apache.iotdb.tsfile.common.constant.TsFileConstant.TSFILE_SUFFIX;
 
+/**
+ * TsFile文件名生成器
+ */
 public class TsFileNameGenerator {
 
   private static FSFactory fsFactory = FSFactoryProducer.getFSFactory();

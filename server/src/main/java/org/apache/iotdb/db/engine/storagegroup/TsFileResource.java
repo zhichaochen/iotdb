@@ -66,6 +66,12 @@ import static org.apache.iotdb.commons.conf.IoTDBConstant.FILE_NAME_SEPARATOR;
 import static org.apache.iotdb.db.engine.storagegroup.TsFileNameGenerator.getTsFileName;
 import static org.apache.iotdb.tsfile.common.constant.TsFileConstant.TSFILE_SUFFIX;
 
+/**
+ * TsFile资源，类似于一个数据源
+ * TsFile索引信息，每个TsFile对应一个TsFileResource
+ * 每个TsFile在内存中对应一个文件索引信息TsFileResource
+ * 多个通TsFileResource过双向链表进行连接
+ */
 @SuppressWarnings("java:S1135") // ignore todos
 public class TsFileResource {
 
@@ -76,28 +82,31 @@ public class TsFileResource {
   private static final IoTDBConfig CONFIG = IoTDBDescriptor.getInstance().getConfig();
 
   /** this tsfile */
-  private File file;
+  private File file; // tsFile
 
-  public static final String RESOURCE_SUFFIX = ".resource";
-  static final String TEMP_SUFFIX = ".temp";
+  public static final String RESOURCE_SUFFIX = ".resource"; // 当前文件后缀
+  static final String TEMP_SUFFIX = ".temp"; // 临时文件后缀
 
   /** version number */
-  public static final byte VERSION_NUMBER = 1;
+  public static final byte VERSION_NUMBER = 1; // 版本号
 
   /** Used in {@link TsFileResourceList TsFileResourceList} */
-  protected TsFileResource prev;
+  protected TsFileResource prev; // 前一个
 
-  protected TsFileResource next;
+  protected TsFileResource next; // 后一个
 
   /** time index */
-  protected ITimeIndex timeIndex;
+  // TODO 一个tsfile存储了多个时间序列的数据，时间序列记录了这些时间序列的时间范围
+  protected ITimeIndex timeIndex; // 时间索引，记录了
 
-  /** time index type, V012FileTimeIndex = 0, deviceTimeIndex = 1, fileTimeIndex = 2 */
-  private byte timeIndexType;
+  /**
+   * 时间索引类型， V012FileTimeIndex = 0, deviceTimeIndex = 1, fileTimeIndex = 2
+   * time index type, V012FileTimeIndex = 0, deviceTimeIndex = 1, fileTimeIndex = 2 */
+  private byte timeIndexType; // 时间索引类型
 
-  private ModificationFile modFile;
+  private ModificationFile modFile; // 修改文件
 
-  private ModificationFile compactionModFile;
+  private ModificationFile compactionModFile; // 压缩
 
   protected volatile TsFileResourceStatus status = TsFileResourceStatus.UNCLOSED;
 
@@ -105,7 +114,7 @@ public class TsFileResource {
 
   private final Random random = new Random();
 
-  private boolean isSeq;
+  private boolean isSeq; // 是否有序
 
   private FSFactory fsFactory = FSFactoryProducer.getFSFactory();
 
@@ -120,7 +129,9 @@ public class TsFileResource {
 
   private SettleTsFileCallBack settleTsFileCallBack;
 
-  /** Maximum index of plans executed within this TsFile. */
+  /**
+   * 用于raft日志
+   * Maximum index of plans executed within this TsFile. */
   protected long maxPlanIndex = Long.MIN_VALUE;
 
   /** Minimum index of plans executed within this TsFile. */
@@ -135,15 +146,20 @@ public class TsFileResource {
   private TsFileProcessor processor;
 
   /**
+   * 未密封tsfile的区块元数据列表。只能在查询过程中的临时TsFileResource中设置。
    * Chunk metadata list of unsealed tsfile. Only be set in a temporal TsFileResource in a query
    * process.
    */
   private Map<PartialPath, List<IChunkMetadata>> pathToChunkMetadataListMap = new HashMap<>();
 
-  /** Mem chunk data. Only be set in a temporal TsFileResource in a query process. */
+  /**
+   * 路径和只读内存块的映射
+   * Mem chunk data. Only be set in a temporal TsFileResource in a query process. */
   private Map<PartialPath, List<ReadOnlyMemChunk>> pathToReadOnlyMemChunkMap = new HashMap<>();
 
-  /** used for unsealed file to get TimeseriesMetadata */
+  /**
+   * 路径和时间序列的映射
+   * used for unsealed file to get TimeseriesMetadata */
   private Map<PartialPath, ITimeSeriesMetadata> pathToTimeSeriesMetadataMap = new HashMap<>();
 
   /**
@@ -230,13 +246,19 @@ public class TsFileResource {
     this.timeIndexType = 1;
   }
 
+  /**
+   * Resource file 序列化
+   * @throws IOException
+   */
   public synchronized void serialize() throws IOException {
     try (OutputStream outputStream =
         fsFactory.getBufferedOutputStream(file + RESOURCE_SUFFIX + TEMP_SUFFIX)) {
+      // 写入版本号
       ReadWriteIOUtils.write(VERSION_NUMBER, outputStream);
+      // 写入时间索引类型
       ReadWriteIOUtils.write(timeIndexType, outputStream);
       timeIndex.serialize(outputStream);
-
+      //
       ReadWriteIOUtils.write(maxPlanIndex, outputStream);
       ReadWriteIOUtils.write(minPlanIndex, outputStream);
 
@@ -638,7 +660,9 @@ public class TsFileResource {
     return timeIndex.checkDeviceIdExist(deviceId);
   }
 
-  /** @return true if the device is contained in the TsFile and it lives beyond TTL */
+  /**
+   * 是否满足
+   * @return true if the device is contained in the TsFile and it lives beyond TTL */
   public boolean isSatisfied(
       String deviceId, Filter timeFilter, boolean isSeq, long ttl, boolean debug) {
     if (deviceId == null) {
@@ -868,12 +892,20 @@ public class TsFileResource {
     return minPlanIndex;
   }
 
+  /**
+   * 更新索引
+   * @param planIndex
+   */
   public void updatePlanIndexes(long planIndex) {
     if (planIndex == Long.MIN_VALUE || planIndex == Long.MAX_VALUE) {
       return;
     }
+    // 更新最大最小的
     maxPlanIndex = Math.max(maxPlanIndex, planIndex);
     minPlanIndex = Math.min(minPlanIndex, planIndex);
+    // 如果当前文件已经关闭，则序列化当前文件
+    // TODO 关闭与否，只是一个标志，如果需要关闭，则将关闭设置为true，在判断的时候做相应的逻辑
+    if (closed) {
     if (isClosed()) {
       try {
         serialize();

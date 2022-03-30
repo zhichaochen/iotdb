@@ -26,13 +26,15 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-/** Definition for binary filter operations. */
+/**
+ * 二进制过滤器
+ * Definition for binary filter operations. */
 public abstract class BinaryFilter implements Filter, Serializable {
 
   private static final long serialVersionUID = 1039585564327602465L;
 
-  protected Filter left;
-  protected Filter right;
+  protected Filter left; // 左边的过滤器
+  protected Filter right; // 右边的过滤器
 
   public BinaryFilter() {}
 

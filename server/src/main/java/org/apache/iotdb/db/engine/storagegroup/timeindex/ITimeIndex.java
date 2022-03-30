@@ -28,11 +28,16 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Set;
 
+/**
+ * 时间索引，支持多种粒度，默认DeviceTimeIndex
+ * 一个tsfile存储了多个时间序列的数据，时间序列记录了这些时间序列的时间范围
+ */
 public interface ITimeIndex {
 
   int SPANS_MULTI_TIME_PARTITIONS_FLAG_ID = -1;
 
   /**
+   * 序列化到outputStream
    * serialize to outputStream
    *
    * @param outputStream outputStream
@@ -40,6 +45,7 @@ public interface ITimeIndex {
   void serialize(OutputStream outputStream) throws IOException;
 
   /**
+   * 从inputStream中反序列化
    * deserialize from inputStream
    *
    * @param inputStream inputStream

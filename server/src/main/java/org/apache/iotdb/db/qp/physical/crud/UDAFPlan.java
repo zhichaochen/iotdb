@@ -31,7 +31,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-/** The physical plan of aggregation query with UDF nested */
+/**
+ *
+ * 嵌套的UDF聚合查询的物理计划
+ * The physical plan of aggregation query with UDF nested */
 public class UDAFPlan extends UDTFPlan {
 
   // Construct an innerAggregationPlan using resultColumns of UDAFPlan

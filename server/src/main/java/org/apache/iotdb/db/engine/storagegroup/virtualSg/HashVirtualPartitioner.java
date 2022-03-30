@@ -21,9 +21,16 @@ package org.apache.iotdb.db.engine.storagegroup.virtualSg;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.metadata.path.PartialPath;
 
+/**
+ * Hash虚拟分区器，
+ * 将存储组再分成多个虚拟存储组
+ * 将设备ID的全路径进行hash得到分区值，比如设备的全路径，root/watch-tv
+ */
 public class HashVirtualPartitioner implements VirtualPartitioner {
 
-  /** total number of virtual storage groups */
+  /**
+   * 虚拟存储组的总数，默认是一个
+   * total number of virtual storage groups */
   public static int STORAGE_GROUP_NUM =
       IoTDBDescriptor.getInstance().getConfig().getVirtualStorageGroupNum();
 
@@ -44,6 +51,7 @@ public class HashVirtualPartitioner implements VirtualPartitioner {
   }
 
   private int toStorageGroupId(PartialPath deviceId) {
+    // 当前设备的全路径进行hash得到
     return Math.abs(deviceId.hashCode() % STORAGE_GROUP_NUM);
   }
 

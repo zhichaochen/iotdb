@@ -29,6 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * 查询索引计划
+ */
 public class QueryIndexPlan extends RawDataQueryPlan {
 
   private Map<String, Object> props;

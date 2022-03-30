@@ -38,6 +38,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+/**
+ * 时间数据块写入器
+ * NOTE 当前类可能只用于对其的时间队列
+ */
 public class TimeChunkWriter {
 
   private static final Logger logger = LoggerFactory.getLogger(TimeChunkWriter.class);
@@ -221,6 +225,7 @@ public class TimeChunkWriter {
     }
 
     // start to write this column chunk
+    // 序列化chunk头
     writer.startFlushChunk(
         measurementId,
         compressionType,
@@ -231,11 +236,14 @@ public class TimeChunkWriter {
         numOfPages,
         TsFileConstant.TIME_COLUMN_MASK);
 
+    // 数据偏移量
     long dataOffset = writer.getPos();
 
     // write all pages of this column
+    // 写入当前chunk的所有pages
     writer.writeBytesToStream(pageBuffer);
 
+    // 数据大小
     int dataSize = (int) (writer.getPos() - dataOffset);
     if (dataSize != pageBuffer.size()) {
       throw new IOException(
@@ -246,6 +254,7 @@ public class TimeChunkWriter {
               + pageBuffer.size());
     }
 
+    // 结束当前chunk
     writer.endCurrentChunk();
   }
 

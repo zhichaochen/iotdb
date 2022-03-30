@@ -49,7 +49,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 文件写入器
+ * 时间序列日志写入器
+ *
+ * TsFileWriter是进行写入处理的入口。
+ * 它接收一条记录并将其发送给相应的chunk group写入。
+ * 它会根据自己的策略检查所有写入处理的内存大小，并将存储在内存中的数据刷新到OutputStream。
+ * 在写结束时，用户应该调用{@code close()}方法来刷新外部的最后一个数据，并关闭正常的outputStream和错误输出流。
+ *
  * TsFileWriter is the entrance for writing processing. It receives a record and send it to
  * responding chunk group write. It checks memory size for all writing processing along its strategy
  * and flush data stored in memory to OutputStream. At the end of writing, user should call {@code
@@ -231,6 +237,7 @@ public class TsFileWriter implements AutoCloseable {
   }
 
   /**
+   * 注册非对齐时间序列
    * Register nonAligned timeseries by single.
    *
    * @param devicePath
@@ -263,6 +270,7 @@ public class TsFileWriter implements AutoCloseable {
   }
 
   /**
+   * 注册时间序列
    * Register nonAligned timeseries by groups.
    *
    * @param devicePath

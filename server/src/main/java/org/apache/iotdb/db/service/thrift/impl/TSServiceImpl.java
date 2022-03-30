@@ -164,7 +164,10 @@ import static org.apache.iotdb.db.utils.ErrorHandlingUtils.onNPEOrUnexpectedExce
 import static org.apache.iotdb.db.utils.ErrorHandlingUtils.onNonQueryException;
 import static org.apache.iotdb.db.utils.ErrorHandlingUtils.onQueryException;
 
-/** Thrift RPC implementation at server side. */
+/**
+ * 服务端的RPC实现
+ * 应该是用于集群模式
+ * Thrift RPC implementation at server side. */
 public class TSServiceImpl implements TSIService.Iface {
 
   private static final Coordinator coordinator = Coordinator.getInstance();
@@ -184,6 +187,7 @@ public class TSServiceImpl implements TSIService.Iface {
     private final boolean enableRedirectQuery;
 
     /**
+     * 执行查询语句
      * Execute query statement, return TSExecuteStatementResp with dataset.
      *
      * @param plan must be a plan for Query: QueryPlan, ShowPlan, and some AuthorPlan
@@ -209,6 +213,11 @@ public class TSServiceImpl implements TSIService.Iface {
       this.enableRedirectQuery = enableRedirectQuery;
     }
 
+    /**
+     * 方法调用
+     * @return
+     * @throws Exception
+     */
     @Override
     public TSExecuteStatementResp call() throws Exception {
       String username = SESSION_MANAGER.getUsername(sessionId);
@@ -791,8 +800,19 @@ public class TSServiceImpl implements TSIService.Iface {
     }
   }
 
+
+  /**
+   * 提交查询计划
+   * @param physicalPlan
+   * @param startTime
+   * @param req
+   * @return
+   * @throws Exception
+   */
   private TSExecuteStatementResp submitQueryTask(
       PhysicalPlan physicalPlan, long startTime, TSExecuteStatementReq req) throws Exception {
+
+    // 创建一个查询任务
     QueryTask queryTask =
         new QueryTask(
             physicalPlan,
@@ -805,9 +825,11 @@ public class TSServiceImpl implements TSIService.Iface {
             req.jdbcQuery,
             req.enableRedirectQuery);
     TSExecuteStatementResp resp;
+    //
     if (physicalPlan instanceof ShowQueryProcesslistPlan) {
       resp = queryTask.call();
     } else {
+      // 提交查询
       resp = QueryTaskManager.getInstance().submit(queryTask).get();
     }
     return resp;

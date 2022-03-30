@@ -22,6 +22,7 @@ package org.apache.iotdb.db.query.filter;
 import org.apache.iotdb.db.engine.storagegroup.TsFileResource;
 
 /**
+ *
  * TsFileFilter is used to filter unwanted TsFiles in a QueryDataSource, to better support data
  * partitioning in the distributed version and other features.
  */

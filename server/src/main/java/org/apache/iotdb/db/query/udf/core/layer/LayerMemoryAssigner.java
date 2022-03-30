@@ -26,6 +26,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+/**
+ * 层的内存分配器
+ */
 public class LayerMemoryAssigner {
 
   private final float memoryBudgetInMB;

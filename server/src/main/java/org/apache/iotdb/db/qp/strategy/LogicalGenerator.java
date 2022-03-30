@@ -52,9 +52,19 @@ import java.util.Set;
 
 import static org.apache.iotdb.commons.conf.IoTDBConstant.TIME;
 
-/** LogicalGenerator. */
+/**
+ * 逻辑计划生成器
+ * LogicalGenerator. */
 public class LogicalGenerator {
 
+  /**
+   * 解析SQL语句，生成节点树
+   * @param sql
+   * @param zoneId
+   * @param clientVersion
+   * @return
+   * @throws ParseCancellationException
+   */
   public static Operator generate(
       String sql, ZoneId zoneId, IoTDBConstant.ClientVersion clientVersion)
       throws ParseCancellationException {

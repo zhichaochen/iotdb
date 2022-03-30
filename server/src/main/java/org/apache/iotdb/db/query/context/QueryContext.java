@@ -32,7 +32,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/** QueryContext contains the shared information with in a query. */
+/**
+ * 查询上下文
+ * QueryContext contains the shared information with in a query. */
 public class QueryContext {
 
   /**
@@ -48,7 +50,7 @@ public class QueryContext {
    */
   private final Map<String, List<Modification>> fileModCache = new HashMap<>();
 
-  private long queryId;
+  private long queryId; // 查询ID
 
   private long queryTimeLowerBound = Long.MIN_VALUE;
 

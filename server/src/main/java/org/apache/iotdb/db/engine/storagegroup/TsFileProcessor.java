@@ -84,6 +84,10 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+/**
+ * 时间序列文件处理器，用于处理Ts文件，包括，创建tsFile、写入tsFile。
+ * TODO 一个TsFile对应一个TsFileProcessor
+ */
 @SuppressWarnings("java:S1135") // ignore todos
 public class TsFileProcessor {
 
@@ -91,20 +95,23 @@ public class TsFileProcessor {
   private static final Logger logger = LoggerFactory.getLogger(TsFileProcessor.class);
 
   /** storgae group name of this tsfile */
-  private final String storageGroupName;
+  private final String storageGroupName; // 当前TsFile的存储组名称
 
-  /** IoTDB config */
+  /** IoTDB config 配置 */
   private final IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
 
   /** whether it's enable mem control */
+  // 是否需要内存控制
   private final boolean enableMemControl = config.isEnableMemControl();
 
   /** storage group info for mem control */
+  // 存储组信息
   private StorageGroupInfo storageGroupInfo;
   /** tsfile processor info for mem control */
   private TsFileProcessorInfo tsFileProcessorInfo;
 
   /** sync this object in query() and asyncTryToFlush() */
+  // 待刷写中的内存表
   private final ConcurrentLinkedDeque<IMemTable> flushingMemTables = new ConcurrentLinkedDeque<>();
 
   /** modification to memtable mapping */
@@ -132,7 +139,7 @@ public class TsFileProcessor {
   private volatile boolean shouldClose;
 
   /** working memtable */
-  private IMemTable workMemTable;
+  private IMemTable workMemTable; // 工作中的内存表
 
   /** last flush time to flush the working memtable */
   private long lastWorkMemtableFlushTime;
@@ -200,21 +207,25 @@ public class TsFileProcessor {
   }
 
   /**
+   * 插入一条InsertRowPlan数据到workingMemtable
+   *
    * insert data in an InsertRowPlan into the workingMemtable.
    *
    * @param insertRowPlan physical plan of insertion
    */
   public void insert(InsertRowPlan insertRowPlan) throws WriteProcessException {
-
+    // 如果工作内存表为空，则创建内存表
     if (workMemTable == null) {
       if (enableMemControl) {
         workMemTable = new PrimitiveMemTable(enableMemControl);
+        // 增加内存表个数
         MemTableManager.getInstance().addMemtableNumber();
       } else {
         workMemTable = MemTableManager.getInstance().getAvailableMemTable(storageGroupName);
       }
     }
 
+    // 计算增加的内存
     long[] memIncrements = null;
     if (enableMemControl) {
       if (insertRowPlan.isAligned()) {
@@ -224,8 +235,11 @@ public class TsFileProcessor {
       }
     }
 
+    // 如果可以wal
+    // 在写入之前先写WAL
     if (IoTDBDescriptor.getInstance().getConfig().isEnableWal()) {
       try {
+        // 写wal
         getLogNode().write(insertRowPlan);
       } catch (Exception e) {
         if (enableMemControl && memIncrements != null) {
@@ -239,7 +253,8 @@ public class TsFileProcessor {
       }
     }
 
-    // 写入内存表
+    // 将数据插入缓存，写入chunk
+    // TODO 一个chunk就是数据的一列。也就是一个物理量
     if (insertRowPlan.isAligned()) {
       workMemTable.insertAlignedRow(insertRowPlan);
     } else {
@@ -247,14 +262,17 @@ public class TsFileProcessor {
     }
 
     // update start time of this memtable
+    // 更新内存表的开始时间
     tsFileResource.updateStartTime(
         insertRowPlan.getDeviceID().toStringID(), insertRowPlan.getTime());
     // for sequence tsfile, we update the endTime only when the file is prepared to be closed.
     // for unsequence tsfile, we have to update the endTime for each insertion.
+    // 更新结束时间
     if (!sequence) {
       tsFileResource.updateEndTime(
           insertRowPlan.getDeviceID().toStringID(), insertRowPlan.getTime());
     }
+    // 更新
     tsFileResource.updatePlanIndexes(insertRowPlan.getIndex());
   }
 
@@ -669,6 +687,10 @@ public class TsFileProcessor {
     return tsFileResource;
   }
 
+  /**
+   * 是否应该刷盘
+   * @return
+   */
   public boolean shouldFlush() {
     if (workMemTable == null) {
       return false;
@@ -701,10 +723,6 @@ public class TsFileProcessor {
     return config.getMemtableSizeThreshold();
   }
 
-  /**
-   * 是否应该关闭当前文件
-   * @return
-   */
   public boolean shouldClose() {
     long fileSize = tsFileResource.getTsFileSize();
     long fileSizeThreshold = sequence ? config.getSeqTsFileSize() : config.getUnSeqTsFileSize();
@@ -716,7 +734,6 @@ public class TsFileProcessor {
           fileSize,
           fileSizeThreshold);
     }
-    // 如果文件超过了设定的阈值，那么就应该关闭
     return fileSize >= fileSizeThreshold;
   }
 
@@ -1007,16 +1024,18 @@ public class TsFileProcessor {
   }
 
   /**
+   * 刷写一个内存表
+   * 从flushingMemTables中取出第一个MemTable并冲洗。由flush manager池的flush线程调用
    * Take the first MemTable from the flushingMemTables and flush it. Called by a flush thread of
    * the flush manager pool
    */
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
   public void flushOneMemTable() {
+    // 第一个内存表
     IMemTable memTableToFlush = flushingMemTables.getFirst();
 
     // signal memtable only may appear when calling asyncClose()
     if (!memTableToFlush.isSignalMemTable()) {
-      // 先同步刷盘
       try {
         writer.mark();
         MemTableFlushTask flushTask =
@@ -1095,7 +1114,7 @@ public class TsFileProcessor {
           memTableToFlush.isSignalMemTable());
     }
     // for sync flush
-    //
+    // 同步刷盘
     synchronized (memTableToFlush) {
       releaseFlushedMemTable(memTableToFlush);
       memTableToFlush.notifyAll();
@@ -1109,10 +1128,11 @@ public class TsFileProcessor {
       }
     }
 
-    //
+    // 如果应该关闭
     if (shouldClose && flushingMemTables.isEmpty() && writer != null) {
       try {
         writer.mark();
+        // 更新压缩占比
         updateCompressionRatio(memTableToFlush);
         if (logger.isDebugEnabled()) {
           logger.debug(
@@ -1120,7 +1140,7 @@ public class TsFileProcessor {
               storageGroupName,
               tsFileResource.getTsFile().getName());
         }
-        // TODO 结束文件，在这里会更新元数据
+        // TODO 结束一个Ts File
         endFile();
         if (logger.isDebugEnabled()) {
           logger.debug("{} flushingMemtables is clear", storageGroupName);
@@ -1148,12 +1168,14 @@ public class TsFileProcessor {
             e);
       }
       // for sync close
+      // 关闭日志
       if (logger.isDebugEnabled()) {
         logger.debug(
             "{}: {} try to get flushingMemtables lock.",
             storageGroupName,
             tsFileResource.getTsFile().getName());
       }
+      // TODO 同步刷写内存表
       synchronized (flushingMemTables) {
         flushingMemTables.notifyAll();
       }
@@ -1190,27 +1212,29 @@ public class TsFileProcessor {
   }
 
   /**
-   * 结束文件并写入一些元数据
+   * 结束Ts file并写入一些数据
    * end file and write some meta */
   private void endFile() throws IOException, TsFileProcessorException {
     logger.info("Start to end file {}", tsFileResource);
     long closeStartTime = System.currentTimeMillis();
-    // 写入元数据信息
     writer.endFile();
-    // 序列化.resource文件
+    // 序列化一些Ts File版本号相关内容
     tsFileResource.serialize();
     logger.info("Ended file {}", tsFileResource);
 
     // remove this processor from Closing list in StorageGroupProcessor,
     // mark the TsFileResource closed, no need writer anymore
+    // 关闭文件监听器
     for (CloseFileListener closeFileListener : closeFileListeners) {
       closeFileListener.onClosed(this);
     }
 
+    // 内存控制
     if (enableMemControl) {
       tsFileProcessorInfo.clear();
       storageGroupInfo.closeTsFileProcessorAndReportToSystem(this);
     }
+    // 打印日志
     if (logger.isInfoEnabled()) {
       long closeEndTime = System.currentTimeMillis();
       logger.info(
@@ -1234,6 +1258,7 @@ public class TsFileProcessor {
   }
 
   /**
+   * 获取wal日志节点
    * get WAL log node
    *
    * @return WAL log node

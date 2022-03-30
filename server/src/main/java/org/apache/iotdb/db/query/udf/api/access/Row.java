@@ -24,6 +24,9 @@ import org.apache.iotdb.tsfile.utils.Binary;
 
 import java.io.IOException;
 
+/**
+ * 表示一行数据
+ */
 public interface Row {
 
   /**

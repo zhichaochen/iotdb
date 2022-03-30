@@ -38,9 +38,14 @@ public interface IMetadataQuerier {
 
   Map<Path, List<IChunkMetadata>> getChunkMetaDataMap(List<Path> paths) throws IOException;
 
+  /**
+   * 元数据的整个文件
+   * @return
+   */
   TsFileMetadata getWholeFileMetadata();
 
   /**
+   * 加载给定路径的chunk的元数据到缓存中
    * this will load all chunk metadata of given paths into cache.
    *
    * <p>call this method before calling getChunkMetaDataList() will accelerate the reading of chunk

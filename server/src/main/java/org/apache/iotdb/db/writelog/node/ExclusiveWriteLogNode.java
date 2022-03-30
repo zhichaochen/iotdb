@@ -49,7 +49,11 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static org.apache.iotdb.commons.concurrent.ThreadName.WAL_FLUSH;
 
-/** This WriteLogNode is used to manage insert ahead logs of a TsFile. */
+/**
+ * 专用的写日志节点
+ * 当前类专用于写入tsFile的wal，与虚拟存储组形成1对多的关系
+ * WriteLogNode用于管理TsFile的WAL（写前日志）
+ * This WriteLogNode is used to manage insert ahead logs of a TsFile. */
 public class ExclusiveWriteLogNode implements WriteLogNode, Comparable<ExclusiveWriteLogNode> {
 
   public static final String WAL_FILE_NAME = "wal";
@@ -63,23 +67,28 @@ public class ExclusiveWriteLogNode implements WriteLogNode, Comparable<Exclusive
 
   private final IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
 
-  private volatile ByteBuffer logBufferWorking;
+  private volatile ByteBuffer logBufferWorking; // 工作状态下的日志缓存
+  //
   private volatile ByteBuffer logBufferIdle;
+  // 正在刷盘中的日志，如果不在刷盘中，该对象为空
   private volatile ByteBuffer logBufferFlushing;
 
   // used for the convenience of deletion
   private volatile ByteBuffer[] bufferArray;
 
+  // 能否写入缓存的开关
   private final Object switchBufferCondition = new Object();
 
+  // 读写锁
   private final ReentrantLock lock = new ReentrantLock();
-  private final ExecutorService FLUSH_BUFFER_THREAD_POOL;
+  private final ExecutorService FLUSH_BUFFER_THREAD_POOL; // 刷盘的线程池
 
   private long fileId = 0;
   private long lastFlushedId = 0;
 
-  private int bufferedLogNum = 0;
+  private int bufferedLogNum = 0; // 当前缓存的日志数量
 
+  // 当前节点是否是已删除的状态
   private final AtomicBoolean deleted = new AtomicBoolean(false);
 
   private int bufferOverflowNum = 0;
@@ -108,14 +117,23 @@ public class ExclusiveWriteLogNode implements WriteLogNode, Comparable<Exclusive
     this.bufferArray = byteBuffers;
   }
 
+  /**
+   * 写入WAL
+   * @param plan - a PhysicalPlan
+   * @throws IOException
+   */
   @Override
   public void write(PhysicalPlan plan) throws IOException {
+    // 如果当前节点已经删除，则抛出IO异常
     if (deleted.get()) {
       throw new IOException("WAL node deleted");
     }
+    // 加锁
     lock.lock();
     try {
+      // 写入写前日志
       putLog(plan);
+      // 如果缓存的日志数量超过了配置的缓存的最大数量，则同步刷写到磁盘
       if (bufferedLogNum >= config.getFlushWalThreshold()) {
         sync();
       }
@@ -135,17 +153,22 @@ public class ExclusiveWriteLogNode implements WriteLogNode, Comparable<Exclusive
 
   private void putLog(PhysicalPlan plan) {
     try {
+      // 序列化日志
       plan.serialize(logBufferWorking);
     } catch (BufferOverflowException e) {
+      // 如果抓到缓存溢出异常，则尝试刷盘，然后再序列化进logBufferWorking缓存
       bufferOverflowNum++;
       if (bufferOverflowNum > 200) {
         logger.info(
             "WAL bytebuffer overflows too many times. If this occurs frequently, please increase wal_buffer_size.");
         bufferOverflowNum = 0;
       }
+      // 同步刷盘
       sync();
+      // 计划序列化
       plan.serialize(logBufferWorking);
     }
+    // 日志数量加1
     bufferedLogNum++;
   }
 
@@ -291,15 +314,23 @@ public class ExclusiveWriteLogNode implements WriteLogNode, Comparable<Exclusive
     }
   }
 
+  /**
+   * 同步
+   */
   private void sync() {
     lock.lock();
     try {
+      // 如果缓存的日志数量为0，则返回
       if (bufferedLogNum == 0) {
         return;
       }
+      // 获取当前日志写入器
       ILogWriter currWriter = getCurrentFileWriter();
+      // 将working buffer 赋值给 flushing buffer
       switchBufferWorkingToFlushing();
+      // 开启一个线程进行刷盘
       FLUSH_BUFFER_THREAD_POOL.submit(() -> flushBuffer(currWriter));
+      // 将缓存的日志数量设置成0
       bufferedLogNum = 0;
       logger.debug("Log node {} ends sync.", identifier);
     } catch (InterruptedException e) {
@@ -312,14 +343,20 @@ public class ExclusiveWriteLogNode implements WriteLogNode, Comparable<Exclusive
     }
   }
 
+  /**
+   * 刷写缓存
+   * @param writer
+   */
   private void flushBuffer(ILogWriter writer) {
     try {
+      // 刷盘
       writer.write(logBufferFlushing);
     } catch (Throwable e) {
       logger.error("Log node {} sync failed, change system mode to read-only", identifier, e);
       IoTDBDescriptor.getInstance().getConfig().setReadOnly(true);
     } finally {
       // switch buffer flushing to idle and notify the sync thread
+      // 切换flushing缓存到idle缓存，并通知同步线程
       synchronized (switchBufferCondition) {
         logBufferIdle = logBufferFlushing;
         logBufferFlushing = null;
@@ -328,12 +365,19 @@ public class ExclusiveWriteLogNode implements WriteLogNode, Comparable<Exclusive
     }
   }
 
+  /**
+   *
+   * @throws InterruptedException
+   */
   private void switchBufferWorkingToFlushing() throws InterruptedException {
     synchronized (switchBufferCondition) {
+      // 如果logBufferFlushing不为null，则表示正在刷盘中，等待100ms
       while (logBufferFlushing != null && !deleted.get()) {
         switchBufferCondition.wait(100);
       }
+      // 将工作中的缓存付给
       logBufferFlushing = logBufferWorking;
+      //
       logBufferWorking = logBufferIdle;
       logBufferWorking.clear();
       logBufferIdle = null;

@@ -28,7 +28,9 @@ import org.apache.iotdb.db.query.udf.core.reader.LayerPointReader;
 import org.apache.iotdb.db.query.udf.core.reader.LayerRowReader;
 import org.apache.iotdb.db.query.udf.core.reader.LayerRowWindowReader;
 
-/** IntermediateLayer for constants. */
+/**
+ * 中间层常量
+ * IntermediateLayer for constants. */
 public class ConstantIntermediateLayer extends IntermediateLayer {
 
   private final LayerPointReader constantLayerPointReaderCache;

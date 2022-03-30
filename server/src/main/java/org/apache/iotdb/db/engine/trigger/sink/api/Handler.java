@@ -19,6 +19,11 @@
 
 package org.apache.iotdb.db.engine.trigger.sink.api;
 
+/**
+ * 处理器
+ * @param <C>
+ * @param <E>
+ */
 public interface Handler<C extends Configuration, E extends Event> {
 
   @SuppressWarnings("squid:S112")

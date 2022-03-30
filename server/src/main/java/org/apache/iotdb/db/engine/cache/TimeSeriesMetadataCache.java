@@ -55,6 +55,7 @@ import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * 该类用于缓存TimeSeriesMetadata，缓存策略是LRU
  * This class is used to cache <code>TimeSeriesMetadata</code> in IoTDB. The caching strategy is
  * LRU.
  */
@@ -142,6 +143,9 @@ public class TimeSeriesMetadataCache {
     return TimeSeriesMetadataCache.TimeSeriesMetadataCacheHolder.INSTANCE;
   }
 
+  /**
+   * 获取一个Timeseries索引
+   */
   @SuppressWarnings("squid:S1860") // Suppress synchronize warning
   public TimeseriesMetadata get(
       TimeSeriesMetadataCacheKey key,
@@ -151,6 +155,7 @@ public class TimeSeriesMetadataCache {
       throws IOException {
     if (!CACHE_ENABLE) {
       // bloom filter part
+      //
       TsFileSequenceReader reader = FileReaderManager.getInstance().get(key.filePath, true);
       BloomFilter bloomFilter = reader.readBloomFilter();
       if (bloomFilter != null

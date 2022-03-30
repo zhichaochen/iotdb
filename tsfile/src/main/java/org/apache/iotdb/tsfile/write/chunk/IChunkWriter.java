@@ -22,10 +22,15 @@ import org.apache.iotdb.tsfile.write.writer.TsFileIOWriter;
 
 import java.io.IOException;
 
-/** IChunkWriter provides a list of writing methods for different value types. */
+/**
+ * 数据块写入器
+ * 提供了写入不同类型值得方法列表
+ * IChunkWriter provides a list of writing methods for different value types. */
 public interface IChunkWriter {
 
-  /** flush data to TsFileIOWriter. */
+  /**
+   * 刷写数据
+   * flush data to TsFileIOWriter. */
   void writeToFileWriter(TsFileIOWriter tsfileWriter) throws IOException;
 
   /** estimate memory usage of this series. */

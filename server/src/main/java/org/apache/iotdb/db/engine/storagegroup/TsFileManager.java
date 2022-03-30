@@ -41,24 +41,31 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import static org.apache.iotdb.commons.conf.IoTDBConstant.FILE_NAME_SEPARATOR;
 import static org.apache.iotdb.tsfile.common.constant.TsFileConstant.TSFILE_SUFFIX;
 
+/**
+ * TsFile管理器，每个虚拟存储组一个
+ */
 public class TsFileManager {
   private static final Logger LOGGER = LoggerFactory.getLogger(TsFileManager.class);
-  private String storageGroupName;
-  private String virtualStorageGroup;
-  private String storageGroupDir;
+  private String storageGroupName; // 存储组名称
+  private String virtualStorageGroup; // 虚拟存储组
+  private String storageGroupDir; // 存储组目录
 
-  /** Serialize queries, delete resource files, compaction cleanup files */
+  /**
+   * 资源列表锁
+   * Serialize queries, delete resource files, compaction cleanup files */
   private final ReadWriteLock resourceListLock = new ReentrantReadWriteLock();
 
   private String writeLockHolder;
   // time partition -> double linked list of tsfiles
-  private Map<Long, TsFileResourceList> sequenceFiles = new TreeMap<>();
-  private Map<Long, TsFileResourceList> unsequenceFiles = new TreeMap<>();
+  // 时间分区 —> 双向链表的映射
+  private Map<Long, TsFileResourceList> sequenceFiles = new TreeMap<>(); // 有序的文件
+  private Map<Long, TsFileResourceList> unsequenceFiles = new TreeMap<>(); // 无序的文件
+
 
   private List<TsFileResource> sequenceRecoverTsFileResources = new ArrayList<>();
   private List<TsFileResource> unsequenceRecoverTsFileResources = new ArrayList<>();
 
-  private boolean allowCompaction = true;
+  private boolean allowCompaction = true; // 是否允许合并
 
   public TsFileManager(
       String storageGroupName, String virtualStorageGroup, String storageGroupDir) {
@@ -139,6 +146,7 @@ public class TsFileManager {
   }
 
   /**
+   * 插入到分区文件列表
    * insert tsFileResource to a target pos(targetPos = insertPos) e.g. if insertPos = 0, then to the
    * first, if insert Pos = 1, then to the second.
    */
@@ -146,6 +154,7 @@ public class TsFileManager {
       TsFileResource tsFileResource, boolean sequence, int insertPos) {
     writeLock("add");
     try {
+      // TsFile文件集合
       Map<Long, TsFileResourceList> selectedMap = sequence ? sequenceFiles : unsequenceFiles;
       TsFileResourceList tsFileResources =
           selectedMap.computeIfAbsent(
@@ -156,6 +165,11 @@ public class TsFileManager {
     }
   }
 
+  /**
+   * 添加tsFileResource
+   * @param tsFileResource
+   * @param sequence
+   */
   public void add(TsFileResource tsFileResource, boolean sequence) {
     writeLock("add");
     try {

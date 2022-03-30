@@ -68,6 +68,11 @@ public class LeafNode implements Node {
     return false;
   }
 
+  /**
+   * 时间生成器的下一个时间戳
+   * @return
+   * @throws IOException
+   */
   @Override
   public long next() throws IOException {
     if ((hasCached || hasNext())) {

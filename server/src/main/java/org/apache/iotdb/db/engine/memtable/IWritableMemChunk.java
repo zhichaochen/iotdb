@@ -27,6 +27,9 @@ import org.apache.iotdb.tsfile.write.schema.IMeasurementSchema;
 
 import java.util.List;
 
+/**
+ * 可写入的内存块
+ */
 public interface IWritableMemChunk {
 
   void putLong(long t, long v);
@@ -112,6 +115,7 @@ public interface IWritableMemChunk {
   TVList getSortedTvListForQuery(List<IMeasurementSchema> schemaList);
 
   /**
+   * 为flush请求服务。该逻辑与getSortedTVListForQuery相同，但没有添加引用计数
    * served for flush requests. The logic is just same as getSortedTVListForQuery, but without add
    * reference count
    *

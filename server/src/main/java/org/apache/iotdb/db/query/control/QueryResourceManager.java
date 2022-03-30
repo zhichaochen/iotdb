@@ -43,6 +43,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
+ * QueryResourceManager管理每个查询作业使用的资源（文件流），并为作业分配ID。
+ * 在查询的生命周期中，必须严格按顺序调用以下方法：
+ * 1、分配查询ID（获取一个新ID）
+ * 2、获取查询数据源（为job打开多个文件，或者重用存在的读取器）
+ * 3、结束job，释放资源。
+ *
  * QueryResourceManager manages resource (file streams) used by each query job, and assign Ids to
  * the jobs. During the life cycle of a query, the following methods must be called in strict order:
  *
@@ -65,6 +71,7 @@ public class QueryResourceManager {
   private final Map<Long, List<IExternalSortFileDeserializer>> externalSortFileMap;
 
   /**
+   * 记录在查询中用到的查询数据源
    * Record QueryDataSource used in queries
    *
    * <p>Key: query job id. Value: QueryDataSource corresponding to each virtual storage group.
@@ -115,6 +122,9 @@ public class QueryResourceManager {
   }
 
   /**
+   * 初始化查询数据源缓存
+   * 该方法在执行查询时在mergeLock（）中调用。此方法将获取此查询所需的所有QueryDataSource，并将它们放入cachedQueryDataSourcesMap中。
+   *
    * The method is called in mergeLock() when executing query. This method will get all the
    * QueryDataSource needed for this query and put them in the cachedQueryDataSourcesMap.
    *
@@ -126,20 +136,25 @@ public class QueryResourceManager {
       QueryContext context,
       Filter timeFilter)
       throws QueryProcessException {
+    // 遍历虚拟存储组和时间序列的Map
     for (Map.Entry<VirtualStorageGroupProcessor, List<PartialPath>> entry :
         processorToSeriesMap.entrySet()) {
+      // 虚拟存储组处理器
       VirtualStorageGroupProcessor processor = entry.getKey();
+      // 虚拟存储组处理器对应的路径列表
       List<PartialPath> pathList =
           entry.getValue().stream().map(IDTable::translateQueryPath).collect(Collectors.toList());
 
       // when all the selected series are under the same device, the QueryDataSource will be
       // filtered according to timeIndex
+      // 选中的设备路径集合，也就是对设备路径进行去重
       Set<String> selectedDeviceIdSet =
           pathList.stream().map(PartialPath::getDevice).collect(Collectors.toSet());
 
       long queryId = context.getQueryId();
       String storageGroupPath = processor.getStorageGroupPath();
 
+      // 查询数据源
       QueryDataSource cachedQueryDataSource =
           processor.query(
               pathList,
@@ -147,6 +162,7 @@ public class QueryResourceManager {
               context,
               filePathsManager,
               timeFilter);
+      // 缓存查询数据源
       cachedQueryDataSourcesMap
           .computeIfAbsent(queryId, k -> new HashMap<>())
           .put(storageGroupPath, cachedQueryDataSource);

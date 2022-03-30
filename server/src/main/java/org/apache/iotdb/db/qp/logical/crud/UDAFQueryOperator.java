@@ -36,6 +36,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 对于UDAFPlan，我们为其构建一个内部聚合计划。
+ * 比如：select count(a)/count(b),count(a)+sum(b) from root.sg 去初始化内部聚合计划
+ * 我们将会转换成，select count(a),count(b),count(a),sum(b) from root.sg
+ * innerResultColumnsCache将会是 [count(a),count(b),sum(b)]
+ *
  * For a UDAFPlan, we construct an inner AggregationPlan for it. Example: select
  * count(a)/count(b),count(a)+sum(b) from root.sg To init inner AggregationPlan, we will convert it
  * to statement: select count(a),count(b),count(a),sum(b) from root.sg innerResultColumnsCache will
@@ -98,9 +103,16 @@ public class UDAFQueryOperator extends QueryOperator {
     }
   }
 
+  /**
+   * 生成物理计划
+   * @param generator
+   * @return
+   * @throws QueryProcessException
+   */
   @Override
   public PhysicalPlan generatePhysicalPlan(PhysicalGenerator generator)
       throws QueryProcessException {
+    // 初始化内部的聚合计划
     AggregationPlan innerAggregationPlan = initInnerAggregationPlan(generator);
     PhysicalPlan physicalPlan;
     if (!isAlignByDevice()) {
@@ -109,6 +121,7 @@ public class UDAFQueryOperator extends QueryOperator {
       UDAFPlan udafPlan = (UDAFPlan) physicalPlan;
       udafPlan.setInnerAggregationPlan(innerAggregationPlan);
       Map<Expression, Integer> expressionToInnerResultIndexMap = new HashMap<>();
+      //
       // The following codes are used to establish a link from AggregationResult to expression tree
       // input.
       // For example:
@@ -145,6 +158,7 @@ public class UDAFQueryOperator extends QueryOperator {
 
   private AggregationPlan initInnerAggregationPlan(PhysicalGenerator generator)
       throws QueryProcessException {
+    // select 组件
     SelectComponent copiedSelectComponent = new SelectComponent(getSelectComponent());
     copiedSelectComponent.setHasPlainAggregationFunction(true);
     copiedSelectComponent.setResultColumns(getInnerResultColumnsCache());

@@ -23,6 +23,7 @@ import org.apache.iotdb.db.engine.storagegroup.TsFileProcessor;
 import org.apache.iotdb.db.engine.storagegroup.VirtualStorageGroupProcessor;
 
 /**
+ * TsFile刷盘策略
  * TsFileFlushPolicy is applied when a TsFileProcessor is full after insertion. For standalone
  * IoTDB, the flush or close is executed without constraint. But in the distributed version, the
  * close is controlled by the leader and should not be performed by the follower alone.

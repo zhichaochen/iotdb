@@ -26,6 +26,9 @@ import org.apache.iotdb.db.engine.storagegroup.TsFileProcessor;
 
 import java.io.IOException;
 
+/**
+ * 刷写监听器
+ */
 public class WALFlushListener implements FlushListener {
 
   private TsFileProcessor processor;

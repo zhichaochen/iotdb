@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
+ * 索引类型
  * The type of MetadataIndexNode
  *
  * <p>INTERNAL_DEVICE: internal nodes of the index tree's device level LEAF_DEVICE: leaf nodes of
@@ -33,16 +34,16 @@ import java.nio.ByteBuffer;
  */
 public enum MetadataIndexNodeType {
   /** INTERNAL_DEVICE */
-  INTERNAL_DEVICE((byte) 0),
+  INTERNAL_DEVICE((byte) 0), // 内部设备
 
   /** LEAF_DEVICE */
-  LEAF_DEVICE((byte) 1),
+  LEAF_DEVICE((byte) 1), // 叶子设备
 
   /** INTERNAL_MEASUREMENT */
-  INTERNAL_MEASUREMENT((byte) 2),
+  INTERNAL_MEASUREMENT((byte) 2), // 内部物理量
 
   /** INTERNAL_MEASUREMENT */
-  LEAF_MEASUREMENT((byte) 3);
+  LEAF_MEASUREMENT((byte) 3); // 叶子物理量
 
   private final byte type;
 

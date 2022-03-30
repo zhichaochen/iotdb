@@ -25,10 +25,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+/**
+ * 索引条目
+ * 在一个Ts文件中，一个时间序列，即物理量及其偏移量
+ */
 public class MetadataIndexEntry {
 
-  private String name;
-  private long offset;
+  private String name; // 实体或物理量的名称
+  private long offset; // 偏移量， 只有物理量索引部分的叶子节点(LEAF_MEASUREMENT) 指向 TimeseriesIndex。
 
   public MetadataIndexEntry(String name, long offset) {
     this.name = name;

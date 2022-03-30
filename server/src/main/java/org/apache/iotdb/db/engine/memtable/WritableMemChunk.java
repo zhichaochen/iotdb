@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 /**
+ * 表示内存中的chunk块, 其中的TVList记录的是真正的数据
  * chunk块，首先记录在内存中
  */
 public class WritableMemChunk implements IWritableMemChunk {
@@ -47,6 +48,11 @@ public class WritableMemChunk implements IWritableMemChunk {
     this.list = TVList.newList(schema.getType());
   }
 
+  /**
+   * 将数据写入内存
+   * @param insertTime
+   * @param objectValue
+   */
   @Override
   public void write(long insertTime, Object objectValue) {
     switch (schema.getType()) {
@@ -303,24 +309,34 @@ public class WritableMemChunk implements IWritableMemChunk {
     return out.toString();
   }
 
+  /**
+   * 对chunk数据进行编码
+   * @param chunkWriter
+   */
   @Override
   public void encode(IChunkWriter chunkWriter) {
 
+    // chunk写入器
     ChunkWriterImpl chunkWriterImpl = (ChunkWriterImpl) chunkWriter;
-
+    // 遍历chunk数据列表
     for (int sortedRowIndex = 0; sortedRowIndex < list.rowCount(); sortedRowIndex++) {
+      // 时间戳
       long time = list.getTime(sortedRowIndex);
 
       // skip duplicated data
+      // 如果前后两条数据的时间相同，表示是重复的数据，需要跳过
       if ((sortedRowIndex + 1 < list.rowCount() && (time == list.getTime(sortedRowIndex + 1)))) {
         continue;
       }
 
       // store last point for SDT
+      //
       if (sortedRowIndex + 1 == list.rowCount()) {
         ((ChunkWriterImpl) chunkWriterImpl).setLastPoint(true);
       }
 
+      // 写入不同的数据类型
+      // TODO 这里是否能够优化，因为一个chunk的数据类型都是相同的，不需要每次都判断。
       switch (schema.getType()) {
         case BOOLEAN:
           chunkWriterImpl.write(time, list.getBoolean(sortedRowIndex));

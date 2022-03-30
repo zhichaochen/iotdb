@@ -27,6 +27,9 @@ import org.apache.iotdb.db.exception.WriteProcessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 内存表管理器
+ */
 public class MemTableManager {
 
   private static final IoTDBConfig CONFIG = IoTDBDescriptor.getInstance().getConfig();

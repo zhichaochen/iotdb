@@ -44,13 +44,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 查询计划
+ */
 public abstract class QueryPlan extends PhysicalPlan {
 
   public static final String WITHOUT_NULL_FILTER_ERROR_MESSAGE =
       "The without null columns don't match the columns queried. If there is an alias, please use the alias.";
 
-  protected List<ResultColumn> resultColumns = null;
-  protected List<MeasurementPath> paths = null;
+  protected List<ResultColumn> resultColumns = null; // 要select的那些列
+  protected List<MeasurementPath> paths = null; // 物理量路径
 
   private boolean alignByTime = true; // for disable align sql
 

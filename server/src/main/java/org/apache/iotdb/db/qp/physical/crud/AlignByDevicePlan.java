@@ -40,6 +40,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 通过设备对其的计划
+ * 也就是一个对象，有几个字段，这几个字段的值共用一个时间戳
+ */
 public class AlignByDevicePlan extends QueryPlan {
 
   public static final String MEASUREMENT_ERROR_MESSAGE =

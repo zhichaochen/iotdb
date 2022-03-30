@@ -33,6 +33,10 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+/**
+ * 双向链表
+ * TsFileResource列表，以链表的形式，将多个TsFileResource连接起来
+ */
 public class TsFileResourceList implements List<TsFileResource> {
   private static final Logger LOGGER = LoggerFactory.getLogger(TsFileResourceList.class);
   private TsFileResource header;
@@ -112,7 +116,9 @@ public class TsFileResourceList implements List<TsFileResource> {
     return new TsFileReverseIterator();
   }
 
-  /** Insert a new tsFileResource node to the end of List */
+  /**
+   * 在链表的末尾插入一个tsFileResource节点
+   * Insert a new tsFileResource node to the end of List */
   @Override
   public boolean add(TsFileResource newNode) {
     if (newNode.prev != null || newNode.next != null) {

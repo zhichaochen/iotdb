@@ -227,6 +227,10 @@ import static org.apache.iotdb.commons.conf.IoTDBConstant.STATEMENT;
 import static org.apache.iotdb.rpc.TSStatusCode.INTERNAL_SERVER_ERROR;
 import static org.apache.iotdb.tsfile.common.constant.TsFileConstant.TSFILE_SUFFIX;
 
+/**
+ * 计划执行器
+ * 执行物理计划，比如查询，执行查询的物理计划，转化为数据集。
+ */
 public class PlanExecutor implements IPlanExecutor {
 
   private static final Logger logger = LoggerFactory.getLogger(PlanExecutor.class);
@@ -251,11 +255,15 @@ public class PlanExecutor implements IPlanExecutor {
     }
   }
 
+  /**
+   * 用于处理不同的查询类型
+   */
   @Override
   public QueryDataSet processQuery(PhysicalPlan queryPlan, QueryContext context)
       throws IOException, StorageEngineException, QueryFilterOptimizationException,
           QueryProcessException, MetadataException, InterruptedException {
     if (queryPlan instanceof QueryPlan) {
+      // 处理数据查询
       return processDataQuery((QueryPlan) queryPlan, context);
     } else if (queryPlan instanceof AuthorPlan) {
       return processAuthorQuery((AuthorPlan) queryPlan);
@@ -266,6 +274,14 @@ public class PlanExecutor implements IPlanExecutor {
     }
   }
 
+  /**
+   * 处理非查询的计划
+   * @param plan Physical Non-Query Plan
+   * @return
+   * @throws QueryProcessException
+   * @throws StorageGroupNotSetException
+   * @throws StorageEngineException
+   */
   @Override
   public boolean processNonQuery(PhysicalPlan plan)
       throws QueryProcessException, StorageGroupNotSetException, StorageEngineException {
@@ -356,6 +372,10 @@ public class PlanExecutor implements IPlanExecutor {
                     && p.getPartitionId().contains(partitionId);
         StorageEngine.getInstance()
             .removePartitions(((DeletePartitionPlan) plan).getStorageGroupName(), filter);
+        return true;
+      case CREATE_SCHEMA_SNAPSHOT:
+        // 创建元数据快照
+        operateCreateSnapshot();
         return true;
       case CREATE_FUNCTION:
         return operateCreateFunction((CreateFunctionPlan) plan);
@@ -595,11 +615,15 @@ public class PlanExecutor implements IPlanExecutor {
     }
   }
 
+  /**
+   * 处理数据查询
+   */
   protected QueryDataSet processDataQuery(QueryPlan queryPlan, QueryContext context)
       throws StorageEngineException, QueryFilterOptimizationException, QueryProcessException,
           IOException, InterruptedException {
     QueryDataSet queryDataSet;
     if (queryPlan instanceof AlignByDevicePlan) {
+      // 处理对齐的计划
       queryDataSet = getAlignByDeviceDataSet((AlignByDevicePlan) queryPlan, context, queryRouter);
     } else {
       if (queryPlan.getPaths() == null || queryPlan.getPaths().isEmpty()) {
@@ -620,6 +644,7 @@ public class PlanExecutor implements IPlanExecutor {
       } else if (queryPlan instanceof QueryIndexPlan) {
         throw new QueryProcessException("Query index hasn't been supported yet");
       } else if (queryPlan instanceof AggregationPlan) {
+        // 处理聚合查询
         AggregationPlan aggregationPlan = (AggregationPlan) queryPlan;
         queryDataSet = queryRouter.aggregate(aggregationPlan, context);
       } else if (queryPlan instanceof FillQueryPlan) {
@@ -628,6 +653,7 @@ public class PlanExecutor implements IPlanExecutor {
       } else if (queryPlan instanceof LastQueryPlan) {
         queryDataSet = queryRouter.lastQuery((LastQueryPlan) queryPlan, context);
       } else {
+        // 查询Ts中的原始数据
         queryDataSet = queryRouter.rawDataQuery((RawDataQueryPlan) queryPlan, context);
       }
     }
@@ -1626,13 +1652,21 @@ public class PlanExecutor implements IPlanExecutor {
     }
   }
 
+  /**
+   * 插入一条InsertRowPlan类型的计划
+   * @param insertRowPlan physical insert plan
+   * @throws QueryProcessException
+   */
   @Override
   public void insert(InsertRowPlan insertRowPlan) throws QueryProcessException {
     try {
+      // 设置物理量的MNode
       insertRowPlan.setMeasurementMNodes(
           new IMeasurementMNode[insertRowPlan.getMeasurements().length]);
       // When insert data with sql statement, the data types will be null here.
       // We need to predicted the data types first
+      // 当插入的数据使用的是sql语句，这里的数据类型将是空，我们首先需要去推断数据类型。
+      // 推断类型
       if (insertRowPlan.getDataTypes()[0] == null) {
         for (int i = 0; i < insertRowPlan.getDataTypes().length; i++) {
           insertRowPlan.getDataTypes()[i] =
@@ -1641,8 +1675,10 @@ public class PlanExecutor implements IPlanExecutor {
         }
       }
 
+      // 向存储引擎中插入一条
       StorageEngine.getInstance().insert(insertRowPlan);
 
+      // 如果存在失败的物理量，则检查失败的物理量
       if (insertRowPlan.getFailedMeasurements() != null) {
         checkFailedMeasurments(insertRowPlan);
       }

@@ -20,6 +20,9 @@ package org.apache.iotdb.db.query.udf.core.layer;
 
 import org.apache.iotdb.db.query.dataset.IUDFInputDataSet;
 
+/**
+ * 输入行工具类
+ */
 public class InputRowUtils {
 
   /**

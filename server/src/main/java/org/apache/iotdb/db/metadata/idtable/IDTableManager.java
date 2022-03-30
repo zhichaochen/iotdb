@@ -35,16 +35,23 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 
-/** This class manages one id table for each logical storage group */
+/**
+ * ID表管理器
+ * 每个逻辑存储组对应一个ID table
+ * This class manages one id table for each logical storage group */
 public class IDTableManager {
 
   /** logger */
   Logger logger = LoggerFactory.getLogger(IDTableManager.class);
 
-  /** storage group path -> id table */
+  /**
+   * 存储组路径和ID表的映射，当前类的核心数据结构
+   * storage group path -> id table */
   HashMap<String, IDTable> idTableMap;
 
-  /** system dir */
+  /**
+   * 存储组路径
+   * system dir */
   private final String systemDir =
       FilePathUtils.regularizePath(IoTDBDescriptor.getInstance().getConfig().getSystemDir())
           + "storage_groups";
@@ -74,6 +81,7 @@ public class IDTableManager {
   // endregion
 
   /**
+   * 通过设备路径查询ID表
    * get id table by device path
    *
    * @param devicePath device path
@@ -81,8 +89,11 @@ public class IDTableManager {
    */
   public synchronized IDTable getIDTable(PartialPath devicePath) {
     try {
+      // 存储组节点
       IStorageGroupMNode storageGroupMNode =
           IoTDB.schemaProcessor.getStorageGroupNodeByPath(devicePath);
+      // 如果没有则创建创建
+      // TODO 由此可见，一个存储组一个IDTable
       return idTableMap.computeIfAbsent(
           storageGroupMNode.getFullPath(),
           storageGroupPath ->

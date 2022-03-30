@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
+ * 一元过滤器
  * Definition for unary filter operations.
  *
  * @param <T> comparable data type
@@ -35,9 +36,9 @@ import java.util.Objects;
 public abstract class UnaryFilter<T extends Comparable<T>> implements Filter, Serializable {
 
   private static final long serialVersionUID = 1431606024929453556L;
-  protected T value;
+  protected T value; // 值
 
-  protected FilterType filterType;
+  protected FilterType filterType; // 过滤器类型
 
   public UnaryFilter() {}
 

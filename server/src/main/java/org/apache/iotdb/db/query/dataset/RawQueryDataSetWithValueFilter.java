@@ -30,6 +30,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 通过值进行过滤
+ */
 public class RawQueryDataSetWithValueFilter extends QueryDataSet implements IUDFInputDataSet {
 
   private final TimeGenerator timeGenerator;

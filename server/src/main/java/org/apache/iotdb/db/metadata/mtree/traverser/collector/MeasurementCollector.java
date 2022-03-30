@@ -24,6 +24,8 @@ import org.apache.iotdb.db.metadata.mnode.IMeasurementMNode;
 import org.apache.iotdb.db.metadata.path.MeasurementPath;
 import org.apache.iotdb.db.metadata.path.PartialPath;
 
+// 时间序列收集器, 如果使用该类，需要重写其collectMeasurement方法
+// 此类将MeasurementNode定义为目标节点，并定义度量过程框架。
 // This class defines MeasurementMNode as target node and defines the measurement process framework.
 public abstract class MeasurementCollector<T> extends CollectorTraverser<T> {
 
@@ -34,6 +36,7 @@ public abstract class MeasurementCollector<T> extends CollectorTraverser<T> {
 
   public MeasurementCollector(IMNode startNode, PartialPath path, int limit, int offset)
       throws MetadataException {
+    //
     super(startNode, path, limit, offset);
     isMeasurementTraverser = true;
   }

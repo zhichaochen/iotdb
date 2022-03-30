@@ -37,6 +37,8 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 
 /**
+ * 值页写入器
+ * 用于将一个值写入一个page
  * This writer is used to write value into a page. It consists of a value encoder and respective
  * OutputStream.
  */

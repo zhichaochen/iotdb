@@ -21,15 +21,18 @@ package org.apache.iotdb.db.utils.datastructure;
 
 import java.util.Arrays;
 
+/**
+ * 时间选择器
+ */
 public class TimeSelector {
 
   private static final int MIN_DEFAULT_CAPACITY = 8;
 
-  private final boolean ascending;
+  private final boolean ascending; // 是否正序
 
-  private long[] timeHeap;
-  private int heapSize;
-  private long lastTime;
+  private long[] timeHeap; // 时间堆
+  private int heapSize; // 堆大小
+  private long lastTime; // 最新的时间
 
   public TimeSelector(int defaultCapacity, boolean isAscending) {
     this.ascending = isAscending;

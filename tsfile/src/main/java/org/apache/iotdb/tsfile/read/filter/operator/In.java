@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
+ * in字句
  * in clause.
  *
  * @param <T> comparable data type
@@ -42,11 +43,11 @@ public class In<T extends Comparable<T>> implements Filter {
 
   private static final long serialVersionUID = 8572705136773595399L;
 
-  protected Set<T> values;
+  protected Set<T> values; // 值集合
 
-  protected boolean not;
+  protected boolean not; // 是否是not in
 
-  protected FilterType filterType;
+  protected FilterType filterType; // 过滤器类型
 
   public In() {}
 

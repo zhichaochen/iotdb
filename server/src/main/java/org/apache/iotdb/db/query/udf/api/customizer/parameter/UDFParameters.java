@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 解析UDF中的参数
  * Used in {@link UDTF#beforeStart(UDFParameters, UDTFConfigurations)}.
  *
  * <p>This class is used to parse the parameters in the UDF entered by the user.
@@ -46,10 +47,10 @@ import java.util.Map;
  */
 public class UDFParameters {
 
-  private final List<Expression> expressions;
-  private final List<PartialPath> paths;
-  private final Map<String, String> attributes;
-  private final List<TSDataType> dataTypes;
+  private final List<Expression> expressions; // 表达式列表
+  private final List<PartialPath> paths; // 路径
+  private final Map<String, String> attributes; // 传入的属性
+  private final List<TSDataType> dataTypes; // 数据类型列表
 
   public UDFParameters(
       FunctionExpression functionExpression, Map<Expression, TSDataType> expressionDataTypeMap)

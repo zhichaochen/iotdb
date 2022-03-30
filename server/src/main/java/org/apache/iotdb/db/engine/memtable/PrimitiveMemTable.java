@@ -24,6 +24,9 @@ import org.apache.iotdb.db.metadata.idtable.entry.IDeviceID;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 原始内存表
+ */
 public class PrimitiveMemTable extends AbstractMemTable {
 
   public PrimitiveMemTable() {}

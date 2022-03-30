@@ -34,23 +34,38 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * 触发器引擎
+ * 触发器提供了一种侦听序列数据变动的机制。配合用户自定义逻辑，可完成告警、数据清洗、数据转发等功能。
+ */
 public class TriggerEngine {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TriggerEngine.class);
 
+  /**
+   * 启动触发器
+   * @param event
+   * @param insertRowPlan
+   * @throws TriggerExecutionException
+   */
   public static void fire(TriggerEvent event, InsertRowPlan insertRowPlan)
       throws TriggerExecutionException {
+    // 插入的物理量
     IMeasurementMNode[] mNodes = insertRowPlan.getMeasurementMNodes();
     int size = mNodes.length;
 
+    // 插入数据的时间戳
     long timestamp = insertRowPlan.getTime();
+    // 要插入的值
     Object[] values = insertRowPlan.getValues();
 
+    // 遍历所欲物理量
     for (int i = 0; i < size; ++i) {
       IMeasurementMNode mNode = mNodes[i];
       if (mNode == null) {
         continue;
       }
+      // 触发器执行器
       TriggerExecutor executor = mNode.getTriggerExecutor();
       if (executor == null) {
         continue;
@@ -84,6 +99,10 @@ public class TriggerEngine {
     }
   }
 
+  /**
+   * 关闭触发器
+   * @param measurementMNode
+   */
   public static void drop(IMeasurementMNode measurementMNode) {
     TriggerExecutor executor = measurementMNode.getTriggerExecutor();
     if (executor == null) {

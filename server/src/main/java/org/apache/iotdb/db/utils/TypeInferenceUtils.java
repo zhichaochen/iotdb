@@ -26,6 +26,9 @@ import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 
 import org.apache.commons.lang3.StringUtils;
 
+/**
+ * 类型推断工具类
+ */
 public class TypeInferenceUtils {
 
   private static TSDataType booleanStringInferType =

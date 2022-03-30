@@ -43,13 +43,21 @@ import org.apache.iotdb.service.rpc.thrift.TSRawDataQueryReq;
 
 import java.time.ZoneId;
 
-/** provide a integration method for other user. */
+/**
+ * 为其他用户提供一个整合方法
+ * provide a integration method for other user. */
 public class Planner {
 
   public Planner() {
     // do nothing
   }
 
+  /**
+   * 解析Sql成物理计划
+   * @param sqlStr
+   * @return
+   * @throws QueryProcessException
+   */
   public PhysicalPlan parseSQLToPhysicalPlan(String sqlStr) throws QueryProcessException {
     return parseSQLToPhysicalPlan(
         sqlStr, ZoneId.systemDefault(), IoTDBConstant.ClientVersion.V_0_13);
@@ -59,6 +67,7 @@ public class Planner {
       String sqlStr, ZoneId zoneId, IoTDBConstant.ClientVersion clientVersion)
       throws QueryProcessException {
     // from SQL to logical operator
+    // 从sql到逻辑算子，生成逻辑计划
     Operator operator = LogicalGenerator.generate(sqlStr, zoneId, clientVersion);
     return generatePhysicalPlanFromOperator(operator, clientVersion);
   }
@@ -103,21 +112,32 @@ public class Planner {
     return generatePhysicalPlanFromOperator(operator, IoTDBConstant.ClientVersion.V_0_13);
   }
 
+  /**
+   * 生成物理计划
+   * @param operator
+   * @param clientVersion
+   * @return
+   * @throws QueryProcessException
+   */
   private PhysicalPlan generatePhysicalPlanFromOperator(
       Operator operator, IoTDBConstant.ClientVersion clientVersion) throws QueryProcessException {
     // if client version is before 0.13, match path with prefix
     operator.setPrefixMatchPath(IoTDBConstant.ClientVersion.V_0_12.equals(clientVersion));
     // check if there are logical errors
+    // 校验这里是否有逻辑错误
     LogicalChecker.check(operator);
     // optimize the logical operator
+    // 优化逻辑计划
     operator = logicalOptimize(operator);
     // from logical operator to physical plan
+    // 将逻辑算子转化成物理计划
     return generatePhysicalPlanFromOperator(operator);
   }
 
   protected PhysicalPlan generatePhysicalPlanFromOperator(Operator operator)
       throws QueryProcessException {
     // from logical operator to physical plan
+    // 将逻辑算子转化成物理计划
     return new PhysicalGenerator().transformToPhysicalPlan(operator);
   }
 
@@ -133,6 +153,7 @@ public class Planner {
     switch (operator.getType()) {
       case QUERY:
       case QUERY_INDEX:
+        // 查询类型的
         return optimizeQueryOperator((QueryOperator) operator);
       case SELECT_INTO:
         return optimizeSelectIntoOperator((SelectIntoOperator) operator);
@@ -142,6 +163,7 @@ public class Planner {
   }
 
   /**
+   * 优化查询算子
    * given an unoptimized query operator and return an optimized result.
    *
    * @param root unoptimized query operator

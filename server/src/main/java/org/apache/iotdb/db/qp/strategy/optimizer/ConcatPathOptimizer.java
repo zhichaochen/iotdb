@@ -55,7 +55,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-/** concat paths in select and from clause. */
+/**
+ * select和from子句中的拼接路径
+ * concat paths in select and from clause. */
 public class ConcatPathOptimizer implements ILogicalOptimizer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ConcatPathOptimizer.class);

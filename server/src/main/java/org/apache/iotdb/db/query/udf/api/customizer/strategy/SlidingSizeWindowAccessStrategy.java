@@ -49,11 +49,17 @@ import org.apache.iotdb.db.query.udf.api.customizer.parameter.UDFParameters;
  *
  * @see UDTF
  * @see UDTFConfigurations
+ *
+ * 滑动尺寸的窗口访问策略
+ *
+ * 以固定行数的方式处理原始数据，即每个数据处理窗口都会包含固定行数的数据（最后一个窗口除外）。
+ * 框架会为每一个原始数据输入窗口调用一次transform方法。一个窗口可能存在多行数据，每一行数据对应的是输
+ * 入序列按时间对齐后的结果（一行数据中，可能存在某一列为null值，但不会全部都是null）。
  */
 public class SlidingSizeWindowAccessStrategy implements AccessStrategy {
 
-  private final int windowSize;
-  private final int slidingStep;
+  private final int windowSize; // 窗口大小，类似于行数据的范围
+  private final int slidingStep; // 滑动步长，也就是处理几行数据
 
   /**
    * Constructor. You need to specify the number of rows in each sliding size window (except for the

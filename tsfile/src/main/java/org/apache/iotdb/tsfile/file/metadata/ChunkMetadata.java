@@ -35,31 +35,34 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/** Metadata of one chunk. */
+/**
+ * chunk元数据，其实是索引
+ * Metadata of one chunk. */
 public class ChunkMetadata implements IChunkMetadata {
 
-  private String measurementUid;
+  private String measurementUid; // 物理量ID
 
   /**
+   * 文件通知中对应数据的字节偏移量：包括块头和标记。
    * Byte offset of the corresponding data in the file Notice: include the chunk header and marker.
    */
-  private long offsetOfChunkHeader;
+  private long offsetOfChunkHeader; // chunk头的偏移量
 
-  private TSDataType tsDataType;
+  private TSDataType tsDataType; // 当前chunk的数据类型
 
   /**
    * version is used to define the order of operations(insertion, deletion, update). version is set
    * according to its belonging ChunkGroup only when being queried, so it is not persisted.
    */
-  private long version;
+  private long version; // 版本
 
   /** A list of deleted intervals. */
   private List<TimeRange> deleteIntervalList;
 
-  private boolean modified;
+  private boolean modified; //
 
   /** ChunkLoader of metadata, used to create ChunkReaderWrap */
-  private IChunkLoader chunkLoader;
+  private IChunkLoader chunkLoader; // chunk加载器
 
   private Statistics<? extends Serializable> statistics;
 
@@ -85,6 +88,7 @@ public class ChunkMetadata implements IChunkMetadata {
   public ChunkMetadata() {}
 
   /**
+   * 构造chunk元数据
    * constructor of ChunkMetaData.
    *
    * @param measurementUid measurement id
@@ -162,25 +166,34 @@ public class ChunkMetadata implements IChunkMetadata {
   }
 
   /**
+   * 反序列化
    * deserialize from ByteBuffer.
    *
-   * @param buffer ByteBuffer
-   * @return ChunkMetaData object
+   * @param buffer ByteBuffer ： chunk索引的数据
+   * @return ChunkMetaData object ： 时间序列元数据
    */
   public static ChunkMetadata deserializeFrom(
       ByteBuffer buffer, TimeseriesMetadata timeseriesMetadata) {
+    // chunk索引
     ChunkMetadata chunkMetaData = new ChunkMetadata();
 
+    // 物理量ID
     chunkMetaData.measurementUid = timeseriesMetadata.getMeasurementId();
+    // 数据类型
     chunkMetaData.tsDataType = timeseriesMetadata.getTSDataType();
+    // chunk头的偏移量
     chunkMetaData.offsetOfChunkHeader = ReadWriteIOUtils.readLong(buffer);
     // if the TimeSeriesMetadataType is not 0, it means it has more than one chunk
     // and each chunk's metadata has its own statistics
+    // 如果TimeSeriesMetadataType不是0，意味着它有超过一个chunk，每个chunk metadata有他自己的统计信息
     if ((timeseriesMetadata.getTimeSeriesMetadataType() & 0x3F) != 0) {
+      // 反序列化统计信息
       chunkMetaData.statistics = Statistics.deserialize(buffer, chunkMetaData.tsDataType);
     } else {
       // if the TimeSeriesMetadataType is 0, it means it has only one chunk
       // and that chunk's metadata has no statistic
+      // 如果TimeSeriesMetadataType是0，表示只有一个chunk，那么chunk没有统计信息
+      // 换句话说，chunk的统计信息等同于timeseries的统计信息，因为只有一个嘛。
       chunkMetaData.statistics = timeseriesMetadata.getStatistics();
     }
     return chunkMetaData;

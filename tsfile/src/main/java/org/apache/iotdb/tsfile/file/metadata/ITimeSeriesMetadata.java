@@ -24,6 +24,9 @@ import org.apache.iotdb.tsfile.read.controller.IChunkMetadataLoader;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * 时间序列索引
+ */
 public interface ITimeSeriesMetadata {
 
   Statistics getStatistics();
@@ -32,6 +35,10 @@ public interface ITimeSeriesMetadata {
 
   void setModified(boolean modified);
 
+  /**
+   * 是否有序
+   * @return
+   */
   boolean isSeq();
 
   void setSeq(boolean seq);

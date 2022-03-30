@@ -24,6 +24,9 @@ import org.apache.iotdb.tsfile.read.expression.IExpression;
 
 import java.io.Serializable;
 
+/**
+ * 二元表达式
+ */
 public abstract class BinaryExpression implements IBinaryExpression, Serializable {
 
   private static final long serialVersionUID = -711801318534904452L;

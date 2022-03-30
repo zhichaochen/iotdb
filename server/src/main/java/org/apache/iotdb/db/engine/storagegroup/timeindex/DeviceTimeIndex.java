@@ -40,28 +40,58 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 设备的时间索引
+ *
+ * 默认配置下：将此 TsFile 中所有时间序列的路径按照 （root - 倒数第二层）分组，每组为一个索引条目，包含：路径、起始时间、终止时间
+ * root.sg.d1.s1, 1, 10
+ * root.sg.d1.s2, 1, 15
+ * root.sg.d2.s1, 1, 10
+ * root.sg.d3.s1, 5, 10
+ *
+ * 按倒数第二层分组后，则 时间索引 为
+ * root.sg.d1, 1, 15
+ * root.sg.d2, 1, 10
+ * root.sg.d3, 5, 10
+ *
+ * 不按照最后一层分组的原因是，时间序列可能过多，导致时间索引过大，因此选择了倒数第二层作为索引的路径，然而，
+ * 当倒数第二层基数过多时（几十万、百万量级），时间索引仍然会较大。
+ *
+ * 时间索引粒度的影响：
+ * 在各个组的序列时间范围相同时（即写入是同步的），索引粒度越粗，越节省内存，且无任何副作用。
+ * 在各个组的序列时间范围不同时（如一个序列写入1-10，另一个写入20-30），索引粒度越粗，越容易多读不需要的文件元数据。
+ */
 public class DeviceTimeIndex implements ITimeIndex {
 
   private static final Logger logger = LoggerFactory.getLogger(DeviceTimeIndex.class);
 
   public static final int INIT_ARRAY_SIZE = 64;
 
-  /** start times array. */
-  protected long[] startTimes;
+  /**
+   * 因为一个tsfile文件包含多个设备，所以有多个开始结束时间
+   * start times array. */
+  protected long[] startTimes; // 开始时间数组
 
   /**
    * end times array. The values in this array are Long.MIN_VALUE if it's an unsealed sequence
    * tsfile
    */
-  protected long[] endTimes;
+  protected long[] endTimes; // 结束时间数组
 
-  /** min start time */
+  /**
+   * 这个应该针对所有设备
+   * min start time */
   private long minStartTime = Long.MAX_VALUE;
 
-  /** max end time */
+  /**
+   * 未封口则为Long.MAX_VALUE
+   * max end time */
   private long maxEndTime = Long.MIN_VALUE;
 
-  /** device -> index of start times array and end times array */
+  /**
+   * device设备名 => 开始 / 结束时间列表index
+   * 也就是记录了，某个设备，它的开始结束在数组中的下标，上面设备的下标
+   * device -> index of start times array and end times array */
   protected Map<String, Integer> deviceToIndex;
 
   public DeviceTimeIndex() {

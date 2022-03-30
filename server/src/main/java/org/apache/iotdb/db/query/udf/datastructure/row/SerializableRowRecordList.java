@@ -34,11 +34,18 @@ import java.util.List;
 
 import static org.apache.iotdb.commons.conf.IoTDBConstant.MB;
 
+/**
+ * 可序列化的行记录列表
+ */
 public class SerializableRowRecordList implements SerializableList {
 
   protected static final int MIN_OBJECT_HEADER_SIZE = 8;
   protected static final int MIN_ARRAY_HEADER_SIZE = MIN_OBJECT_HEADER_SIZE + 4;
 
+  /**
+   * 创建一个SerializableRowRecordList
+   * @return
+   */
   public static SerializableRowRecordList newSerializableRowRecordList(
       long queryId, TSDataType[] dataTypes, int internalRowRecordListCapacity) {
     SerializationRecorder recorder = new SerializationRecorder(queryId);
@@ -46,6 +53,7 @@ public class SerializableRowRecordList implements SerializableList {
   }
 
   /**
+   * 计算给定内存限制时可以缓存的行数。
    * Calculate the number of rows that can be cached given the memory limit.
    *
    * @param dataTypes Data types of columns.
@@ -92,11 +100,11 @@ public class SerializableRowRecordList implements SerializableList {
   }
 
   private final SerializationRecorder serializationRecorder;
-  private final TSDataType[] dataTypes;
+  private final TSDataType[] dataTypes; //
   private final int internalRowRecordListCapacity;
-  private final int seriesNumber;
+  private final int seriesNumber; //
 
-  private List<Object[]> rowRecords;
+  private List<Object[]> rowRecords; // 行记录
 
   private SerializableRowRecordList(
       SerializationRecorder serializationRecorder,

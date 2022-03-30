@@ -24,15 +24,17 @@ import org.apache.iotdb.db.qp.constant.SQLConstant;
 import org.apache.iotdb.db.qp.physical.PhysicalPlan;
 import org.apache.iotdb.db.qp.strategy.PhysicalGenerator;
 
-/** This class is a superclass of all operator. */
+/**
+ * 算子
+ * This class is a superclass of all operator. */
 public abstract class Operator {
 
   // operator type in int format
   protected int tokenIntType;
   // flag of "explain"
-  protected boolean isDebug;
+  protected boolean isDebug; // 是否是explain语句
 
-  protected OperatorType operatorType = OperatorType.NULL;
+  protected OperatorType operatorType = OperatorType.NULL; // 算子类型
 
   /**
    * Since IoTDB v0.13, all DDL and DML use patternMatch as default. Before IoTDB v0.13, all DDL and
@@ -131,7 +133,7 @@ public abstract class Operator {
 
     DELETE,
 
-    QUERY,
+    QUERY, // query类型
     LAST,
     GROUP_BY_TIME,
     GROUP_BY_FILL,

@@ -25,6 +25,9 @@ import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 
 import java.io.IOException;
 
+/**
+ * 行窗口
+ */
 public interface RowWindow {
 
   /**

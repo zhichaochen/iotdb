@@ -56,15 +56,24 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+/**
+ * Iot db
+ * TODO IotDB启动类
+ */
 public class IoTDB implements IoTDBMBean {
 
   private static final Logger logger = LoggerFactory.getLogger(IoTDB.class);
   private final String mbeanName =
       String.format("%s:%s=%s", IoTDBConstant.IOTDB_PACKAGE, IoTDBConstant.JMX_TYPE, "IoTDB");
+  // 服务注册管理器
   private static final RegisterManager registerManager = new RegisterManager();
+  // 元数据管理器
+  public static MManager metaManager = MManager.getInstance();
+  // 服务提供器， TODO ServiceProvider和RegisterManager有啥区别
   public static LocalSchemaProcessor schemaProcessor = LocalSchemaProcessor.getInstance();
   public static LocalConfigManager configManager = LocalConfigManager.getInstance();
   public static ServiceProvider serviceProvider;
+  // 是否是集群模式
   private static boolean clusterMode = false;
 
   public static IoTDB getInstance() {
@@ -73,12 +82,16 @@ public class IoTDB implements IoTDBMBean {
 
   public static void main(String[] args) {
     try {
+      // 检查iot配置
       IoTDBConfigCheck.getInstance().checkConfig();
+      // 检查 iot rest 服务，检查服务通信
       IoTDBRestServiceCheck.getInstance().checkConfig();
     } catch (ConfigurationException | IOException e) {
       logger.error("meet error when doing start checking", e);
+      // 如果有错误则退出
       System.exit(1);
     }
+    // 获取当前服务，并启动守护进程
     IoTDB daemon = IoTDB.getInstance();
     daemon.active();
   }
@@ -100,6 +113,7 @@ public class IoTDB implements IoTDBMBean {
   }
 
   public void active() {
+    // 启动检查
     StartupChecks checks = new StartupChecks().withDefaultTest();
     try {
       checks.verify();
@@ -110,9 +124,11 @@ public class IoTDB implements IoTDBMBean {
       return;
     }
     try {
+      // 设置所需要初始化的服务
       setUp();
     } catch (StartupException | QueryProcessException e) {
       logger.error("meet error while starting up.", e);
+      // 卸载服务
       deactivate();
       logger.error("{} exit", IoTDBConstant.GLOBAL_DB_NAME);
       return;
@@ -120,9 +136,15 @@ public class IoTDB implements IoTDBMBean {
     logger.info("{} has started.", IoTDBConstant.GLOBAL_DB_NAME);
   }
 
+  /**
+   * 设置
+   * @throws StartupException
+   * @throws QueryProcessException
+   */
   private void setUp() throws StartupException, QueryProcessException {
     logger.info("Setting up IoTDB...");
 
+    // 优雅关闭的钩子
     Runtime.getRuntime().addShutdownHook(new IoTDBShutdownHook());
     setUncaughtExceptionHandler();
     initServiceProvider();
@@ -141,10 +163,12 @@ public class IoTDB implements IoTDBMBean {
     registerManager.register(UDFRegistrationService.getInstance());
 
     // in cluster mode, RPC service is not enabled.
+    //
     if (IoTDBDescriptor.getInstance().getConfig().isEnableRpcService()) {
       registerManager.register(RPCService.getInstance());
     }
 
+    // 初始化协议
     initProtocols();
     // in cluster mode, InfluxDBMManager has been initialized, so there is no need to init again to
     // avoid wasting time.
@@ -233,6 +257,7 @@ public class IoTDB implements IoTDBMBean {
     logger.info("IoTDB is deactivated.");
   }
 
+  // 设置未捕获异常处理器
   private void setUncaughtExceptionHandler() {
     Thread.setDefaultUncaughtExceptionHandler(new IoTDBDefaultThreadExceptionHandler());
   }

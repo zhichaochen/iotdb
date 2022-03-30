@@ -36,6 +36,9 @@ import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.Map;
 
+/**
+ * tag日志文件
+ */
 public class TagLogFile implements AutoCloseable {
 
   private static final Logger logger = LoggerFactory.getLogger(TagLogFile.class);
@@ -86,6 +89,13 @@ public class TagLogFile implements AutoCloseable {
     return new Pair<>(ReadWriteIOUtils.readMap(byteBuffer), ReadWriteIOUtils.readMap(byteBuffer));
   }
 
+  /**
+   * 读取Tag
+   * @param size
+   * @param position
+   * @return
+   * @throws IOException
+   */
   public Map<String, String> readTag(int size, long position) throws IOException {
     ByteBuffer byteBuffer = ByteBuffer.allocate(size);
     fileChannel.read(byteBuffer, position);

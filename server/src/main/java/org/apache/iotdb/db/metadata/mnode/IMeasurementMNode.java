@@ -24,7 +24,10 @@ import org.apache.iotdb.db.metadata.path.MeasurementPath;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.write.schema.IMeasurementSchema;
 
-/** This interface defines a MeasurementMNode's operation interfaces. */
+/**
+ * 时间序列节点
+ * MTree上的物理量节点， 物理量节点是叶子节点
+ * This interface defines a MeasurementMNode's operation interfaces. */
 public interface IMeasurementMNode extends IMNode {
 
   @Override
@@ -32,6 +35,7 @@ public interface IMeasurementMNode extends IMNode {
 
   MeasurementPath getMeasurementPath();
 
+  // 获取物理量的schema
   IMeasurementSchema getSchema();
 
   TSDataType getDataType(String measurementId);

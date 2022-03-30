@@ -22,6 +22,9 @@ package org.apache.iotdb.db.engine.flush;
 import org.apache.iotdb.db.engine.storagegroup.TsFileProcessor;
 import org.apache.iotdb.db.exception.TsFileProcessorException;
 
+/**
+ * 关闭文件监听器
+ */
 @FunctionalInterface
 public interface CloseFileListener {
   void onClosed(TsFileProcessor processor) throws TsFileProcessorException;

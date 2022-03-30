@@ -39,6 +39,14 @@ import java.util.List;
 /**
  * 时间生成器，用来生成满足过滤条件的下一个时间戳
  *
+ * TODO 为啥需要时间生成器？？？
+ *  如果有过滤条件，那么我们肯定要查询符合条件的数据，那么过滤之后取那个时间呢，由时间生成器提供。
+ *
+ * TODO 查询步骤是怎样的呢？
+ *  1、通过表达式构建节点树，叶子节点都是数据读取器，比如：FileSeriesReader
+ *  1、获取我们需要的时间戳
+ *  2、通过FileSeriesReaderByTimestamp,通过时间戳查询目标数据。
+ *
  * IExpression中涉及的所有SingleSeriesExpression将被传输到一个TimeGenerator树，该树的叶节点都是SeriesReader，
  * TimeGenerator树可以生成满足过滤条件的下一个时间戳。然后，我们使用这个时间戳来获取IExpression中未包含的其他系列中的值
  *
@@ -53,15 +61,24 @@ public abstract class TimeGenerator {
   private HashMap<Path, List<LeafNode>> leafNodeCache = new HashMap<>();
 
   private HashMap<Path, List<Object>> leafValuesCache;
-  protected Node operatorNode;
+  // 这里主要通过该对象获取下一个时间
+  protected Node operatorNode; // 表示通过表达式构建的过滤器节点
+  // 是否有or节点
   private boolean hasOrNode;
 
   public boolean hasNext() throws IOException {
     return operatorNode.hasNext();
   }
 
+  /**
+   * 下一个时间
+   * @return
+   * @throws IOException
+   */
   public long next() throws IOException {
+    // 是否有OR节点
     if (!hasOrNode) {
+      // 叶子值缓存
       if (leafValuesCache == null) {
         leafValuesCache = new HashMap<>();
       }
@@ -72,6 +89,7 @@ public abstract class TimeGenerator {
                   .computeIfAbsent(path, k -> new ArrayList<>())
                   .add(nodes.get(0).currentValue()));
     }
+    // 下一个时间戳
     return operatorNode.next();
   }
 
@@ -101,11 +119,17 @@ public abstract class TimeGenerator {
     return leafValuesCache.get(path).remove(0);
   }
 
+  /**
+   * 构造节点
+   * @param expression
+   * @throws IOException
+   */
   public void constructNode(IExpression expression) throws IOException {
     operatorNode = construct(expression);
   }
 
   /**
+   * 构造节点树，叶子节点都是
    * 构造生成时间戳的树
    * construct the tree that generate timestamp. */
   protected Node construct(IExpression expression) throws IOException {
@@ -117,8 +141,9 @@ public abstract class TimeGenerator {
       Path path = singleSeriesExp.getSeriesPath();
 
       // put the current reader to valueCache
-      //
+      // 创建叶子节点，叶子节点是数据读取器
       LeafNode leafNode = new LeafNode(seriesReader);
+      // 将当前读取器加入叶子缓存
       leafNodeCache.computeIfAbsent(path, p -> new ArrayList<>()).add(leafNode);
 
       return leafNode;
@@ -128,12 +153,12 @@ public abstract class TimeGenerator {
       // 构造当前表达式右边的节点
       Node rightChild = construct(((IBinaryExpression) expression).getRight());
 
-      // Or节点
+      // Or节点，返回最上层的OR节点
       if (expression.getType() == ExpressionType.OR) {
         hasOrNode = true;
         return new OrNode(leftChild, rightChild, isAscending());
       }
-      // And节点
+      // And节点，返回最上层的AND节点
       else if (expression.getType() == ExpressionType.AND) {
         return new AndNode(leftChild, rightChild, isAscending());
       }

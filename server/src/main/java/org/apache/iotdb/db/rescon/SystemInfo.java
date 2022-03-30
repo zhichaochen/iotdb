@@ -35,12 +35,16 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.concurrent.ExecutorService;
 
+/**
+ * 系统信息
+ */
 public class SystemInfo {
 
   private static final IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
   private static final Logger logger = LoggerFactory.getLogger(SystemInfo.class);
 
   private long totalStorageGroupMemCost = 0L;
+  // 是否拒绝写入，作用是内存控制
   private volatile boolean rejected = false;
 
   private static long memorySizeForWrite = config.getAllocateMemoryForWrite();

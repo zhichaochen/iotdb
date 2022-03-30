@@ -27,11 +27,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 线程池管理器
+ */
 public abstract class AbstractPoolManager {
 
   private static final int WAIT_TIMEOUT = 2000;
 
-  protected ExecutorService pool;
+  protected ExecutorService pool; // 线程池
 
   /** Block new flush submits and exit when all RUNNING THREADS AND TASKS IN THE QUEUE end. */
   public void close() {

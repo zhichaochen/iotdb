@@ -55,17 +55,20 @@ import java.util.Set;
 
 import static org.apache.iotdb.db.utils.SchemaUtils.getSeriesTypeByPath;
 
+/**
+ * 查询算子
+ */
 public class QueryOperator extends Operator {
 
-  protected SelectComponent selectComponent;
-  protected FromComponent fromComponent;
-  protected WhereComponent whereComponent;
-  protected SpecialClauseComponent specialClauseComponent;
+  protected SelectComponent selectComponent; // select字句
+  protected FromComponent fromComponent; // from字句
+  protected WhereComponent whereComponent; // where 子句
+  protected SpecialClauseComponent specialClauseComponent; // 特殊子句
 
-  protected Map<String, Object> props;
-  protected IndexType indexType;
+  protected Map<String, Object> props; // 属性
+  protected IndexType indexType; // 索引类型
 
-  protected boolean enableTracing;
+  protected boolean enableTracing; // 是否能否追踪
 
   Set<String> aliasSet;
 
@@ -196,22 +199,39 @@ public class QueryOperator extends Operator {
     }
   }
 
+  /**
+   * 生成物理计划
+   * @param generator
+   * @return
+   * @throws QueryProcessException
+   */
   @Override
   public PhysicalPlan generatePhysicalPlan(PhysicalGenerator generator)
       throws QueryProcessException {
+    // 创建查询计划
     QueryPlan queryPlan = indexType == null ? new RawDataQueryPlan() : new QueryIndexPlan();
+    // 是否通过设备对齐
     return isAlignByDevice()
         ? this.generateAlignByDevicePlan(generator)
         : this.generateRawDataQueryPlan(generator, queryPlan);
   }
 
+  /**
+   * 生成原生数据查询计划
+   * @param generator
+   * @param queryPlan
+   * @return
+   * @throws QueryProcessException
+   */
   protected QueryPlan generateRawDataQueryPlan(PhysicalGenerator generator, QueryPlan queryPlan)
       throws QueryProcessException {
+    // 查询计划
     RawDataQueryPlan rawDataQueryPlan = (RawDataQueryPlan) queryPlan;
     rawDataQueryPlan.setPaths(selectComponent.getPaths());
     rawDataQueryPlan.setResultColumns(selectComponent.getResultColumns());
     rawDataQueryPlan.setEnableTracing(enableTracing);
 
+    // 查询索引计划
     if (queryPlan instanceof QueryIndexPlan) {
       ((QueryIndexPlan) queryPlan).setIndexType(indexType);
       ((QueryIndexPlan) queryPlan).setProps(props);

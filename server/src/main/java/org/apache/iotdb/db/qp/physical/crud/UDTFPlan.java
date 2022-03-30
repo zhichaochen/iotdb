@@ -41,6 +41,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ *  UDTF ：其中的T表示table的意思
+ */
 public class UDTFPlan extends RawDataQueryPlan implements UDFPlan {
 
   protected final ZoneId zoneId;

@@ -26,12 +26,14 @@ import org.apache.iotdb.tsfile.read.filter.basic.Filter;
 import java.io.Serializable;
 
 /**
+ * 全局时间表达式
+ * 就是对整个查询都有效的时间过滤条件
  * 全局时间表达式，查询语句中包含 where time > XXX，就是全局时间表达式
  */
 public class GlobalTimeExpression implements IUnaryExpression, Serializable {
 
   private static final long serialVersionUID = 1146132942359113670L;
-  private Filter filter;
+  private Filter filter; // 时间过滤器，其子过滤器必须全部是时间过滤器
 
   public GlobalTimeExpression(Filter filter) {
     this.filter = filter;

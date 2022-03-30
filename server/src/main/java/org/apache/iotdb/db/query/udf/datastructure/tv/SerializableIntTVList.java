@@ -29,6 +29,9 @@ import java.nio.ByteBuffer;
 
 import static org.apache.iotdb.commons.conf.IoTDBConstant.MB;
 
+/**
+ *
+ */
 public class SerializableIntTVList extends SerializableTVList {
 
   protected static int calculateCapacity(float memoryLimitInMB) {
@@ -51,9 +54,12 @@ public class SerializableIntTVList extends SerializableTVList {
     serializationRecorder.setSerializedElementSize(size);
     int serializedByteLength = 0;
     for (int i = 0; i < size; ++i) {
+      // 写入时间
       serializedByteLength += ReadWriteIOUtils.write(getTimeByIndex(i), outputStream);
+      // 写入int值
       serializedByteLength += ReadWriteIOUtils.write(getIntByIndex(i), outputStream);
     }
+    // 设置已序列化字节的长度
     serializationRecorder.setSerializedByteLength(serializedByteLength);
   }
 

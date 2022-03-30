@@ -25,10 +25,13 @@ import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-/** This interface provides accesses to WriteLogNode. */
+/**
+ * WriteLogNode管理器
+ * This interface provides accesses to WriteLogNode. */
 public interface WriteLogNodeManager {
 
   /**
+   * 获取一个WriteLogNode，如果不存在将自动创建
    * Get a WriteLogNode by a identifier like "{storageGroupName}-{BufferWrite/Overflow}-{
    * nameOfTsFile}". The WriteLogNode will be automatically created if not exist.
    *
@@ -38,12 +41,15 @@ public interface WriteLogNodeManager {
   WriteLogNode getNode(String identifier, Supplier<ByteBuffer[]> supplier);
 
   /**
+   * 删除一个日志节点
    * Delete a log node. If the log node does not exist, this will be an empty operation.
    *
    * @param identifier -identifier
    */
   void deleteNode(String identifier, Consumer<ByteBuffer[]> consumer) throws IOException;
 
-  /** Close all nodes. */
+  /**
+   * 关闭所有节点
+   * Close all nodes. */
   void close();
 }

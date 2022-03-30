@@ -30,6 +30,9 @@ import java.util.List;
 import java.util.Set;
 
 /**
+ * 用于表示查询的结果列
+ * 假设时间序列以db为单位，如下所示：[root.sg.d.a，root.sg.d.b，root.sg.e.a，root.sg.e.b]
+ *
  * {@code ResultColumn} is used to represent a result column of a query.
  *
  * <p>Assume that we have time series in db as follows: <br>
@@ -68,12 +71,12 @@ import java.util.Set;
  */
 public class ResultColumn {
 
-  private final Expression expression;
-  private final String alias;
+  private final Expression expression; // 表达式
+  private final String alias; // 别名
 
-  private TSDataType dataType;
+  private TSDataType dataType; // 数据类型
 
-  private List<PartialPath> allPathsInExpression;
+  private List<PartialPath> allPathsInExpression; // 表达式中所有路径
 
   public ResultColumn(Expression expression, String alias) {
     this.expression = expression;

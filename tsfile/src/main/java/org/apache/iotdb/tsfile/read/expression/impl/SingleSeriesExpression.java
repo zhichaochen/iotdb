@@ -26,11 +26,15 @@ import org.apache.iotdb.tsfile.read.filter.basic.Filter;
 
 import java.io.Serializable;
 
+/**
+ * SingleSeriesExpression 表示针对某一指定时间序列的过滤条件，一个 SingleSeriesExpression 包含一个 Path 和一个 Filter。
+ * Path 表示该时间序列的路径；Filter 即为 2.1 章节中介绍的 Filter，表示相应的过滤条件。
+ */
 public class SingleSeriesExpression implements IUnaryExpression, Serializable {
 
   private static final long serialVersionUID = 7131207370394865228L;
-  private Path seriesPath;
-  private Filter filter;
+  private Path seriesPath; // 指定的时间序列路径
+  private Filter filter; // 过滤条件
 
   public SingleSeriesExpression(Path seriesDescriptor, Filter filter) {
     this.seriesPath = seriesDescriptor;

@@ -25,12 +25,15 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 查询表达式，在查询ts文件时的对象
+ */
 public class QueryExpression implements Serializable {
 
-  private List<Path> selectedSeries;
-  private List<TSDataType> dataTypes;
-  private IExpression expression;
-  private boolean hasQueryFilter;
+  private List<Path> selectedSeries; // 已选的时间序列
+  private List<TSDataType> dataTypes; // 数据类型
+  private IExpression expression; // 表达式
+  private boolean hasQueryFilter; // 是否有查询过滤器
 
   private QueryExpression() {
     selectedSeries = new ArrayList<>();

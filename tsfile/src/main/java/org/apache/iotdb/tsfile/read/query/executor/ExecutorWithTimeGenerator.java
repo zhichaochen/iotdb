@@ -38,6 +38,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * 带有时间生成器的执行器
+ */
 public class ExecutorWithTimeGenerator implements QueryExecutor {
 
   private IMetadataQuerier metadataQuerier; // 元数据查询器
@@ -70,17 +73,21 @@ public class ExecutorWithTimeGenerator implements QueryExecutor {
     // the size of hasFilter is equal to selectedPathList, if a series has a filter, it is true,
     // otherwise false
     // 和selectedPathList的size是相同的，如果一个序列有过滤器则为true，否则为false
+    // TODO 其实表示对应的序列是否有过滤器
     List<Boolean> cached =
         markFilterdPaths(expression, selectedPathList, timeGenerator.hasOrNode());
+    // 选择的序列读取器
     List<FileSeriesReaderByTimestamp> readersOfSelectedSeries = new ArrayList<>();
     List<TSDataType> dataTypes = new ArrayList<>();
 
     Iterator<Boolean> cachedIterator = cached.iterator();
     Iterator<Path> selectedPathIterator = selectedPathList.iterator();
+    // 遍历
     while (cachedIterator.hasNext()) {
       boolean cachedValue = cachedIterator.next();
       Path selectedPath = selectedPathIterator.next();
 
+      // 通过路径查询所有的chunk元数据
       List<IChunkMetadata> chunkMetadataList = metadataQuerier.getChunkMetaDataList(selectedPath);
       if (chunkMetadataList.size() != 0) {
         dataTypes.add(chunkMetadataList.get(0).getDataType());
@@ -105,16 +112,20 @@ public class ExecutorWithTimeGenerator implements QueryExecutor {
   public static List<Boolean> markFilterdPaths(
       IExpression expression, List<Path> selectedPaths, boolean hasOrNode) {
     List<Boolean> cached = new ArrayList<>();
+    // 是否有or节点
     if (hasOrNode) {
+      //
       for (Path ignored : selectedPaths) {
         cached.add(false);
       }
       return cached;
     }
 
+    // 包含过滤条件的路径
     HashSet<Path> filteredPaths = new HashSet<>();
+    // 获取所有有过滤条件的时间序列
     getAllFilteredPaths(expression, filteredPaths);
-
+    // 将过滤路径加入缓存
     for (Path selectedPath : selectedPaths) {
       cached.add(filteredPaths.contains(selectedPath));
     }

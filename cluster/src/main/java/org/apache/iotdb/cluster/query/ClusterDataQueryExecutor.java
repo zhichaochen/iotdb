@@ -54,6 +54,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * 集群数据查询执行器
+ */
 public class ClusterDataQueryExecutor extends RawDataQueryExecutor {
 
   private static final Logger logger = LoggerFactory.getLogger(ClusterDataQueryExecutor.class);
@@ -141,6 +144,12 @@ public class ClusterDataQueryExecutor extends RawDataQueryExecutor {
     return readersOfSelectedSeries;
   }
 
+  /**
+   * 初始化被管理的序列读取器
+   * @param context
+   * @return
+   * @throws StorageEngineException
+   */
   @Override
   protected List<ManagedSeriesReader> initManagedSeriesReader(QueryContext context)
       throws StorageEngineException {

@@ -23,7 +23,9 @@ import org.apache.iotdb.tsfile.read.filter.basic.BinaryFilter;
 import org.apache.iotdb.tsfile.read.filter.basic.Filter;
 import org.apache.iotdb.tsfile.read.filter.factory.FilterSerializeId;
 
-/** Both the left and right operators of AndExpression must satisfy the condition. */
+/**
+ * and 过滤条件
+ * Both the left and right operators of AndExpression must satisfy the condition. */
 public class AndFilter extends BinaryFilter {
 
   private static final long serialVersionUID = -8212850098906044102L;

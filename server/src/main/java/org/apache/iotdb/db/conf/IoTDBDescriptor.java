@@ -54,10 +54,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+/**
+ * IOTDB的描述器，记录了数据库级别相关信息
+ */
 public class IoTDBDescriptor {
 
   private static final Logger logger = LoggerFactory.getLogger(IoTDBDescriptor.class);
 
+  // 配置文件
   private final IoTDBConfig conf = new IoTDBConfig();
 
   protected IoTDBDescriptor() {
@@ -119,7 +123,9 @@ public class IoTDBDescriptor {
     }
   }
 
-  /** load an property file and set TsfileDBConfig variables. */
+  /**
+   * 加载配置文件，并设置IOTDB配置值
+   * load an property file and set TsfileDBConfig variables. */
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
   private void loadProps() {
     URL url = getPropsUrl();

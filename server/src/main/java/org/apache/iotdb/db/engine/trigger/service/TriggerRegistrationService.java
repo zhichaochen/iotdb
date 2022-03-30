@@ -69,6 +69,10 @@ import static org.apache.iotdb.commons.conf.IoTDBConstant.COLUMN_TRIGGER_STATUS;
 import static org.apache.iotdb.commons.conf.IoTDBConstant.COLUMN_TRIGGER_STATUS_STARTED;
 import static org.apache.iotdb.commons.conf.IoTDBConstant.COLUMN_TRIGGER_STATUS_STOPPED;
 
+/**
+ * 触发器的注册服务
+ * 主要用户注册触发器, 实现Trigger接口的类
+ */
 public class TriggerRegistrationService implements IService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TriggerRegistrationService.class);
@@ -85,6 +89,7 @@ public class TriggerRegistrationService implements IService {
 
   private static final String LIB_ROOT = IoTDBDescriptor.getInstance().getConfig().getTriggerDir();
 
+  // 执行器Map，key: 触发器名称，触发器执行器
   private final ConcurrentHashMap<String, TriggerExecutor> executors;
 
   private TriggerLogWriter logWriter;
@@ -93,11 +98,21 @@ public class TriggerRegistrationService implements IService {
     executors = new ConcurrentHashMap<>();
   }
 
+  /**
+   * 注册触发器
+   * @param plan
+   * @throws TriggerManagementException
+   * @throws TriggerExecutionException
+   */
   public synchronized void register(CreateTriggerPlan plan)
       throws TriggerManagementException, TriggerExecutionException {
+    // 物理量元数据节点
     IMeasurementMNode measurementMNode = tryGetMeasurementMNode(plan);
+    // 检查是否注册
     checkIfRegistered(plan, measurementMNode);
+    // 触发器日志wal
     tryAppendRegistrationLog(plan);
+    // 注册
     doRegister(plan, measurementMNode);
   }
 
@@ -153,25 +168,39 @@ public class TriggerRegistrationService implements IService {
     }
   }
 
+  /**
+   * 注册操作
+   * @param plan
+   * @param measurementMNode
+   * @throws TriggerManagementException
+   * @throws TriggerExecutionException
+   */
   private void doRegister(CreateTriggerPlan plan, IMeasurementMNode measurementMNode)
       throws TriggerManagementException, TriggerExecutionException {
+    // 触发器注册信息
     TriggerRegistrationInformation information = new TriggerRegistrationInformation(plan);
+    // 注册类，并获取加载类的类加载器
     TriggerClassLoader classLoader =
         TriggerClassLoaderManager.getInstance().register(plan.getClassName());
 
+    // 触发器执行器
     TriggerExecutor executor;
     try {
+      // 创建触发器执行器，在这里会实例化类加载器
       executor = new TriggerExecutor(information, classLoader, measurementMNode);
+      // 通知触发器已创建
       executor.onCreate();
     } catch (TriggerManagementException | TriggerExecutionException e) {
       TriggerClassLoaderManager.getInstance().deregister(plan.getClassName());
       throw e;
     }
 
+    // 缓存执行器
     executors.put(plan.getTriggerName(), executor);
     measurementMNode.setTriggerExecutor(executor);
 
     // update id table
+    // 更新id表
     if (CONFIG.isEnableIDTable()) {
       try {
         IDTable idTable =

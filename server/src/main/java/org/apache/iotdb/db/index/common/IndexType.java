@@ -21,11 +21,14 @@ package org.apache.iotdb.db.index.common;
 import org.apache.iotdb.db.exception.index.UnsupportedIndexTypeException;
 import org.apache.iotdb.tsfile.exception.NotImplementedException;
 
+/**
+ * 索引类型
+ */
 public enum IndexType {
-  NO_INDEX,
-  RTREE_PAA,
+  NO_INDEX, // 没有索引
+  RTREE_PAA, //
   ELB_INDEX,
-  KV_INDEX;
+  KV_INDEX; // KV索引
 
   /**
    * judge the index type.

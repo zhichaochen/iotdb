@@ -20,9 +20,14 @@ package org.apache.iotdb.db.engine.storagegroup.virtualSg;
 
 import org.apache.iotdb.db.metadata.path.PartialPath;
 
+/**
+ * 虚拟存储组分区器
+ * 在存储组下面一层，还有虚拟存储组，会通过该分区器进行hash分区，得到虚拟存储组
+ */
 public interface VirtualPartitioner {
 
   /**
+   * 用设备ID去决定存储组ID
    * use device id to determine storage group id
    *
    * @param deviceId device id
@@ -31,6 +36,7 @@ public interface VirtualPartitioner {
   int deviceToVirtualStorageGroupId(PartialPath deviceId);
 
   /**
+   * 获取分区总数
    * get total number of virtual storage group
    *
    * @return total number of virtual storage group

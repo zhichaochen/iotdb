@@ -38,6 +38,9 @@ import org.slf4j.LoggerFactory;
 import java.time.ZoneId;
 import java.util.Map;
 
+/**
+ * UDTF执行器
+ */
 public class UDTFExecutor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UDTFExecutor.class);
@@ -45,7 +48,7 @@ public class UDTFExecutor {
   protected final FunctionExpression expression;
   protected final UDTFConfigurations configurations;
 
-  protected UDTF udtf;
+  protected UDTF udtf; // udtf
   protected ElasticSerializableTVList collector;
 
   public UDTFExecutor(FunctionExpression expression, ZoneId zoneId) {

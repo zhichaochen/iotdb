@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 
 /**
+ * 编码器
  * This class is the parent class of all Encoders. Every encoder has a specific {@code
  * <encoderType>} which represents the type of this encoder
  */
@@ -35,7 +36,7 @@ public abstract class Encoder {
   public static final String MAX_STRING_LENGTH = "max_string_length";
   public static final String MAX_POINT_NUMBER = "max_point_number";
 
-  private TSEncoding type;
+  private TSEncoding type; //编码器类型
 
   public void setType(TSEncoding type) {
     this.type = type;

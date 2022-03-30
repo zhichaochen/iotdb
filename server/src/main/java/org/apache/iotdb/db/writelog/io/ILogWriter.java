@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
+ * Wal日志的写入器
+ * ILogWriter提供了将已转换为字节的WAL日志插入持久介质的函数。
  * ILogWriter provides functions to insert WAL logs that have already been converted to bytes to a
  * persistent medium.
  */

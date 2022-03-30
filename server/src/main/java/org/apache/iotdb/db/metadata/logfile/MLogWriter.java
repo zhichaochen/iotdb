@@ -61,15 +61,19 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.Collections;
 
+/**
+ * 元数据日志写入器
+ * 其中的putLog()方法实现了写入WAL日志的操作
+ */
 public class MLogWriter implements AutoCloseable {
 
   private static final Logger logger = LoggerFactory.getLogger(MLogWriter.class);
   private static final IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
 
-  private final File logFile;
-  private LogWriter logWriter;
-  private int logNum;
-  private final ByteBuffer mlogBuffer =
+  private final File logFile; // 日志文件
+  private LogWriter logWriter; // 日志写入器
+  private int logNum; // 日志数量，用一个int类型记录写入日志的数量
+  private final ByteBuffer mlogBuffer = // 日志的字节缓存, 默认分配1m大小
       ByteBuffer.allocate(IoTDBDescriptor.getInstance().getConfig().getMlogBufferSize());
 
   private static final String LOG_TOO_LARGE_INFO =
@@ -99,21 +103,35 @@ public class MLogWriter implements AutoCloseable {
     logWriter.close();
   }
 
+  /**
+   * 同步写入磁盘
+   */
   private void sync() {
     try {
+      // 写入日志
       logWriter.write(mlogBuffer);
     } catch (IOException e) {
       logger.error(
           "MLog {} sync failed, change system mode to read-only", logFile.getAbsoluteFile(), e);
       IoTDBDescriptor.getInstance().getConfig().setReadOnly(true);
     }
+    // 完成之后清空
     mlogBuffer.clear();
   }
 
+  /**
+   * TODO WAL
+   * 同步写入meta log，也就是wal的过程
+   * @param plan
+   * @throws IOException
+   */
   synchronized void putLog(PhysicalPlan plan) throws IOException {
     try {
+      // 将数据以特定格式写入ByteBuffer
       plan.serialize(mlogBuffer);
+      // 同步写入磁盘
       sync();
+      // 日志数量+1
       logNum++;
     } catch (BufferOverflowException e) {
       throw new IOException(LOG_TOO_LARGE_INFO, e);
@@ -187,12 +205,19 @@ public class MLogWriter implements AutoCloseable {
     putLog(plan);
   }
 
+  /**
+   * 序列化元数据节点
+   * @param node
+   * @throws IOException
+   */
   public void serializeMNode(IMNode node) throws IOException {
     int childSize = 0;
     if (node.getChildren() != null) {
       childSize = node.getChildren().size();
     }
+    // 创建元节点计划
     MNodePlan plan = new MNodePlan(node.getName(), childSize);
+    // TODO 这里会做WAL
     putLog(plan);
   }
 

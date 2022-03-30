@@ -26,7 +26,9 @@ import org.slf4j.LoggerFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-/** Using sha 256 hash value of device path as device ID */
+/**
+ * 用设备路径的sha 作为设备ID
+ * Using sha 256 hash value of device path as device ID */
 public class SHA256DeviceID implements IDeviceID {
   // four long value form a 32 bytes sha 256 value
   long l1;

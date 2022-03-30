@@ -59,6 +59,10 @@ import static org.apache.iotdb.commons.conf.IoTDBConstant.MULTI_LEVEL_PATH_WILDC
 import static org.apache.iotdb.commons.conf.IoTDBConstant.ONE_LEVEL_PATH_WILDCARD;
 
 /**
+ * 部分路径
+ * 为啥要起这个名字呢？将String路径切割成的一个个的子路径数组。
+ *
+ * 从sql中生成的前缀路径、后缀路径，或全路径，通用用于服务器模块
  * A prefix path, suffix path or fullPath generated from SQL. Usually used in the IoTDB server
  * module
  */
@@ -66,11 +70,12 @@ public class PartialPath extends Path implements Comparable<Path>, Cloneable {
 
   private static final Logger logger = LoggerFactory.getLogger(PartialPath.class);
 
-  protected String[] nodes;
+  protected String[] nodes; // 路径节点，split分割后的结果
 
   public PartialPath() {}
 
   /**
+   * 通过一个字符串构造PartialPath，将切割给定的字符串为字符串数组，
    * Construct the PartialPath using a String, will split the given String into String[] E.g., path
    * = "root.sg.\"d.1\".\"s.1\"" nodes = {"root", "sg", "\"d.1\"", "\"s.1\""}
    *
@@ -78,6 +83,7 @@ public class PartialPath extends Path implements Comparable<Path>, Cloneable {
    * @throws IllegalPathException
    */
   public PartialPath(String path) throws IllegalPathException {
+    // 路径节点
     this.nodes = MetaUtils.splitPathToDetachedPath(path);
     this.fullPath = path;
   }
@@ -322,6 +328,10 @@ public class PartialPath extends Path implements Comparable<Path>, Cloneable {
     return true;
   }
 
+  /**
+   * 获取全路径
+   * @return
+   */
   @Override
   public String getFullPath() {
     if (fullPath == null) {
@@ -443,6 +453,10 @@ public class PartialPath extends Path implements Comparable<Path>, Cloneable {
     return getFullPath();
   }
 
+  /**
+   * 设备路径，在时间序列路径上去掉最后一个节点
+   * @return
+   */
   public PartialPath getDevicePath() {
     return new PartialPath(Arrays.copyOf(nodes, nodes.length - 1));
   }

@@ -74,18 +74,21 @@ import java.util.Set;
 
 import static org.apache.iotdb.tsfile.read.query.executor.ExecutorWithTimeGenerator.markFilterdPaths;
 
+/**
+ * 聚合执行器
+ */
 @SuppressWarnings("java:S1135") // ignore todos
 public class AggregationExecutor {
 
   private static final Logger logger = LoggerFactory.getLogger(AggregationExecutor.class);
 
-  private List<PartialPath> selectedSeries;
-  protected List<TSDataType> dataTypes;
-  protected List<String> aggregations;
-  protected IExpression expression;
-  protected boolean ascending;
-  protected QueryContext context;
-  protected AggregateResult[] aggregateResultList;
+  private List<PartialPath> selectedSeries; // 选择的序列，也就是查询中包含那些时间序列
+  protected List<TSDataType> dataTypes; // 数据类型列表
+  protected List<String> aggregations; // 聚合值
+  protected IExpression expression; // 过滤表达式
+  protected boolean ascending; // 排序方式
+  protected QueryContext context; // 查询上下文
+  protected AggregateResult[] aggregateResultList; // 聚合结果
 
   /** aggregation batch calculation size. */
   private int aggregateFetchSize;
@@ -615,16 +618,21 @@ public class AggregationExecutor {
     return newRemainingToCalculate;
   }
 
-  /** execute aggregate function with value filter. */
+  /**
+   * 执行
+   * execute aggregate function with value filter. */
   public QueryDataSet executeWithValueFilter(AggregationPlan queryPlan)
       throws StorageEngineException, IOException, QueryProcessException {
     optimizeLastElementFunc(queryPlan);
 
+    // 获取时间生成器
     TimeGenerator timestampGenerator = getTimeGenerator(context, queryPlan);
 
+    // 读取器和聚合索引的映射
     Map<IReaderByTimestamp, List<List<Integer>>> readerToAggrIndexesMap = new HashMap<>();
 
     // group by path name
+    // 通过路径进行分组，其中key：路径，value：路径所在下标。
     Map<PartialPath, List<Integer>> pathToAggrIndexesMap =
         MetaUtils.groupAggregationsBySeries(selectedSeries);
     Map<AlignedPath, List<List<Integer>>> alignedPathToAggrIndexesMap =
@@ -635,15 +643,19 @@ public class AggregationExecutor {
     groupedPathList.addAll(pathToAggrIndexesMap.keySet());
     groupedPathList.addAll(alignedPathToAggrIndexesMap.keySet());
 
+    // 给所有涉及到的虚拟存储组加读锁
     Pair<List<VirtualStorageGroupProcessor>, Map<VirtualStorageGroupProcessor, List<PartialPath>>>
         lockListAndProcessorToSeriesMapPair =
             StorageEngine.getInstance().mergeLock(groupedPathList);
+    // 当前查询路径，涉及的虚拟存储组
     List<VirtualStorageGroupProcessor> lockList = lockListAndProcessorToSeriesMapPair.left;
+    // 虚拟存储组和路径的映射
     Map<VirtualStorageGroupProcessor, List<PartialPath>> processorToSeriesMap =
         lockListAndProcessorToSeriesMapPair.right;
 
     try {
       // init QueryDataSource Cache
+      // 初始化QueryDataSource缓存
       QueryResourceManager.getInstance()
           .initQueryDataSourceCache(
               processorToSeriesMap, context, timestampGenerator.getTimeFilter());
@@ -651,17 +663,23 @@ public class AggregationExecutor {
       logger.error("Meet error when init QueryDataSource ", e);
       throw new QueryProcessException("Meet error when init QueryDataSource.", e);
     } finally {
+      // 虚拟存储组解锁
       StorageEngine.getInstance().mergeUnLock(lockList);
     }
 
+    // 遍历所有查询路径
     for (PartialPath path : pathToAggrIndexesMap.keySet()) {
+      // 创建时间序列读取器
       IReaderByTimestamp seriesReaderByTimestamp =
           getReaderByTime(path, queryPlan, path.getSeriesType(), context);
+      // 加入map
       readerToAggrIndexesMap.put(
           seriesReaderByTimestamp, Collections.singletonList(pathToAggrIndexesMap.get(path)));
     }
     // assign null to be friendly for GC
+    // 将null赋值为对GC友好
     pathToAggrIndexesMap = null;
+    // 遍历对齐的聚合索引map
     for (AlignedPath vectorPath : alignedPathToAggrIndexesMap.keySet()) {
       IReaderByTimestamp seriesReaderByTimestamp =
           getReaderByTime(vectorPath, queryPlan, vectorPath.getSeriesType(), context);
@@ -671,12 +689,15 @@ public class AggregationExecutor {
     // assign null to be friendly for GC
     alignedPathToAggrIndexesMap = null;
 
+    // 遍历本次查询所有的时间序列
     for (int i = 0; i < selectedSeries.size(); i++) {
       aggregateResultList[i] =
           AggregateResultFactory.getAggrResultByName(
               aggregations.get(i), dataTypes.get(i), ascending);
     }
+    // TODO 通过值进行聚合，这里是聚合查询，真正执行聚合的地方
     aggregateWithValueFilter(timestampGenerator, readerToAggrIndexesMap);
+    // 构造数据集
     return constructDataSet(Arrays.asList(aggregateResultList), queryPlan);
   }
 
@@ -695,6 +716,13 @@ public class AggregationExecutor {
     }
   }
 
+  /**
+   * 创建时间生成器ServerTimeGenerator
+   * @param context
+   * @param queryPlan
+   * @return
+   * @throws StorageEngineException
+   */
   protected TimeGenerator getTimeGenerator(QueryContext context, RawDataQueryPlan queryPlan)
       throws StorageEngineException {
     return new ServerTimeGenerator(context, queryPlan);
@@ -703,6 +731,7 @@ public class AggregationExecutor {
   protected IReaderByTimestamp getReaderByTime(
       PartialPath path, RawDataQueryPlan queryPlan, TSDataType dataType, QueryContext context)
       throws StorageEngineException, QueryProcessException {
+    // 创建时间序列读取器
     return new SeriesReaderByTimestamp(
         path,
         queryPlan.getAllMeasurementsInDevice(path.getDevice()),
@@ -713,38 +742,54 @@ public class AggregationExecutor {
         ascending);
   }
 
-  /** calculate aggregation result with value filter. */
+  /**
+   * 使用值过滤器计算过滤结果
+   * calculate aggregation result with value filter. */
   private void aggregateWithValueFilter(
       TimeGenerator timestampGenerator,
+      // 读取器和聚合索引的映射
       Map<IReaderByTimestamp, List<List<Integer>>> readerToAggrIndexesMap)
       throws IOException {
+    // 标记包含过滤条件的时间序列路径，List<Boolean> 和 selectedSeries是一一对应的
     List<Boolean> cached =
         markFilterdPaths(
             expression, new ArrayList<>(selectedSeries), timestampGenerator.hasOrNode());
 
+    // 如果有下一个
     while (timestampGenerator.hasNext()) {
 
       // generate timestamps for aggregate
+      // 生成聚合的时间戳
+      // 时间数组
       long[] timeArray = new long[aggregateFetchSize];
       int timeArrayLength = 0;
       for (int cnt = 0; cnt < aggregateFetchSize; cnt++) {
         if (!timestampGenerator.hasNext()) {
           break;
         }
+        // 对应的时间
         timeArray[timeArrayLength++] = timestampGenerator.next();
       }
 
       // cal part of aggregate result
+      // 计算部分聚合结果
+      // 遍历
       for (Entry<IReaderByTimestamp, List<List<Integer>>> entry :
           readerToAggrIndexesMap.entrySet()) {
         // use cache data as much as possible
+        // 尽可能多的用缓存
         boolean[] cachedOrNot = new boolean[entry.getValue().size()];
+        //
         for (int i = 0; i < entry.getValue().size(); i++) {
+          // 子索引
           List<Integer> subIndexes = entry.getValue().get(i);
+          // 路径
           int pathId = subIndexes.get(0);
           // if cached in timeGenerator
           if (cached.get(pathId)) {
+            //
             Object[] values = timestampGenerator.getValues(selectedSeries.get(pathId));
+            // 值迭代器
             ValueIterator valueIterator = QueryUtils.generateValueIterator(values);
             if (valueIterator != null) {
               for (Integer index : subIndexes) {
@@ -757,16 +802,20 @@ public class AggregationExecutor {
           }
         }
 
+        //
         if (hasRemaining(cachedOrNot)) {
           // TODO: if we only need to get firstValue/minTime that's not need to traverse all values,
           //  it's enough to get the exact number of values for these specific aggregate func
+          // 获取时间戳的值
           Object[] values = entry.getKey().getValuesInTimestamps(timeArray, timeArrayLength);
+          // 值迭代器
           ValueIterator valueIterator = QueryUtils.generateValueIterator(values);
           if (valueIterator != null) {
             for (int i = 0; i < entry.getValue().size(); i++) {
               if (!cachedOrNot[i]) {
                 valueIterator.setSubMeasurementIndex(i);
                 for (Integer index : entry.getValue().get(i)) {
+                  //
                   aggregateResultList[index].updateResultUsingValues(
                       timeArray, timeArrayLength, valueIterator);
                   valueIterator.reset();
@@ -790,6 +839,7 @@ public class AggregationExecutor {
   }
 
   /**
+   * 使用聚合结果数据列表构造QueryDataSet。
    * using aggregate result data list construct QueryDataSet.
    *
    * @param aggregateResultList aggregate result list

@@ -18,7 +18,9 @@
  */
 package org.apache.iotdb.db.metadata.mnode;
 
-/** This interface defines a StorageGroupMNode's operation interfaces. */
+/**
+ * 存储组节点
+ * This interface defines a StorageGroupMNode's operation interfaces. */
 public interface IStorageGroupMNode extends IMNode {
 
   long getDataTTL();

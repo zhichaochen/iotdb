@@ -24,10 +24,15 @@ import org.apache.iotdb.db.metadata.idtable.entry.DiskSchemaEntry;
 import java.io.IOException;
 import java.util.Collection;
 
-/** This class manages IO of id table's schema entry */
+/**
+ * DiskSchemaEntry管理器
+ *
+ * 管理ID表schema条目的ID
+ * This class manages IO of id table's schema entry */
 public interface IDiskSchemaManager {
 
   /**
+   * 序列化一个磁盘sche
    * serialize a disk schema entry
    *
    * @param schemaEntry disk schema entry
@@ -36,6 +41,7 @@ public interface IDiskSchemaManager {
   public long serialize(DiskSchemaEntry schemaEntry);
 
   /**
+   * 从log日志文件中恢复ID表
    * recover id table from log file
    *
    * @param idTable id table need to be recovered
@@ -43,6 +49,7 @@ public interface IDiskSchemaManager {
   public void recover(IDTable idTable);
 
   /**
+   * 获取文件中DiskSchemaEntry
    * get all disk schema entries from file
    *
    * @return collection of all disk schema entires

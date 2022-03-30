@@ -42,6 +42,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Session 管理器
+ */
 public class SessionManager {
   private static final Logger LOGGER = LoggerFactory.getLogger(SessionManager.class);
   public static final Logger AUDIT_LOGGER =
@@ -61,7 +64,7 @@ public class SessionManager {
   private final Map<Long, Set<Long>> sessionIdToStatementId = new ConcurrentHashMap<>();
   // (statementId -> Set(queryId))
   private final Map<Long, Set<Long>> statementIdToQueryId = new ConcurrentHashMap<>();
-  // (queryId -> QueryDataSet)
+  // (queryId -> QueryDataSet) queryID 和 查询数据集的映射
   private final Map<Long, QueryDataSet> queryIdToDataSet = new ConcurrentHashMap<>();
 
   // (sessionId -> client version number)

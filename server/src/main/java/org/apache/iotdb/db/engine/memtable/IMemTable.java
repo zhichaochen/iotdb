@@ -35,7 +35,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 内存表
+ * 内存表，IMemTable用于存储尚未刷新到TsFile中的数据点。
+ * IMemTable的一个实例维护属于一个StorageGroup的所有系列，对应于一个StorageGroupProcessor<br>
+ * IMemTable的并发控制基于StorageGroupProcessor的并发控制，即写入和查询操作必须已经分别获得writeLock和readLock<br>
+ *
  * IMemTable is designed to store data points which are not flushed into TsFile yet. An instance of
  * IMemTable maintains all series belonging to one StorageGroup, corresponding to one
  * StorageGroupProcessor.<br>
@@ -93,6 +96,7 @@ public interface IMemTable {
   long getTotalPointsNum();
 
   /**
+   * 插入内存表
    * insert into this memtable
    *
    * @param insertRowPlan insertRowPlan

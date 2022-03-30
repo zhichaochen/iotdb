@@ -22,9 +22,12 @@ import org.apache.iotdb.tsfile.utils.TsPrimitiveType;
 
 import java.io.Serializable;
 
+/**
+ * 时间-值对
+ */
 public class TimeValuePair implements Serializable, Comparable<TimeValuePair> {
 
-  private long timestamp;
+  private long timestamp; // 时间值
   private TsPrimitiveType value;
 
   public TimeValuePair(long timestamp, TsPrimitiveType value) {

@@ -36,9 +36,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 
+/**
+ * 创建时间序列计划
+ * 什么叫时间序列：物理量就是时间序列
+ * IoTDB > create timeseries root.ln.wf01.wt01.temperature with datatype=FLOAT,encoding=RLE
+ */
 public class CreateTimeSeriesPlan extends PhysicalPlan {
 
-  private PartialPath path;
+  private PartialPath path; //
   private TSDataType dataType;
   private TSEncoding encoding;
   private CompressionType compressor;

@@ -30,6 +30,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 有向无环图构建器
+ */
 public class DAGBuilder {
 
   private final long queryId;

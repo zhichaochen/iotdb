@@ -20,6 +20,9 @@ package org.apache.iotdb.tsfile.read.query.timegenerator.node;
 
 import java.io.IOException;
 
+/**
+ * or节点
+ */
 public class OrNode implements Node {
 
   private Node leftChild;

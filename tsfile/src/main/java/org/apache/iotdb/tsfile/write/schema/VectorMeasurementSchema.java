@@ -40,6 +40,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * 什么是Vector
+ * 从0.13起，系统支持多元时间序列（Multi-variable timeseries 或 Aligned timeseries）
+ * 一个实体的一个多元物理量对应一个多元时间序列。这些时间序列称为多元时间序列，也叫对齐时间序列。
+ * 多元时间序列需要被同时创建、同时插入值，删除时也必须同时删除，一组多元序列的时间戳列在内存和磁盘中仅需存储一次，而不是每个时间序列存储一次。
+ */
 public class VectorMeasurementSchema
     implements IMeasurementSchema, Comparable<VectorMeasurementSchema>, Serializable {
 

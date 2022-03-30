@@ -54,7 +54,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** id table belongs to a storage group and mapping timeseries path to it's schema */
+/**
+ * ID表， 一个存储组一个ID表
+ * id table belongs to a storage group and mapping timeseries path to it's schema */
 public class IDTableHashmapImpl implements IDTable {
 
   // number of table slot
@@ -63,21 +65,30 @@ public class IDTableHashmapImpl implements IDTable {
   private static final Logger logger = LoggerFactory.getLogger(IDTableHashmapImpl.class);
 
   /**
+   * ID表数组，存储组下面的多个设备
+   * 256 hashmap，用于避免再次刷新性能问题并锁定竞争设备ID->（测量名称->模式条目）
    * 256 hashmap for avoiding rehash performance issue and lock competition device ID ->
    * (measurement name -> schema entry)
    */
   private Map<IDeviceID, DeviceEntry>[] idTables;
 
-  /** disk schema manager to manage disk schema entry */
+  /**
+   * 磁盘schema管理器，管理磁盘schema条目
+   * disk schema manager to manage disk schema entry */
   private IDiskSchemaManager IDiskSchemaManager;
   /** iotdb config */
   protected static IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
 
+  /**
+   * 初始化ID表数组
+   * @param storageGroupDir
+   */
   public IDTableHashmapImpl(File storageGroupDir) {
     idTables = new Map[NUM_OF_SLOTS];
     for (int i = 0; i < NUM_OF_SLOTS; i++) {
       idTables[i] = new HashMap<>();
     }
+    // 是否ID表能持久化，如果能持久化，那么在创建的时候，将磁盘上老的内容恢复到内存中
     if (config.isEnableIDTableLogFile()) {
       IDiskSchemaManager = new AppendOnlyDiskSchemaManager(storageGroupDir);
       IDiskSchemaManager.recover(this);
@@ -111,13 +122,16 @@ public class IDTableHashmapImpl implements IDTable {
   }
 
   /**
+   * 创建时间序列
    * create timeseries
    *
    * @param plan create timeseries plan
    * @throws MetadataException if the device is aligned, throw it
    */
   public synchronized void createTimeseries(CreateTimeSeriesPlan plan) throws MetadataException {
+    // 设备条目
     DeviceEntry deviceEntry = getDeviceEntryWithAlignedCheck(plan.getPath().getDevice(), false);
+    // 创建一条元数据
     SchemaEntry schemaEntry =
         new SchemaEntry(
             plan.getDataType(),
@@ -127,10 +141,13 @@ public class IDTableHashmapImpl implements IDTable {
             plan.getPath(),
             false,
             IDiskSchemaManager);
+    // 建立设备和物理量的映射
     deviceEntry.putSchemaEntry(plan.getPath().getMeasurement(), schemaEntry);
   }
 
   /**
+   * 获取有序的schema
+   * 检查插入中的时间序列是否存在，并填充他们的物理量元数据
    * check inserting timeseries existence and fill their measurement mnode
    *
    * @param plan insert plan
@@ -138,23 +155,30 @@ public class IDTableHashmapImpl implements IDTable {
    * @throws MetadataException if insert plan's aligned value is inconsistent with device
    */
   public synchronized IDeviceID getSeriesSchemas(InsertPlan plan) throws MetadataException {
+    // 部分路径
     PartialPath devicePath = plan.getDevicePath();
+    // 物理量列表
     String[] measurementList = plan.getMeasurements();
+    // 物理量的MNode
     IMeasurementMNode[] measurementMNodes = plan.getMeasurementMNodes();
 
     // 1. get device entry and check align
+    // 1. 获取设备条目并检查是否对其
     DeviceEntry deviceEntry =
         getDeviceEntryWithAlignedCheck(devicePath.toString(), plan.isAligned());
 
     // 2. get schema of each measurement
+    // 2. 获取每个物理量的schema
     for (int i = 0; i < measurementList.length; i++) {
       try {
         // get MeasurementMNode, auto create if absent
+        // 获取物理量的mnode，如果缺失则自动创建
         try {
           IMeasurementMNode measurementMNode =
               getOrCreateMeasurementIfNotExist(deviceEntry, plan, i);
-
+          // 检查数据物理量的数据类型是否匹配
           checkDataTypeMatch(plan, i, measurementMNode.getSchema().getType());
+          // 设置物理量的元数据节点
           measurementMNodes[i] = measurementMNode;
         } catch (DataTypeMismatchException mismatchException) {
           if (!config.isEnablePartialInsert()) {
@@ -188,8 +212,10 @@ public class IDTableHashmapImpl implements IDTable {
     }
 
     // set reusable device id
+    // 设置可重用的设备ID
     plan.setDeviceID(deviceEntry.getDeviceID());
     // change device path to device id string for insertion
+    // 将设备路径变成插入的设备ID字符串
     plan.setDevicePath(new PartialPath(deviceEntry.getDeviceID().toStringID()));
 
     return deviceEntry.getDeviceID();

@@ -31,6 +31,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * 查询文件管理器
+ * 管理所有的文件
+ *
+ * QueryFileManager记录每个查询用于QueryResourceManager的文件路径。
  * QueryFileManager records the paths of files that every query uses for QueryResourceManager.
  *
  * <p>
@@ -58,7 +62,10 @@ public class QueryFileManager {
     unsealedFilePathsMap.computeIfAbsent(queryId, x -> new ConcurrentHashMap<>());
   }
 
-  /** Add the unique file paths to sealedFilePathsMap and unsealedFilePathsMap. */
+  /**
+   * 添加查询用到的所有的TsFile
+   * 添加独一无二的文件路径到sealedFilePathsMap、unsealedFilePathsMap
+   * Add the unique file paths to sealedFilePathsMap and unsealedFilePathsMap. */
   public void addUsedFilesForQuery(long queryId, QueryDataSource dataSource) {
 
     // sequence data
@@ -70,9 +77,13 @@ public class QueryFileManager {
 
   private void addUsedFilesForQuery(long queryId, List<TsFileResource> resources) {
     Iterator<TsFileResource> iterator = resources.iterator();
+    // 迭代TsFileResource
     while (iterator.hasNext()) {
+      // tsFileResource
       TsFileResource tsFileResource = iterator.next();
+      // 是否关闭
       boolean isClosed = tsFileResource.isClosed();
+      //
       addFilePathToMap(queryId, tsFileResource, isClosed);
 
       // this file may be deleted just before we lock it
@@ -113,6 +124,11 @@ public class QueryFileManager {
   }
 
   /**
+   * 添加文件路径到Map
+   *
+   * 增加作业id的filePath的使用引用。在调用此方法之前，<code>this。已调用setqueryIdForCurrentRequestThread</code>，
+   * 因此</code>Sealed文件路径映射。获取（queryId）</code>或<code>未密封的文件路径映射。get（queryId）</code>不能返回null。
+   *
    * Increase the usage reference of filePath of job id. Before the invoking of this method, <code>
    * this.setqueryIdForCurrentRequestThread</code> has been invoked, so <code>
    * sealedFilePathsMap.get(queryId)</code> or <code>unsealedFilePathsMap.get(queryId)</code> must

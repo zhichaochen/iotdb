@@ -48,6 +48,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+/**
+ * UDF注册服务，提供了UDF的装载卸载管理
+ */
 public class UDFRegistrationService implements IService {
 
   private static final Logger logger = LoggerFactory.getLogger(UDFRegistrationService.class);
@@ -60,10 +63,11 @@ public class UDFRegistrationService implements IService {
   private static final String LOG_FILE_NAME = ULOG_FILE_DIR + "ulog.txt";
   private static final String TEMPORARY_LOG_FILE_NAME = LOG_FILE_NAME + ".tmp";
 
-  private final ReentrantLock registrationLock;
+  private final ReentrantLock registrationLock; // 注册锁
+  // 所有的UDF注册信息 key：函数名，value：函数名对应的注册信息
   private final ConcurrentHashMap<String, UDFRegistrationInformation> registrationInformation;
 
-  private final ReentrantReadWriteLock logWriterLock;
+  private final ReentrantReadWriteLock logWriterLock; // 日志的读写锁
   private UDFLogWriter logWriter;
 
   private UDFRegistrationService() {
@@ -72,19 +76,36 @@ public class UDFRegistrationService implements IService {
     logWriterLock = new ReentrantReadWriteLock();
   }
 
+  /**
+   * 加锁
+   */
   public void acquireRegistrationLock() {
     registrationLock.lock();
   }
 
+  /**
+   * 释放锁
+   */
   public void releaseRegistrationLock() {
     registrationLock.unlock();
   }
 
+  /**
+   * 注册
+   * @param functionName 函数名
+   * @param className 类名
+   * @param writeToTemporaryLogFile 是否写入临时日志文件
+   * @throws UDFRegistrationException
+   */
   public void register(String functionName, String className, boolean writeToTemporaryLogFile)
       throws UDFRegistrationException {
+    // 函数名大写
     functionName = functionName.toUpperCase();
+    // 校验函数名
     validateFunctionName(functionName, className);
+    // 检查是否已注册
     checkIfRegistered(functionName, className);
+    // 注册
     doRegister(functionName, className);
     tryAppendRegistrationLog(functionName, className, writeToTemporaryLogFile);
   }
@@ -135,15 +156,25 @@ public class UDFRegistrationService implements IService {
     throw new UDFRegistrationException(errorMessage);
   }
 
+  /**
+   * 注册
+   * @param functionName 函数名
+   * @param className 类名
+   * @throws UDFRegistrationException
+   */
   private void doRegister(String functionName, String className) throws UDFRegistrationException {
     acquireRegistrationLock();
     try {
+      // 获取一个新的类加载器
       UDFClassLoader currentActiveClassLoader =
           UDFClassLoaderManager.getInstance().updateAndGetActiveClassLoader();
+      // 更新注册的信息
       updateAllRegisteredClasses(currentActiveClassLoader);
 
+      // 反射创建函数
       Class<?> functionClass = Class.forName(className, true, currentActiveClassLoader);
       functionClass.getDeclaredConstructor().newInstance();
+      // 注册函数
       registrationInformation.put(
           functionName,
           new UDFRegistrationInformation(functionName, className, false, functionClass));
@@ -186,8 +217,12 @@ public class UDFRegistrationService implements IService {
 
   private void updateAllRegisteredClasses(UDFClassLoader activeClassLoader)
       throws ClassNotFoundException {
+    // 遍历所有的注册信息
     for (UDFRegistrationInformation information : getRegistrationInformation()) {
+      // 如果不是内置函数
       if (!information.isBuiltin()) {
+        // 使用当前新的类加载器加载类
+        // 为啥呢？？？？
         information.updateFunctionClass(activeClassLoader);
       }
     }

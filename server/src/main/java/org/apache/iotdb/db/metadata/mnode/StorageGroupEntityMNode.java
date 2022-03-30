@@ -23,6 +23,9 @@ import org.apache.iotdb.db.metadata.schemaregion.SchemaRegion;
 
 import java.io.IOException;
 
+/**
+ * MTree上额存储组节点
+ */
 public class StorageGroupEntityMNode extends EntityMNode implements IStorageGroupMNode {
   /**
    * when the data file in a storage group is older than dataTTL, it is considered invalid and will

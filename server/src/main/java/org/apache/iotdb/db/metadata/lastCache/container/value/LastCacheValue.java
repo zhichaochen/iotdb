@@ -22,11 +22,14 @@ package org.apache.iotdb.db.metadata.lastCache.container.value;
 import org.apache.iotdb.tsfile.read.TimeValuePair;
 import org.apache.iotdb.tsfile.utils.TsPrimitiveType;
 
+/**
+ * 最新的缓存值
+ */
 public class LastCacheValue implements ILastCacheValue {
 
-  private long timestamp;
+  private long timestamp; // 时间戳
 
-  private TsPrimitiveType value;
+  private TsPrimitiveType value; // 数据值
 
   public LastCacheValue(long timestamp, TsPrimitiveType value) {
     this.timestamp = timestamp;

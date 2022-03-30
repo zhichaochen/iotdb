@@ -23,7 +23,8 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 /**
- * 表示一个可写的TsFIle
+ * Ts文件输出，用于写入Ts文件
+ * 为啥是输出流呢？输入输出是相对内核而言的，写入磁盘肯定是从磁盘输出到磁盘而言的
  */
 public interface TsFileOutput {
 
@@ -71,6 +72,7 @@ public interface TsFileOutput {
   void close() throws IOException;
 
   /**
+   * 转化TsFileOutput成一个输出流
    * convert this TsFileOutput as a outputstream.
    *
    * @return an output stream whose position is the same with this Output
@@ -79,6 +81,7 @@ public interface TsFileOutput {
   OutputStream wrapAsStream() throws IOException;
 
   /**
+   * 真正的刷盘
    * the same with {@link OutputStream#flush()}.
    *
    * @throws IOException if an I/O error occurs.

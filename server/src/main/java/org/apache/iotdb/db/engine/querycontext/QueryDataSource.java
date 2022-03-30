@@ -27,6 +27,8 @@ import org.apache.iotdb.tsfile.read.filter.operator.AndFilter;
 import java.util.List;
 
 /**
+ * 查询数据源
+ * QueryDataSource在一个查询中包含一个时间序列的所有有序和无序的TsFileResources
  * The QueryDataSource contains all the seq and unseq TsFileResources for one timeseries in one
  * query
  */
@@ -38,14 +40,16 @@ public class QueryDataSource {
    * <p>Note: Sequences under the same virtual storage group share two lists of TsFileResources (seq
    * and unseq).
    */
-  private List<TsFileResource> seqResources;
+  private List<TsFileResource> seqResources; // 有序的资源
 
-  private List<TsFileResource> unseqResources;
+  private List<TsFileResource> unseqResources; // 无序的资源
 
   /* The traversal order of unseqResources (different for each device) */
   private int[] unSeqFileOrderIndex;
 
-  /** data older than currentTime - dataTTL should be ignored. */
+  /**
+   * 数据
+   * data older than currentTime - dataTTL should be ignored. */
   private long dataTTL = Long.MAX_VALUE;
 
   public QueryDataSource(List<TsFileResource> seqResources, List<TsFileResource> unseqResources) {
@@ -73,7 +77,9 @@ public class QueryDataSource {
     this.dataTTL = dataTTL;
   }
 
-  /** @return an updated filter concerning TTL */
+  /**
+   * 用存活时间去更新过滤器
+   * @return an updated filter concerning TTL */
   public Filter updateFilterUsingTTL(Filter filter) {
     if (dataTTL != Long.MAX_VALUE) {
       if (filter != null) {

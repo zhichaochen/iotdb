@@ -37,6 +37,11 @@ import static org.apache.iotdb.commons.conf.IoTDBConstant.ONE_LEVEL_PATH_WILDCAR
 import static org.apache.iotdb.commons.conf.IoTDBConstant.PATH_ROOT;
 
 /**
+ * 元数据节点树的遍历器
+ * 这个类定义了主遍历框架，并声明了一些用于结果过程扩展的方法。这个类可以扩展以实现具体的任务。
+ * 目前，任务分为两类：
+ * 1。计数器：计算与路径模式
+ * 2 匹配的节点数或测量数。收集器：收集匹配节点或测量的自定义结果
  * This class defines the main traversal framework and declares some methods for result process
  * extension. This class could be extended to implement concrete tasks. <br>
  * Currently, the tasks are classified into two type:
@@ -55,15 +60,17 @@ public abstract class Traverser {
   protected boolean isPrefixStart = false;
 
   // to construct full path or find mounted node on MTree when traverse into template
-  protected Deque<IMNode> traverseContext;
+  // 当遍历到模板中时，在MTree上构造完整路径或查找mount的节点
+  protected Deque<IMNode> traverseContext; //
 
   // if isMeasurementTraverser, measurement in template should be processed
-  protected boolean isMeasurementTraverser = false;
+  protected boolean isMeasurementTraverser = false; //
 
   // default false means fullPath pattern match
-  protected boolean isPrefixMatch = false;
+  protected boolean isPrefixMatch = false; // 是否是前缀匹配
 
   /**
+   * 创建一个遍历器
    * To traverse subtree under root.sg, e.g., init Traverser(root, "root.sg.**")
    *
    * @param startNode denote which tree to traverse by passing its root
@@ -71,6 +78,7 @@ public abstract class Traverser {
    * @throws MetadataException
    */
   public Traverser(IMNode startNode, PartialPath path) throws MetadataException {
+    // 当前要查询的路径的节点数组
     String[] nodes = path.getNodes();
     if (nodes.length == 0 || !nodes[0].equals(PATH_ROOT)) {
       throw new IllegalPathException(
@@ -78,6 +86,7 @@ public abstract class Traverser {
     }
     this.startNode = startNode;
     this.nodes = nodes;
+    // 创建遍历上下文
     initStartIndexAndLevel(path);
     this.traverseContext = new ArrayDeque<>();
   }
@@ -122,6 +131,7 @@ public abstract class Traverser {
   }
 
   /**
+   * 开始去遍历
    * The interface to start the traversal. The node process should be defined before traversal by
    * overriding or implement concerned methods.
    */
@@ -133,37 +143,49 @@ public abstract class Traverser {
   }
 
   /**
+   * MTree遍历的递归方法
    * The recursive method for MTree traversal. If the node matches nodes[idx], then do some
    * operation and traverse the children with nodes[idx+1].
    *
-   * @param node current node that match the targetName in given path
-   * @param idx the index of targetName in given path
-   * @param level the level of current node in MTree
+   * 比如：s1.g1.** ,那么
+   * @param node current node that match the targetName in given path 在路径中当前要匹配的节点的名称
+   * @param idx the index of targetName in given path 在给定路径中，当前节点所在的下标
+   * @param level the level of current node in MTree 当前节点在Mtree中的层级
    * @throws MetadataException some result process may throw MetadataException
    */
   protected void traverse(IMNode node, int idx, int level) throws MetadataException {
 
+    // 处理已匹配节点
     if (processMatchedMNode(node, idx, level)) {
       return;
     }
 
+    // 说明
     if (idx >= nodes.length - 1) {
+      // 如果路径的最后是**，或者前缀匹配，比如: s1.g1.**
       if (nodes[nodes.length - 1].equals(MULTI_LEVEL_PATH_WILDCARD) || isPrefixMatch) {
+        // 处理多级通配符**
         processMultiLevelWildcard(node, idx, level);
       }
       return;
     }
 
+    // 如果当前节点是物理量，则返回
     if (node.isMeasurement()) {
       return;
     }
 
+    // 路径节点名称
     String targetName = nodes[idx + 1];
+    // 如果是多级通配符
     if (MULTI_LEVEL_PATH_WILDCARD.equals(targetName)) {
+      // 处理多级路径通配符
       processMultiLevelWildcard(node, idx, level);
     } else if (targetName.contains(ONE_LEVEL_PATH_WILDCARD)) {
+      // 处理单级路径通配符
       processOneLevelWildcard(node, idx, level);
     } else {
+      // 处理名称匹配
       processNameMatch(node, idx, level);
     }
   }
@@ -200,28 +222,46 @@ public abstract class Traverser {
   protected abstract boolean processFullMatchedMNode(IMNode node, int idx, int level)
       throws MetadataException;
 
+  /**
+   * 处理多级通配符**
+   * @param node
+   * @param idx
+   * @param level
+   * @throws MetadataException
+   */
   protected void processMultiLevelWildcard(IMNode node, int idx, int level)
       throws MetadataException {
+    //
     traverseContext.push(node);
+    // 遍历当前节点的所有子节点
     for (IMNode child : node.getChildren().values()) {
+      // 继续递归
       traverse(child, idx + 1, level + 1);
     }
     traverseContext.pop();
 
+    // 如果当前节点没有使用模板，则返回
     if (!node.isUseTemplate()) {
       return;
     }
 
+    // ?
     Template upperTemplate = node.getUpperTemplate();
     traverseContext.push(node);
+    // 遍历模板节点
     for (IMNode child : upperTemplate.getDirectNodes()) {
       traverse(child, idx + 1, level + 1);
     }
     traverseContext.pop();
   }
 
+  /**
+   * 处理一级通配符
+   */
   protected void processOneLevelWildcard(IMNode node, int idx, int level) throws MetadataException {
+    // 是否多级通配符
     boolean multiLevelWildcard = nodes[idx].equals(MULTI_LEVEL_PATH_WILDCARD);
+    //
     String targetNameRegex = nodes[idx + 1].replace("*", ".*");
     traverseContext.push(node);
     for (IMNode child : node.getChildren().values()) {
@@ -248,6 +288,7 @@ public abstract class Traverser {
       traverseContext.pop();
     }
 
+    // 以下是处理模板
     if (!node.isUseTemplate()) {
       return;
     }
@@ -272,16 +313,24 @@ public abstract class Traverser {
     }
   }
 
+  /**
+   * 处理名称匹配
+   */
   @SuppressWarnings("Duplicates")
   protected void processNameMatch(IMNode node, int idx, int level) throws MetadataException {
+    // 是否是多级匹配
     boolean multiLevelWildcard = nodes[idx].equals(MULTI_LEVEL_PATH_WILDCARD);
+    // 下一个节点的名称
     String targetName = nodes[idx + 1];
+    // 查找叫targetName的子节点
     IMNode next = node.getChild(targetName);
+    // 如果不为空，则表示匹配到了，则继续遍历
     if (next != null) {
       traverseContext.push(node);
       traverse(next, idx + 1, level + 1);
       traverseContext.pop();
     }
+    // 当前路径是多级通配符，则继续遍历其子节点
     if (multiLevelWildcard) {
       traverseContext.push(node);
       for (IMNode child : node.getChildren().values()) {
@@ -290,10 +339,12 @@ public abstract class Traverser {
       traverseContext.pop();
     }
 
+    // 如果没有使用模板则停止本地调用
     if (!node.isUseTemplate()) {
       return;
     }
 
+    // 否则查找模板节点
     Template upperTemplate = node.getUpperTemplate();
 
     IMNode targetNode = upperTemplate.getDirectNode(targetName);

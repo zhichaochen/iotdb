@@ -25,15 +25,18 @@ import org.apache.iotdb.db.qp.physical.sys.CreateTriggerPlan;
 
 import java.util.Map;
 
+/**
+ * 触发器的注册信息
+ */
 public class TriggerRegistrationInformation {
 
-  private final String triggerName;
-  private final TriggerEvent event;
-  private final PartialPath fullPath;
-  private final String className;
-  private final Map<String, String> attributes;
+  private final String triggerName; // 触发器名称
+  private final TriggerEvent event; // 事件
+  private final PartialPath fullPath; // 全路径
+  private final String className; // 类名，比如：org.apache.iotdb.db.engine.trigger.example.AlertListener
+  private final Map<String, String> attributes; // 自定义的属性集合，在通过Sql注册Trigger的时候添加
 
-  private volatile boolean isStopped;
+  private volatile boolean isStopped; // 当前触发器是否停止中，
 
   public TriggerRegistrationInformation(CreateTriggerPlan plan) {
     this.triggerName = plan.getTriggerName();

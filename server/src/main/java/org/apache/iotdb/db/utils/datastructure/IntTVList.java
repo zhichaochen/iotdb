@@ -30,30 +30,46 @@ import java.util.List;
 
 import static org.apache.iotdb.db.rescon.PrimitiveArrayManager.ARRAY_SIZE;
 
+/**
+ * int类型的时间序列值
+ */
 public class IntTVList extends TVList {
 
   // list of primitive array, add 1 when expanded -> int primitive array
   // index relation: arrayIndex -> elementIndex
-  private List<int[]> values;
+  private List<int[]> values; // 值
 
-  private int[][] sortedValues;
+  private int[][] sortedValues; // 排序的值
 
-  private int pivotValue;
+  private int pivotValue; // 轴心值
 
   IntTVList() {
     super();
     values = new ArrayList<>();
   }
 
+  /**
+   * 放入一个int类型的值
+   * @param timestamp
+   * @param value
+   */
   @Override
   public void putInt(long timestamp, int value) {
+    // 检查是否需要扩容
     checkExpansion();
+    // 数组索引
     int arrayIndex = rowCount / ARRAY_SIZE;
+    // 元素索引
     int elementIndex = rowCount % ARRAY_SIZE;
+    // 最小的时间
     minTime = Math.min(minTime, timestamp);
+    // 设置时间戳
     timestamps.get(arrayIndex)[elementIndex] = timestamp;
+    // 设置值
     values.get(arrayIndex)[elementIndex] = value;
+    // 行数增加1
     rowCount++;
+    //
     if (sorted && rowCount > 1 && timestamp < getTime(rowCount - 2)) {
       sorted = false;
     }

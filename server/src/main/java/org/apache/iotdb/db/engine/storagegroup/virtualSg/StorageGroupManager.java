@@ -49,7 +49,17 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** Each storage group that set by users corresponds to a StorageGroupManager */
+/**
+ * 存储组管理器，管理虚拟存储组
+ * 一个存储组对应一个StorageGroupManager，对应多个虚拟存储组
+ *
+ * vsg是虚拟存储组的缩写
+ * 存储组：用户设置的存储组
+ * 虚拟存储组：在存储组的基础之上，再根据InsertPlan中的设备名进行hash，确定其虚拟存储组名称
+ *
+ * corresponds to ：对应于，相当于
+ * 用户设置的每个存储组，对应一个StorageGroupManager
+ * Each storage group that set by users corresponds to a StorageGroupManager */
 public class StorageGroupManager {
 
   /** logger of this class */
@@ -58,10 +68,13 @@ public class StorageGroupManager {
   /** virtual storage group partitioner */
   VirtualPartitioner partitioner = HashVirtualPartitioner.getInstance();
 
-  /** all virtual storage group processor */
+  /**
+   * 所有的虚拟存储组处理器
+   * all virtual storage group processor */
   VirtualStorageGroupProcessor[] virtualStorageGroupProcessor;
 
   /**
+   * 每个虚拟存储组的恢复状态，如果此逻辑存储组是新创建的，则为null
    * recover status of each virtual storage group processor, null if this logical storage group is
    * new created
    */
@@ -150,6 +163,7 @@ public class StorageGroupManager {
   }
 
   /**
+   * 通过设备ID获取处理器
    * get processor from device id
    *
    * @param partialPath device path
@@ -160,11 +174,15 @@ public class StorageGroupManager {
   public VirtualStorageGroupProcessor getProcessor(
       PartialPath partialPath, IStorageGroupMNode storageGroupMNode)
       throws StorageGroupProcessorException, StorageEngineException {
+    // 分区得到分区值
     int loc = partitioner.deviceToVirtualStorageGroupId(partialPath);
 
+    // 虚拟存储组
     VirtualStorageGroupProcessor processor = virtualStorageGroupProcessor[loc];
+    // 虚拟存储组恢复需要点时间，所以可能存在为null的情况
     if (processor == null) {
       // if finish recover
+      // 如果完成恢复
       if (isVsgReady[loc].get()) {
         synchronized (storageGroupMNode) {
           processor = virtualStorageGroupProcessor[loc];
@@ -178,6 +196,7 @@ public class StorageGroupManager {
         }
       } else {
         // not finished recover, refuse the request
+        // 如果没有完成恢复，则拒绝此请求
         throw new StorageGroupNotReadyException(
             storageGroupMNode.getFullPath(), TSStatusCode.STORAGE_GROUP_NOT_READY.getStatusCode());
       }
@@ -187,6 +206,7 @@ public class StorageGroupManager {
   }
 
   /**
+   * 异步恢复逻辑存储组下面的虚拟存储组
    * async recover all virtual storage groups in this logical storage group
    *
    * @param storageGroupMNode logical sg mnode
@@ -196,13 +216,16 @@ public class StorageGroupManager {
   public void asyncRecover(
       IStorageGroupMNode storageGroupMNode, ExecutorService pool, List<Future<Void>> futures) {
     readyVsgNum = new AtomicInteger(0);
+    // 遍历分区数量
     for (int i = 0; i < partitioner.getPartitionCount(); i++) {
       int cur = i;
+      //
       Callable<Void> recoverVsgTask =
           () -> {
             isVsgReady[cur].set(false);
             VirtualStorageGroupProcessor processor = null;
             try {
+              // 构建新的存储组处理器
               processor =
                   StorageEngine.getInstance()
                       .buildNewStorageGroupProcessor(
@@ -217,6 +240,7 @@ public class StorageGroupManager {
                   e);
             }
 
+            //
             virtualStorageGroupProcessor[cur] = processor;
             isVsgReady[cur].set(true);
             logger.info(

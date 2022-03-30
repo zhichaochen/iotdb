@@ -38,6 +38,9 @@ import static org.apache.iotdb.db.rescon.PrimitiveArrayManager.ARRAY_SIZE;
 import static org.apache.iotdb.tsfile.utils.RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
 import static org.apache.iotdb.tsfile.utils.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
 
+/**
+ * 内存中的数据结构，表示真正的数据
+ */
 public abstract class TVList {
 
   protected static final int SMALL_ARRAY_LENGTH = 32;
@@ -48,7 +51,7 @@ public abstract class TVList {
   protected int rowCount;
 
   protected long[][] sortedTimestamps;
-  protected boolean sorted = true;
+  protected boolean sorted = true; // 是否已经排序
   // record reference count of this tv list
   // currently this reference will only be increase because we can't know when to decrease it
   protected AtomicInteger referenceCount;

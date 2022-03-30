@@ -25,6 +25,9 @@ import org.apache.iotdb.db.writelog.io.SingleFileLogReader;
 import java.io.File;
 import java.io.IOException;
 
+/**
+ * 触发器日志读取器
+ */
 public class TriggerLogReader implements AutoCloseable {
 
   private final SingleFileLogReader logReader;

@@ -27,6 +27,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
+ * Schema
+ * 在这个文件中存在的时间序列schema，schemaTemplates是批量创建时间序列schema的简化方式
  * The schema of timeseries that exist in this file. The schemaTemplates is a simplified manner to
  * batch create schema of timeseries.
  */

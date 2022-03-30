@@ -20,9 +20,13 @@ package org.apache.iotdb.db.query.reader.series;
 
 import java.io.IOException;
 
+/**
+ * 通过时间戳创建的读取器
+ */
 public interface IReaderByTimestamp {
 
   /**
+   * 返回此时间戳下的相应值。如果此时间戳下没有值，则返回null。
    * Returns the corresponding value under this timestamp. Returns null if no value under this
    * timestamp.
    *

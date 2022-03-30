@@ -38,6 +38,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+// 最新的缓存管理器
 // this class provides all the operations on last cache
 public class LastCacheManager {
 

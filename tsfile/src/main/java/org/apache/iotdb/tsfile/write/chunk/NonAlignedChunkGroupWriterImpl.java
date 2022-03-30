@@ -48,7 +48,7 @@ public class NonAlignedChunkGroupWriterImpl implements IChunkGroupWriter {
   /** Map(measurementID, ChunkWriterImpl). Aligned measurementId is empty. */
   private Map<String, ChunkWriterImpl> chunkWriters = new LinkedHashMap<>();
 
-  // measurementId -> lastTime
+  // measurementId -> lastTime 物理量ID -> 最新的时间
   private Map<String, Long> lastTimeMap = new HashMap<>();
 
   public NonAlignedChunkGroupWriterImpl(String deviceId) {
@@ -71,10 +71,15 @@ public class NonAlignedChunkGroupWriterImpl implements IChunkGroupWriter {
     }
   }
 
+  /**
+   * 写入数据
+   */
   @Override
   public int write(long time, List<DataPoint> data) throws IOException, WriteProcessException {
     int pointCount = 0;
+    // 遍历数据点
     for (DataPoint point : data) {
+      // 不能比最新的时间更早
       checkIsHistoryData(point.getMeasurementId(), time);
 
       if (pointCount == 0) {
@@ -82,6 +87,7 @@ public class NonAlignedChunkGroupWriterImpl implements IChunkGroupWriter {
       }
       point.writeTo(
           time, chunkWriters.get(point.getMeasurementId())); // write time and value to page
+      // 更新当前物理量最新的时间
       lastTimeMap.put(point.getMeasurementId(), time);
     }
     return pointCount;

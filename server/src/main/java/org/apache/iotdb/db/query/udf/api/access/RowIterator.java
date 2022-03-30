@@ -21,6 +21,9 @@ package org.apache.iotdb.db.query.udf.api.access;
 
 import java.io.IOException;
 
+/**
+ * 迭代器
+ */
 public interface RowIterator {
 
   /**

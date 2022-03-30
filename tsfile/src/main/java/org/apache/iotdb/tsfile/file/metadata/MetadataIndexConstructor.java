@@ -32,6 +32,9 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.TreeMap;
 
+/**
+ * MetadataIndexNode构建器
+ */
 public class MetadataIndexConstructor {
 
   private static final TSFileConfig config = TSFileDescriptor.getInstance().getConfig();
@@ -42,7 +45,8 @@ public class MetadataIndexConstructor {
 
   /**
    * 构造元数据索引树
-   * 构建设备、物理量的元数据节点
+   * 构建【时间序列元数据】的索引，是索引的索引
+   * TODO 这里是构造 【时间序列元数据的索引树】，包括设备和物理量，每256个建立一个 设备/物理量节点
    * Construct metadata index tree
    *
    * @param deviceTimeseriesMetadataMap
@@ -50,10 +54,9 @@ public class MetadataIndexConstructor {
    */
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
   public static MetadataIndexNode constructMetadataIndex(
-          // TODO device => TimeseriesMetadata list
+          // TODO device => TimeseriesMetadata list 的映射
       Map<String, List<TimeseriesMetadata>> deviceTimeseriesMetadataMap, TsFileOutput out)
       throws IOException {
-
     // tree map , 设备的元数据索引map
     Map<String, MetadataIndexNode> deviceMetadataIndexMap = new TreeMap<>();
 
@@ -70,36 +73,40 @@ public class MetadataIndexConstructor {
       // 创建元数据索引，标记节点类型为物理量
       MetadataIndexNode currentIndexNode =
           new MetadataIndexNode(MetadataIndexNodeType.LEAF_MEASUREMENT);
-      // TODO 这个循环里会为时间序列建立 MetadataIndexNode，其子全是LEAF_MEASUREMENT类型，最多256
+      // TODO 这个循环里会为【时间序列】建立 MetadataIndexNode，其子全是LEAF_MEASUREMENT类型，最多256
       // 遍历设备的时间序列元数据List<TimeseriesMetadata>
       for (int i = 0; i < entry.getValue().size(); i++) {
+        // 时间序列元数据
         timeseriesMetadata = entry.getValue().get(i);
         // 判断设备的时间序列是否达到了256
         if (i % config.getMaxDegreeOfIndexNode() == 0) {
           // 判断当前索引节点的子节点（MetadataIndexEntry）个数是否达到了256
+          // TODO 如果满了，则将当前节点加入队列，并创建新的currentIndexNode
           if (currentIndexNode.isFull()) {
             // 如果currentIndexNode的子节点达到了256，则添加currentIndexNode到队列中
             addCurrentIndexNodeToQueue(currentIndexNode, measurementMetadataIndexQueue, out);
             // 并创建新的索引节点。
             currentIndexNode = new MetadataIndexNode(MetadataIndexNodeType.LEAF_MEASUREMENT);
           }
-          // 向MetadataIndexNode中添加子节点
+          // 如果【没有达到256】，则向其中添加MetadataIndexEntry，记录时间序列的偏移量
+          // TODO
           currentIndexNode.addEntry(
               new MetadataIndexEntry(timeseriesMetadata.getMeasurementId(), out.getPosition()));
         }
-        // 如果超过256，则进行序列化，不会向currentIndexNode中添加子节点
+        // TODO 序列化当前时间序列
         timeseriesMetadata.serializeTo(out.wrapAsStream());
       }
       // 添加当前索引节点到队列
       addCurrentIndexNodeToQueue(currentIndexNode, measurementMetadataIndexQueue, out);
-      // 加入设备元数据索引
-      deviceMetadataIndexMap.put(
-          entry.getKey(),
+      // 加入设备元数据索引，设备 和 MetadataIndexNode的映射
+      deviceMetadataIndexMap.put(entry.getKey(),
           // 生成根节点
           generateRootNode(
               measurementMetadataIndexQueue, out, MetadataIndexNodeType.INTERNAL_MEASUREMENT));
     }
-    // TODO 这里不在时间序列循环里面，而是在设备循环里面, 这里会为设备建立MetadataIndexNode
+
+    // TODO 下面构建设备元数据的索引树
+    // TODO 这里不在时间序列循环里面，而是在设备循环里面, 这里会为【设备建立MetadataIndexNode】
     //  其子MetadataIndexEntry全部为LEAF_DEVICE类型。最多256
     // if not exceed the max child nodes num, ignore the device index and directly point to the
     // measurement
@@ -119,10 +126,9 @@ public class MetadataIndexConstructor {
     }
 
     // else, build level index for devices
-    // 如果超过256了，则构建设备级别的索引
+    // TODO 如果超过256了，则构建多层级
     // 设备元数据索引队列
     Queue<MetadataIndexNode> deviceMetadataIndexQueue = new ArrayDeque<>();
-    //
     MetadataIndexNode currentIndexNode = new MetadataIndexNode(MetadataIndexNodeType.LEAF_DEVICE);
     // 遍历设备索引Map
     for (Map.Entry<String, MetadataIndexNode> entry : deviceMetadataIndexMap.entrySet()) {
@@ -136,7 +142,7 @@ public class MetadataIndexConstructor {
       entry.getValue().serializeTo(out.wrapAsStream());
     }
     addCurrentIndexNodeToQueue(currentIndexNode, deviceMetadataIndexQueue, out);
-    // 设备元数据节点，TODO 内部设备内型
+    // 设备元数据节点，TODO 内部设备类型 INTERNAL_DEVICE
     MetadataIndexNode deviceMetadataIndexNode =
         generateRootNode(deviceMetadataIndexQueue, out, MetadataIndexNodeType.INTERNAL_DEVICE);
     deviceMetadataIndexNode.setEndOffset(out.getPosition());
@@ -160,19 +166,26 @@ public class MetadataIndexConstructor {
     int queueSize = metadataIndexNodeQueue.size();
     MetadataIndexNode metadataIndexNode;
     MetadataIndexNode currentIndexNode = new MetadataIndexNode(type);
+    // TODO 只要不是一个，没有得到根节点，就一直执行下面的步骤
+    //
     while (queueSize != 1) {
       for (int i = 0; i < queueSize; i++) {
         // 拿出一个
         metadataIndexNode = metadataIndexNodeQueue.poll();
         // when constructing from internal node, each node is related to an entry
+        // 如果当前索引节点已经满了，则加入队列并创建一个新的
+        // TODO 这里控制了一个MetadataIndexNode不能超过256
         if (currentIndexNode.isFull()) {
           addCurrentIndexNodeToQueue(currentIndexNode, metadataIndexNodeQueue, out);
           currentIndexNode = new MetadataIndexNode(type);
         }
+        // 加入一个child
         currentIndexNode.addEntry(
             new MetadataIndexEntry(metadataIndexNode.peek().getName(), out.getPosition()));
+        // 序列化MetadataIndexNode
         metadataIndexNode.serializeTo(out.wrapAsStream());
       }
+      //
       addCurrentIndexNodeToQueue(currentIndexNode, metadataIndexNodeQueue, out);
       currentIndexNode = new MetadataIndexNode(type);
       queueSize = metadataIndexNodeQueue.size();

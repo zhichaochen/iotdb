@@ -25,14 +25,17 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+/**
+ * 展示时间序列的计划，比如通过标签。
+ */
 public class ShowTimeSeriesPlan extends ShowPlan {
 
-  private boolean isContains;
-  private String key;
-  private String value;
+  private boolean isContains; // 是否是contains关系，如果是则使用contains方法，否则使用equals进行比较值
+  private String key; // 标签key
+  private String value; // 标签value
 
   // if is true, the result will be sorted according to the inserting frequency of the timeseries
-  private boolean orderByHeat;
+  private boolean orderByHeat; // 是否热排序
 
   public ShowTimeSeriesPlan(PartialPath path) {
     super(ShowContentType.TIMESERIES, path);

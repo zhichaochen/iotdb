@@ -24,10 +24,13 @@ import org.apache.iotdb.tsfile.read.filter.factory.FilterSerializeId;
 import java.io.DataOutputStream;
 import java.nio.ByteBuffer;
 
-/** Filter is a top level filter abstraction. */
+/**
+ * 过滤器，这里表示查询的条件
+ * Filter is a top level filter abstraction. */
 public interface Filter {
 
   /**
+   * 检查统计信息是否满足过滤器的要求。
    * To examine whether the statistics is satisfied with the filter.
    *
    * @param statistics statistics with min time, max time, min value, max value.
@@ -35,6 +38,7 @@ public interface Filter {
   boolean satisfy(Statistics statistics);
 
   /**
+   * 检查单点（带时间和值）是否满足过滤器的要求。
    * To examine whether the single point(with time and value) is satisfied with the filter.
    *
    * @param time single point time
@@ -51,6 +55,7 @@ public interface Filter {
   boolean satisfyStartEndTime(long startTime, long endTime);
 
   /**
+   *
    * To examine whether the partition [startTime, endTime] is subsets of filter.
    *
    * @param startTime start time of a partition

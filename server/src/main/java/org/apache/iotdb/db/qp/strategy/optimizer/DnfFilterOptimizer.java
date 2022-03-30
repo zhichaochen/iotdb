@@ -28,6 +28,7 @@ import java.util.List;
 public class DnfFilterOptimizer implements IFilterOptimizer {
 
   /**
+   * 范式
    * get DNF(disjunctive normal form) for this filter operator tree. Before getDnf, this op tree
    * must be binary, in another word, each non-leaf node has exactly two children.
    *

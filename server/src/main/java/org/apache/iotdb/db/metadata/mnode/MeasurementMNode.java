@@ -35,6 +35,9 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
+/**
+ * MTree上的物理量节点、或模板节点
+ */
 public class MeasurementMNode extends MNode implements IMeasurementMNode {
 
   private static final Logger logger = LoggerFactory.getLogger(MeasurementMNode.class);

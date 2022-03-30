@@ -59,6 +59,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 /**
+ * 日志回放器
  * LogReplayer finds the logNode of the TsFile given by insertFilePath and logNodePrefix, reads the
  * WALs from the logNode and redoes them into a given MemTable and ModificationFile.
  */
@@ -93,6 +94,7 @@ public class LogReplayer {
   }
 
   /**
+   * 回放日志
    * finds the logNode of the TsFile given by insertFilePath and logNodePrefix, reads the WALs from
    * the logNode and redoes them into a given MemTable and ModificationFile.
    */

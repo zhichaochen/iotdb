@@ -38,7 +38,8 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 
 /**
- * Page写入器
+ * 页写入器
+ * 此书写器用于将时间值写入页面。它由时间编码器、值编码器和各自的输出流组成。
  * This writer is used to write time-value into a page. It consists of a time encoder, a value
  * encoder and respective OutputStream.
  */
@@ -46,20 +47,20 @@ public class PageWriter {
 
   private static final Logger logger = LoggerFactory.getLogger(PageWriter.class);
 
-  private ICompressor compressor;
+  private ICompressor compressor; // 压缩器
 
   // time
-  private Encoder timeEncoder;
-  private PublicBAOS timeOut;
+  private Encoder timeEncoder; // 时间编码器
+  private PublicBAOS timeOut; // 时间的字节输出数组
   // value
-  private Encoder valueEncoder;
-  private PublicBAOS valueOut;
+  private Encoder valueEncoder; // 值的编码器
+  private PublicBAOS valueOut; // 值的字节输出数组
 
   /**
    * statistic of current page. It will be reset after calling {@code
    * writePageHeaderAndDataIntoBuff()}
    */
-  private Statistics<? extends Serializable> statistics;
+  private Statistics<? extends Serializable> statistics; // 当前页的统计信息
 
   public PageWriter() {
     this(null, null);
@@ -78,10 +79,15 @@ public class PageWriter {
     this.valueEncoder = valueEncoder;
   }
 
-  /** write a time value pair into encoder */
+  /**
+   * 将时间和值写入编码器
+   * write a time value pair into encoder */
   public void write(long time, boolean value) {
+    // 对时间进行编码
     timeEncoder.encode(time, timeOut);
+    // 对值进行编码
     valueEncoder.encode(value, valueOut);
+    // 更新统计信息
     statistics.update(time, value);
   }
 
@@ -203,25 +209,35 @@ public class PageWriter {
     return buffer;
   }
 
-  /** write the page header and data into the PageWriter's output stream. */
+  /**
+   * 写入page的头和数据信息到PageWriter的输出流
+   * write the page header and data into the PageWriter's output stream. */
   public int writePageHeaderAndDataIntoBuff(PublicBAOS pageBuffer, boolean first)
       throws IOException {
     if (statistics.getCount() == 0) {
       return 0;
     }
 
+    // 未压缩的page数据
     ByteBuffer pageData = getUncompressedBytes();
+    // 未压缩的字节大小
     int uncompressedSize = pageData.remaining();
-    int compressedSize;
-    byte[] compressedBytes = null;
+    int compressedSize; // 压缩后的大小
+    byte[] compressedBytes = null; // 压缩后的数据
 
+    // 如果需要压缩，则进行压缩
+    // 如果是不压缩类型
     if (compressor.getType().equals(CompressionType.UNCOMPRESSED)) {
       compressedSize = uncompressedSize;
-    } else if (compressor.getType().equals(CompressionType.GZIP)) {
+    }
+    // gzip压缩类型
+    else if (compressor.getType().equals(CompressionType.GZIP)) {
       compressedBytes =
           compressor.compress(pageData.array(), pageData.position(), uncompressedSize);
       compressedSize = compressedBytes.length;
-    } else {
+    }
+    // 其他压缩类型
+    else {
       compressedBytes = new byte[compressor.getMaxBytesForCompression(uncompressedSize)];
       // data is never a directByteBuffer now, so we can use data.array()
       compressedSize =
@@ -230,19 +246,25 @@ public class PageWriter {
     }
 
     // write the page header to IOWriter
+    // 写入page的头信息
     int sizeWithoutStatistic = 0;
     if (first) {
+      // 第一个page
       sizeWithoutStatistic +=
           ReadWriteForEncodingUtils.writeUnsignedVarInt(uncompressedSize, pageBuffer);
       sizeWithoutStatistic +=
           ReadWriteForEncodingUtils.writeUnsignedVarInt(compressedSize, pageBuffer);
     } else {
+      // 写入未压缩的大小
       ReadWriteForEncodingUtils.writeUnsignedVarInt(uncompressedSize, pageBuffer);
+      // 写入压缩的size
       ReadWriteForEncodingUtils.writeUnsignedVarInt(compressedSize, pageBuffer);
+      // 序列化
       statistics.serialize(pageBuffer);
     }
 
     // write page content to temp PBAOS
+    // 写入page内容
     logger.trace("start to flush a page data into buffer, buffer position {} ", pageBuffer.size());
     if (compressor.getType().equals(CompressionType.UNCOMPRESSED)) {
       try (WritableByteChannel channel = Channels.newChannel(pageBuffer)) {

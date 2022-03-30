@@ -20,9 +20,19 @@ package org.apache.iotdb.tsfile.read.expression;
 
 import java.io.Serializable;
 
+/**
+ * 查询过滤条件，是一种一元表达式
+ */
 public interface IExpression extends Serializable {
-
+  /**
+   * 表达式类型
+   * @return
+   */
   ExpressionType getType();
 
+  /**
+   * clone
+   * @return
+   */
   IExpression clone();
 }

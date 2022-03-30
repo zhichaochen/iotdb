@@ -21,6 +21,9 @@ package org.apache.iotdb.tsfile.read.query.timegenerator.node;
 import java.io.IOException;
 import java.util.function.BiPredicate;
 
+/**
+ * and 节点
+ */
 public class AndNode implements Node {
 
   private Node leftChild;
@@ -55,15 +58,25 @@ public class AndNode implements Node {
     if (hasCachedTime) {
       return true;
     }
+    // 最终还是要看叶子节点是否还有值
     if (leftChild.hasNext() && rightChild.hasNext()) {
+      // 如果是升序
       if (ascending) {
         return fillNextCache((l, r) -> l > r);
       }
+      // 如果是降序
       return fillNextCache((l, r) -> l < r);
     }
     return false;
   }
 
+  /**
+   * 填充下一个缓存的值
+   * TODO 无论升序降序都获取右边的时间戳
+   * @param seekRight
+   * @return
+   * @throws IOException
+   */
   private boolean fillNextCache(BiPredicate<Long, Long> seekRight) throws IOException {
     long leftValue = leftChild.next();
     long rightValue = rightChild.next();
@@ -73,6 +86,7 @@ public class AndNode implements Node {
         this.cachedTime = leftValue;
         return true;
       }
+      // left < right
       if (seekRight.test(leftValue, rightValue)) {
         if (rightChild.hasNext()) {
           rightValue = rightChild.next();

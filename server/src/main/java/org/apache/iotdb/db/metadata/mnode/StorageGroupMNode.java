@@ -23,6 +23,9 @@ import org.apache.iotdb.db.qp.physical.sys.StorageGroupMNodePlan;
 
 import java.io.IOException;
 
+/**
+ * 存储组节点
+ */
 public class StorageGroupMNode extends InternalMNode implements IStorageGroupMNode {
 
   private static final long serialVersionUID = 7999036474525817732L;

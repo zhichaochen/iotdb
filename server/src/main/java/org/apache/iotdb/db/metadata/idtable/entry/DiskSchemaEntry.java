@@ -26,6 +26,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 /**
+ * 磁盘schema条目
+ * ID表的schema条目，这是一个po类，p：Persistence，也就是持久化到磁盘的类，所以每个字段是公开的
  * the disk schema entry of schema entry of id table. This is a po class, so every field is public
  */
 public class DiskSchemaEntry {
@@ -72,6 +74,12 @@ public class DiskSchemaEntry {
     this.isAligned = isAligned;
   }
 
+  /**
+   * 序列化
+   * @param outputStream
+   * @return
+   * @throws IOException
+   */
   public int serialize(OutputStream outputStream) throws IOException {
     int byteLen = 0;
     byteLen += ReadWriteIOUtils.write(deviceID, outputStream);
@@ -88,6 +96,12 @@ public class DiskSchemaEntry {
     return byteLen;
   }
 
+  /**
+   * 反序列化
+   * @param inputStream
+   * @return
+   * @throws IOException
+   */
   public static DiskSchemaEntry deserialize(InputStream inputStream) throws IOException {
     DiskSchemaEntry res = new DiskSchemaEntry();
     res.deviceID = ReadWriteIOUtils.readString(inputStream);

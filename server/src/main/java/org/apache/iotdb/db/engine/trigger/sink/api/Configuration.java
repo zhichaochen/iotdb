@@ -19,4 +19,7 @@
 
 package org.apache.iotdb.db.engine.trigger.sink.api;
 
+/**
+ * 触发器配置
+ */
 public interface Configuration {}

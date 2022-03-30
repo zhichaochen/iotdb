@@ -32,16 +32,17 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 /**
- *
+ * 本地TsFile的输入
  */
 public class LocalTsFileInput implements TsFileInput {
 
   private static final Logger logger = LoggerFactory.getLogger(LocalTsFileInput.class);
 
-  private final FileChannel channel;
-  private final String filePath;
+  private final FileChannel channel; // 文件通道，用于将文件写入磁盘
+  private final String filePath; // 文件路径
 
   public LocalTsFileInput(Path file) throws IOException {
+    // 打开一个只读通道
     channel = FileChannel.open(file, StandardOpenOption.READ);
     filePath = file.toString();
   }

@@ -21,7 +21,9 @@ package org.apache.iotdb.db.metadata.lastCache.container;
 
 import org.apache.iotdb.tsfile.read.TimeValuePair;
 
-/** this interface declares the operations of LastCache data */
+/**
+ * 定义了LastCache data的操作
+ * this interface declares the operations of LastCache data */
 public interface ILastCacheContainer {
 
   // get lastCache of monad timseries

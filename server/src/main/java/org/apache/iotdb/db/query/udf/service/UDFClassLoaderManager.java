@@ -34,6 +34,9 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * UDF类加载器管理器
+ */
 public class UDFClassLoaderManager implements IService {
 
   private static final Logger logger = LoggerFactory.getLogger(UDFClassLoaderManager.class);

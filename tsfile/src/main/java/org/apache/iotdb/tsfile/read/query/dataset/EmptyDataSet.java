@@ -22,6 +22,9 @@ import org.apache.iotdb.tsfile.read.common.RowRecord;
 
 import java.util.Collections;
 
+/**
+ * 空数据集
+ */
 public class EmptyDataSet extends QueryDataSet {
 
   public EmptyDataSet() {

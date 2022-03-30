@@ -39,6 +39,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * UDTF数据集
+ */
 public abstract class UDTFDataSet extends QueryDataSet {
 
   protected static final float UDF_READER_MEMORY_BUDGET_IN_MB =
@@ -107,13 +110,16 @@ public abstract class UDTFDataSet extends QueryDataSet {
     queryId = queryContext.getQueryId();
     this.udtfPlan = udtfPlan;
     rawQueryInputLayer = new RawQueryInputLayer(queryId, UDF_READER_MEMORY_BUDGET_IN_MB, dataSet);
+    // 初始化转换
     initTransformers();
     initDataSetFields();
   }
 
   protected void initTransformers() throws QueryProcessException, IOException {
+    // 加锁
     UDFRegistrationService.getInstance().acquireRegistrationLock();
     // This statement must be surrounded by the registration lock.
+    // 初始化一个查询
     UDFClassLoaderManager.getInstance().initializeUDFQuery(queryId);
     try {
       // UDF executors will be initialized at the same time

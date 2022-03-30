@@ -25,12 +25,21 @@ import org.apache.iotdb.tsfile.fileSystem.FSType;
 import java.io.File;
 import java.net.URI;
 
+/**
+ * 系统文件工厂, 用于通过路径获取文件
+ */
 public enum SystemFileFactory {
   INSTANCE;
 
   private static FSType fsType = IoTDBDescriptor.getInstance().getConfig().getSystemFileStorageFs();
   private static final String UNSUPPORT_FILE_SYSTEM = "Unsupported file system: ";
 
+  /**
+   * 通过路径创建一个文件
+   * 比如触发器根目录对应的File
+   * @param pathname
+   * @return
+   */
   public File getFile(String pathname) {
     if (fsType.equals(FSType.HDFS)) {
       throw new UnsupportedOperationException(UNSUPPORT_FILE_SYSTEM + fsType.name());

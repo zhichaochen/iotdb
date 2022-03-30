@@ -31,21 +31,25 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-/** The storageGroupInfo records the total memory cost of the Storage Group. */
+/**
+ * 存储组信息
+ * The storageGroupInfo records the total memory cost of the Storage Group. */
 public class StorageGroupInfo {
 
+  // 虚拟存储组处理器
   private VirtualStorageGroupProcessor virtualStorageGroupProcessor;
 
   /**
    * The total Storage group memory cost, including unsealed TsFileResource, ChunkMetadata, WAL,
    * primitive arrays and TEXT values
    */
-  private AtomicLong memoryCost;
+  private AtomicLong memoryCost; // 当前存储组的内存消耗
 
   /** The threshold of reporting it's size to SystemInfo */
   private long storageGroupSizeReportThreshold =
       IoTDBDescriptor.getInstance().getConfig().getStorageGroupSizeReportThreshold();
 
+  //
   private AtomicLong lastReportedSize = new AtomicLong();
 
   /** A set of all unclosed TsFileProcessors in this SG */

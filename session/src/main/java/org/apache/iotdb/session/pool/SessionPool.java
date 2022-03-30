@@ -60,6 +60,8 @@ import java.util.concurrent.ConcurrentMap;
  *
  * <p>Another case that you have to manually call closeResultSet() is that when there is exception
  * when you call SessionDataSetWrapper.hasNext() or next()
+ *
+ * 会话池
  */
 public class SessionPool {
 

@@ -25,6 +25,9 @@ import org.apache.iotdb.db.qp.logical.crud.QueryOperator;
 import org.apache.iotdb.db.qp.logical.crud.SelectIntoOperator;
 import org.apache.iotdb.db.qp.logical.sys.CreateContinuousQueryOperator;
 
+/**
+ * 逻辑计划检查器
+ */
 public class LogicalChecker {
 
   private LogicalChecker() {}

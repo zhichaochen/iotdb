@@ -28,12 +28,13 @@ import org.apache.iotdb.tsfile.read.query.executor.TsFileExecutor;
 
 import java.io.IOException;
 
+
 public class TsFileReader implements AutoCloseable {
 
-  private TsFileSequenceReader fileReader;
-  private IMetadataQuerier metadataQuerier;
-  private IChunkLoader chunkLoader;
-  private TsFileExecutor tsFileExecutor;
+  private TsFileSequenceReader fileReader; // 文件读取器
+  private IMetadataQuerier metadataQuerier; // 元数据查询器
+  private IChunkLoader chunkLoader; // chunk加载器
+  private TsFileExecutor tsFileExecutor; // ts文件执行器
 
   /** constructor, create ReadOnlyTsFile with TsFileSequenceReader. */
   public TsFileReader(TsFileSequenceReader fileReader) throws IOException {

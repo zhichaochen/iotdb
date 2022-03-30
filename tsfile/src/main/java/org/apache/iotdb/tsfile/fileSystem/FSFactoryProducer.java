@@ -30,8 +30,12 @@ import org.apache.iotdb.tsfile.fileSystem.fsFactory.FSFactory;
 import org.apache.iotdb.tsfile.fileSystem.fsFactory.HDFSFactory;
 import org.apache.iotdb.tsfile.fileSystem.fsFactory.LocalFSFactory;
 
+/**
+ * 文件系统工厂
+ */
 public class FSFactoryProducer {
 
+  // 默认本地文件系统
   private static FSType fSType = TSFileDescriptor.getInstance().getConfig().getTSFileStorageFs();
 
   private static FSFactory fsFactory;
@@ -44,7 +48,9 @@ public class FSFactoryProducer {
       fileInputFactory = new HDFSInputFactory();
       fileOutputFactory = new HDFSOutputFactory();
     } else {
+      // 本地文件系统工厂
       fsFactory = new LocalFSFactory();
+      // 输入工厂
       fileInputFactory = new LocalFSInputFactory();
       fileOutputFactory = new LocalFSOutputFactory();
     }

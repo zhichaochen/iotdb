@@ -31,6 +31,9 @@ import org.apache.iotdb.tsfile.read.filter.operator.NotFilter;
 
 import java.util.Set;
 
+/**
+ * 时间过滤器
+ */
 public class TimeFilter {
 
   private TimeFilter() {}
@@ -124,6 +127,8 @@ public class TimeFilter {
   }
 
   /**
+   * 默认的时间过滤器
+   * long的最大值和最小值
    * returns a default time filter by whether it's an ascending query.
    *
    * <p>If the data is read in descending order, we use the largest timestamp to set to the filter,

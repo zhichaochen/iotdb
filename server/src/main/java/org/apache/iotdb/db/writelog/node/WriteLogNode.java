@@ -24,10 +24,15 @@ import org.apache.iotdb.db.writelog.io.ILogReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-/** WriteLogNode is the minimum unit of managing WALs. */
+/**
+ * 写日志节点，WriteLogNode是管理wal最小的单元
+ * WriteLogNode is the minimum unit of managing WALs. */
 public interface WriteLogNode {
 
   /**
+   * 为物理计划写一个wal。
+   * 首先，PhysicalPlan将被传送到字节数组。然后字节数组将被放入缓存。当缓存已满时，缓存中的日志将同步到磁盘。
+   *
    * Write a wal for a PhysicalPlan. First, the PhysicalPlan will be conveyed to byte[]. Then the
    * byte[] will be put into a cache. When the cache is full, the logs in the cache will be synced
    * to disk.

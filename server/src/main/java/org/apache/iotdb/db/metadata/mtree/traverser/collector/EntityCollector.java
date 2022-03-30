@@ -23,6 +23,7 @@ import org.apache.iotdb.db.metadata.mnode.IEntityMNode;
 import org.apache.iotdb.db.metadata.mnode.IMNode;
 import org.apache.iotdb.db.metadata.path.PartialPath;
 
+// EntityMNode结果收集器
 // This class defines EntityMNode as target node and defines the Entity process framework.
 public abstract class EntityCollector<T> extends CollectorTraverser<T> {
 

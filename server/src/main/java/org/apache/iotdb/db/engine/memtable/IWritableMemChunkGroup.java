@@ -26,6 +26,11 @@ import org.apache.iotdb.tsfile.write.schema.IMeasurementSchema;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 内存中的chunk group
+ * TODO 其实一个chunk group就是一个entity，一个设备，chunk表示一列数据，chunk group表示一个实体的多列数据
+ * 表示一个驻扎在内存中的ChunkGroup，记录了chunk group的信息
+ */
 public interface IWritableMemChunkGroup {
 
   void writeValues(
@@ -42,6 +47,7 @@ public interface IWritableMemChunkGroup {
 
   boolean contains(String measurement);
 
+  // 写入数据
   void write(long insertTime, Object[] objectValue, List<IMeasurementSchema> schemaList);
 
   Map<String, IWritableMemChunk> getMemChunkMap();

@@ -18,10 +18,13 @@
  */
 package org.apache.iotdb.tsfile.read.filter.factory;
 
+/**
+ * 过滤器类型
+ */
 public enum FilterType {
-  VALUE_FILTER("value"),
-  TIME_FILTER("time"),
-  GROUP_BY_FILTER("group by");
+  VALUE_FILTER("value"), // 值过滤器
+  TIME_FILTER("time"), // 时间过滤器
+  GROUP_BY_FILTER("group by"); // group by 过滤器
 
   private String name;
 

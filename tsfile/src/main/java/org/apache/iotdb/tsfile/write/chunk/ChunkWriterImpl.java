@@ -42,6 +42,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 
+/**
+ * 数据块写入器
+ * 数据块：包含一条时间序列上的多个page，是数据块被IO读取的最小单元
+ * TODO 将数据写入磁盘的操作肯定在当前类中进行
+ */
 public class ChunkWriterImpl implements IChunkWriter {
 
   private static final Logger logger = LoggerFactory.getLogger(ChunkWriterImpl.class);
@@ -51,9 +56,9 @@ public class ChunkWriterImpl implements IChunkWriter {
   private final ICompressor compressor;
 
   /** all pages of this chunk. */
-  private final PublicBAOS pageBuffer;
+  private final PublicBAOS pageBuffer; // page缓存
 
-  private int numOfPages;
+  private int numOfPages; // 当前chunk块中page的数量
 
   /** write data into current page */
   private PageWriter pageWriter;
@@ -64,7 +69,7 @@ public class ChunkWriterImpl implements IChunkWriter {
   private final int maxNumberOfPointsInPage;
 
   /** value count in current page. */
-  private int valueCountInOnePageForNextCheck;
+  private int valueCountInOnePageForNextCheck; // 在一个page中值的总数
 
   // initial value for valueCountInOnePageForNextCheck
   private static final int MINIMUM_RECORD_COUNT_FOR_CHECK = 1500;
@@ -88,17 +93,21 @@ public class ChunkWriterImpl implements IChunkWriter {
   private static final String SDT_COMP_MAX_TIME = "compmaxtime";
 
   /** first page info */
-  private int sizeWithoutStatistic;
+  private int sizeWithoutStatistic; // 第一个page的大小，不包含统计信息
 
-  private Statistics<?> firstPageStatistics;
+  private Statistics<?> firstPageStatistics; // 第一个page的统计信息
 
   /** @param schema schema of this measurement */
   public ChunkWriterImpl(IMeasurementSchema schema) {
-    this.measurementSchema = schema;
+    this.measurementSchema = schema; //
+    // 获取压缩器
     this.compressor = ICompressor.getCompressor(schema.getCompressor());
+    //
     this.pageBuffer = new PublicBAOS();
 
+    // 每页数据的大小，默认64kb
     this.pageSizeThreshold = TSFileDescriptor.getInstance().getConfig().getPageSizeInByte();
+    // 每页最大的数据点，默认1024 * 1024. 1M
     this.maxNumberOfPointsInPage =
         TSFileDescriptor.getInstance().getConfig().getMaxNumberOfPointsInPage();
     // initial check of memory usage. So that we have enough data to make an initial prediction
@@ -109,7 +118,9 @@ public class ChunkWriterImpl implements IChunkWriter {
 
     this.pageWriter = new PageWriter(measurementSchema);
 
+    // 当前物理量的时间编码器
     this.pageWriter.setTimeEncoder(measurementSchema.getTimeEncoder());
+    // 当前物理量的值编码器
     this.pageWriter.setValueEncoder(measurementSchema.getValueEncoder());
 
     // check if the measurement schema uses SDT
@@ -145,10 +156,16 @@ public class ChunkWriterImpl implements IChunkWriter {
     }
   }
 
+  /**
+   * 写入时间戳和值
+   * @param time
+   * @param value
+   */
   public void write(long time, long value) {
     // store last point for sdtEncoding, it still needs to go through encoding process
     // in case it exceeds compdev and needs to store second last point
     if (!isSdtEncoding || sdtEncoder.encodeLong(time, value)) {
+      // 调用page写入器写入
       pageWriter.write(
           isSdtEncoding ? sdtEncoder.getTime() : time,
           isSdtEncoding ? sdtEncoder.getLongValue() : value);
@@ -156,6 +173,7 @@ public class ChunkWriterImpl implements IChunkWriter {
     if (isSdtEncoding && isLastPoint) {
       pageWriter.write(time, value);
     }
+    // 检查当前页的大小，可能需要打开一个新的页
     checkPageSizeAndMayOpenANewPage();
   }
 
@@ -171,6 +189,11 @@ public class ChunkWriterImpl implements IChunkWriter {
     checkPageSizeAndMayOpenANewPage();
   }
 
+  /**
+   * 写入一个boolean值
+   * @param time
+   * @param value
+   */
   public void write(long time, boolean value) {
     pageWriter.write(time, value);
     checkPageSizeAndMayOpenANewPage();
@@ -249,17 +272,24 @@ public class ChunkWriterImpl implements IChunkWriter {
   }
 
   /**
+   * 检查当前页的大小，可能需要打开一个新的页
    * check occupied memory size, if it exceeds the PageSize threshold, construct a page and put it
    * to pageBuffer
    */
   private void checkPageSizeAndMayOpenANewPage() {
+    // 如果达到最大数据点数量，则将字节数组中的Page写入
     if (pageWriter.getPointNumber() == maxNumberOfPointsInPage) {
       logger.debug("current line count reaches the upper bound, write page {}", measurementSchema);
+      // 通过上面的日志提示，表示要写入磁盘
       writePageToPageBuffer();
-    } else if (pageWriter.getPointNumber()
+    }
+    //
+    else if (pageWriter.getPointNumber()
         >= valueCountInOnePageForNextCheck) { // need to check memory size
       // not checking the memory used for every value
+      // 当前page大小
       long currentPageSize = pageWriter.estimateMaxMemSize();
+      // 如果当前page的大小超过page的阈值，则写入page到磁盘
       if (currentPageSize > pageSizeThreshold) { // memory size exceeds threshold
         // we will write the current page
         logger.debug(
@@ -278,12 +308,22 @@ public class ChunkWriterImpl implements IChunkWriter {
     }
   }
 
+  /**
+   * 写page到page缓存
+   * 将page写入到缓存中，待刷盘，存储引擎会通过调用writeToFileWriter()，将数据刷写到磁盘
+   */
   private void writePageToPageBuffer() {
     try {
+      // 如果page的数量为0，说明当前是第一个page
       if (numOfPages == 0) { // record the firstPageStatistics
+        // 第一个page的统计信息
         this.firstPageStatistics = pageWriter.getStatistics();
+        // 写入page头和数据到buffer中
         this.sizeWithoutStatistic = pageWriter.writePageHeaderAndDataIntoBuff(pageBuffer, true);
-      } else if (numOfPages == 1) { // put the firstPageStatistics into pageBuffer
+      }
+      //
+      else if (numOfPages == 1) { // put the firstPageStatistics into pageBuffer
+        // page数组
         byte[] b = pageBuffer.toByteArray();
         pageBuffer.reset();
         pageBuffer.write(b, 0, this.sizeWithoutStatistic);
@@ -296,7 +336,9 @@ public class ChunkWriterImpl implements IChunkWriter {
       }
 
       // update statistics of this chunk
+      // 更新chunk的统计信息
       numOfPages++;
+      // 合并 chunk 的统计信息
       this.statistics.mergeStatistics(pageWriter.getStatistics());
     } catch (IOException e) {
       logger.error("meet error in pageWriter.writePageHeaderAndDataIntoBuff,ignore this page:", e);
@@ -306,12 +348,20 @@ public class ChunkWriterImpl implements IChunkWriter {
     }
   }
 
+  /**
+   * TODO 这里将TsFile刷写到磁盘
+   * @param tsfileWriter
+   * @throws IOException
+   */
   @Override
   public void writeToFileWriter(TsFileIOWriter tsfileWriter) throws IOException {
+    // 密封当前page，将当前page写入缓存
     sealCurrentPage();
+    // 将当前chunk的所有page写入TsFile，只是写入，并没有flush。
     writeAllPagesOfChunkToTsFile(tsfileWriter, statistics);
 
     // reinit this chunk writer
+    // 重新初始化这个chunk write
     pageBuffer.reset();
     numOfPages = 0;
     firstPageStatistics = null;
@@ -336,6 +386,9 @@ public class ChunkWriterImpl implements IChunkWriter {
         + (long) pageBuffer.size();
   }
 
+  /**
+   * 密封当前页
+   */
   @Override
   public void sealCurrentPage() {
     if (pageWriter != null && pageWriter.getPointNumber() > 0) {
@@ -405,6 +458,7 @@ public class ChunkWriterImpl implements IChunkWriter {
   }
 
   /**
+   * 将当前chunk的所有page写入TsFile
    * write the page to specified IOWriter.
    *
    * @param writer the specified IOWriter
@@ -418,6 +472,7 @@ public class ChunkWriterImpl implements IChunkWriter {
     }
 
     // start to write this column chunk
+    // 开始去写数据块，写入了chunk的一些元数据
     writer.startFlushChunk(
         measurementSchema.getMeasurementId(),
         compressor.getType(),
@@ -428,12 +483,16 @@ public class ChunkWriterImpl implements IChunkWriter {
         numOfPages,
         0);
 
+    // 数据偏移量
     long dataOffset = writer.getPos();
 
     // write all pages of this column
+    // 将这列所有的page写入输出流
     writer.writeBytesToStream(pageBuffer);
 
+    // 数据的size
     int dataSize = (int) (writer.getPos() - dataOffset);
+    // 校验
     if (dataSize != pageBuffer.size()) {
       throw new IOException(
           "Bytes written is inconsistent with the size of data: "
@@ -443,6 +502,7 @@ public class ChunkWriterImpl implements IChunkWriter {
               + pageBuffer.size());
     }
 
+    // 结束当前chunk
     writer.endCurrentChunk();
   }
 

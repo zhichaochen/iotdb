@@ -26,7 +26,9 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
 
-/** This interface defines a MNode's operation interfaces. */
+/**
+ * 元数据节点，定义了元数据节点的操作接口
+ * This interface defines a MNode's operation interfaces. */
 public interface IMNode extends Serializable {
 
   String getName();
@@ -45,7 +47,7 @@ public interface IMNode extends Serializable {
 
   boolean hasChild(String name);
 
-  IMNode getChild(String name);
+  IMNode getChild(String name); // 获取【当前节点的子节点】中，叫这个名字的节点
 
   IMNode addChild(String name, IMNode child);
 
@@ -64,11 +66,11 @@ public interface IMNode extends Serializable {
 
   void setChildren(Map<String, IMNode> children);
 
-  boolean isUseTemplate();
+  boolean isUseTemplate(); // 是否使用模板
 
   void setUseTemplate(boolean useTemplate);
 
-  Template getUpperTemplate();
+  Template getUpperTemplate(); //
 
   Template getSchemaTemplate();
 
@@ -78,6 +80,10 @@ public interface IMNode extends Serializable {
   // and this node is not the root nor a storageGroup nor a measurement.
   boolean isEmptyInternal();
 
+  /**
+   * 判断当前节点是否是存储组
+   * @return
+   */
   boolean isStorageGroup();
 
   boolean isEntity();

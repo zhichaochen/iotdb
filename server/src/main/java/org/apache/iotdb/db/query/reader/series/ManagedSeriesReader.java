@@ -22,6 +22,8 @@ package org.apache.iotdb.db.query.reader.series;
 import org.apache.iotdb.tsfile.read.reader.IBatchReader;
 
 /**
+ * 托管序列的读取器
+ * 提供额外的接口，使其能够在查询内的线程池中并发运行。
  * provides additional interfaces to make it able to be run in a thread pool concurrently within a
  * query.
  */

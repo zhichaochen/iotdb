@@ -30,17 +30,23 @@ import java.net.URLClassLoader;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 自定义函数的类加载器
+ */
 public class UDFClassLoader extends URLClassLoader {
 
+  // 根路径
   private final String libRoot;
 
   /**
+   * 活跃的查询总数
    * If activeQueriesCount is equals to 0, it means that there is no query using this classloader.
    * This classloader can only be closed when activeQueriesCount is equals to 0.
    */
   private final AtomicLong activeQueriesCount;
 
   /**
+   * 如果这个类加载器被标记为已弃用，那么在所有使用这个类加载器的查询完成后，这个类加载器可以被关闭。
    * If this classloader is marked as deprecated, then this classloader can be closed after all
    * queries that use this classloader are completed.
    */
@@ -51,9 +57,14 @@ public class UDFClassLoader extends URLClassLoader {
     this.libRoot = libRoot;
     activeQueriesCount = new AtomicLong(0);
     deprecated = false;
+    // 添加所有url到URL类加载器中
     addURLs();
   }
 
+  /**
+   * 添加udf下所有的url到类加载器中
+   * @throws IOException
+   */
   private void addURLs() throws IOException {
     HashSet<File> fileSet =
         new HashSet<>(FileUtils.listFiles(SystemFileFactory.INSTANCE.getFile(libRoot), null, true));

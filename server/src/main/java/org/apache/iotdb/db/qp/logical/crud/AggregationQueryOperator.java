@@ -38,6 +38,9 @@ import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 
 import java.util.List;
 
+/**
+ * 聚合查询算子
+ */
 public class AggregationQueryOperator extends QueryOperator {
 
   public static final String ERROR_MESSAGE1 =
@@ -86,6 +89,12 @@ public class AggregationQueryOperator extends QueryOperator {
     }
   }
 
+  /**
+   * 生成物理计划
+   * @param generator
+   * @return
+   * @throws QueryProcessException
+   */
   @Override
   public PhysicalPlan generatePhysicalPlan(PhysicalGenerator generator)
       throws QueryProcessException {

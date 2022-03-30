@@ -25,6 +25,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+/**
+ * 聚合类型
+ */
 public enum AggregationType {
   COUNT,
   AVG,

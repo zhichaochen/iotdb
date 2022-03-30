@@ -51,6 +51,18 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.stream.Collectors.toList;
 
+/**
+ * 标签管理器
+ * 标签不是别名，而是给当前时间序列打一个标签，比如：给苹果打个标签，糖心的
+ * 此类维护了 标签 -> 时间序列路径 的倒排索引，那么通过标签可以查询到所有该标签的时间序列。
+ *
+ * 怎么理解倒排索引呢？
+ * 本身是通过时间序列能知道标签，倒排便是，通过标签能查询到时间序列
+ * 本身是维护了一个map结构
+ *
+ * 与属性的关系
+ * 属性只能通过时间序列来查询，不能通过属性来查询
+ */
 public class TagManager {
 
   private static final String TAG_FORMAT = "tag key is %s, tag value is %s, tlog offset is %d";
@@ -73,10 +85,23 @@ public class TagManager {
     tagLogFile = new TagLogFile(sgSchemaDirPath, MetadataConstant.TAG_LOG);
   }
 
+  /**
+   * 恢复索引
+   * @param offset
+   * @param measurementMNode
+   * @throws IOException
+   */
   public void recoverIndex(long offset, IMeasurementMNode measurementMNode) throws IOException {
+    // 读取tag，并将其加入到索引中
     addIndex(tagLogFile.readTag(config.getTagAttributeTotalSize(), offset), measurementMNode);
   }
 
+  /**
+   * 添加时间序列
+   * @param tagKey
+   * @param tagValue
+   * @param measurementMNode
+   */
   public void addIndex(String tagKey, String tagValue, IMeasurementMNode measurementMNode) {
     if (tagKey == null || tagValue == null || measurementMNode == null) {
       return;
@@ -102,23 +127,36 @@ public class TagManager {
     }
   }
 
+  /**
+   * 通过标签查询所有时间徐磊
+   * @param plan
+   * @param context
+   * @return
+   * @throws MetadataException
+   */
   public List<IMeasurementMNode> getMatchedTimeseriesInIndex(
       ShowTimeSeriesPlan plan, QueryContext context) throws MetadataException {
+    // 是否包含该tag，如果不包含返回空集合
     if (!tagIndex.containsKey(plan.getKey())) {
       return Collections.emptyList();
     }
+    // tag value -> time series
     Map<String, Set<IMeasurementMNode>> value2Node = tagIndex.get(plan.getKey());
+    // map为空也返回空集合
     if (value2Node.isEmpty()) {
       return Collections.emptyList();
     }
 
+    // 所有匹配的时间序列节点
     List<IMeasurementMNode> allMatchedNodes = new ArrayList<>();
     if (plan.isContains()) {
       for (Map.Entry<String, Set<IMeasurementMNode>> entry : value2Node.entrySet()) {
         if (entry.getKey() == null || entry.getValue() == null) {
           continue;
         }
+        // tag value
         String tagValue = entry.getKey();
+        // 是否包含该值，如果包含则添加
         if (tagValue.contains(plan.getValue())) {
           allMatchedNodes.addAll(entry.getValue());
         }
@@ -137,6 +175,7 @@ public class TagManager {
 
     // if ordered by heat, we sort all the timeseries by the descending order of the last insert
     // timestamp
+    // 是否热排序，如果是，则通过访问热度进行排序，否则，我们就按字母顺序排序
     if (plan.isOrderByHeat()) {
       List<VirtualStorageGroupProcessor> list;
       try {

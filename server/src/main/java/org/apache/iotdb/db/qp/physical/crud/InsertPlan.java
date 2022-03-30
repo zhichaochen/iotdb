@@ -33,31 +33,35 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * 插入计划
+ */
 public abstract class InsertPlan extends PhysicalPlan {
 
   /**
+   * 如果用id table，这个字段设备路径的id形式，如果不是，这个字段是设备路径
    * if use id table, this filed is id form of device path <br>
    * if not, this filed is device path<br>
    */
-  protected PartialPath devicePath;
+  protected PartialPath devicePath; // 设备路径
 
-  protected boolean isAligned;
-  protected String[] measurements;
+  protected boolean isAligned; // 是否对其
+  protected String[] measurements; // 多个物理量，一个设备对应多个物理量嘛，好比数据库一个字段的名称
   // get from client
-  protected TSDataType[] dataTypes;
+  protected TSDataType[] dataTypes; // 数据类型列表
   // get from SchemaProcessor
-  protected IMeasurementMNode[] measurementMNodes;
+  protected IMeasurementMNode[] measurementMNodes; // 物理量的元数据节点
 
   /**
    * device id reference, for reuse device id in both id table and memtable <br>
    * used in memtable
    */
-  protected IDeviceID deviceID;
+  protected IDeviceID deviceID; // 设备ID的引用
 
   // record the failed measurements, their reasons, and positions in "measurements"
-  List<String> failedMeasurements;
-  private List<Exception> failedExceptions;
-  List<Integer> failedIndices;
+  List<String> failedMeasurements; // 失败的物理量
+  private List<Exception> failedExceptions; // 失败原因
+  List<Integer> failedIndices; // 失败的物理量的位置
 
   public InsertPlan(Operator.OperatorType operatorType) {
     super(operatorType);

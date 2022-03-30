@@ -30,6 +30,7 @@ import org.apache.iotdb.db.query.udf.api.customizer.strategy.SlidingSizeWindowAc
 import org.apache.iotdb.db.query.udf.api.customizer.strategy.SlidingTimeWindowAccessStrategy;
 
 /**
+ * 用户定义的时间序列生成函数（UDTF）
  * User-defined Time-series Generating Function (UDTF)
  *
  * <p>New UDTF classes need to inherit from this UDTF class.
@@ -58,6 +59,8 @@ import org.apache.iotdb.db.query.udf.api.customizer.strategy.SlidingTimeWindowAc
 public interface UDTF extends UDF {
 
   /**
+   * transform开始之前做些什么
+   *
    * This method is mainly used to customize UDTF. In this method, the user can do the following
    * things:
    *
@@ -80,6 +83,9 @@ public interface UDTF extends UDF {
   void beforeStart(UDFParameters parameters, UDTFConfigurations configurations) throws Exception;
 
   /**
+   * 对原始数据进行变换
+   * row ：入参
+   * PointCollector ：出参
    * When the user specifies {@link RowByRowAccessStrategy} to access the original data in {@link
    * UDTFConfigurations}, this method will be called to process the transformation. In a single UDF
    * query, this method may be called multiple times.

@@ -37,7 +37,13 @@ import java.util.Objects;
 import static org.apache.iotdb.db.utils.EncodingInferenceUtils.getDefaultEncoding;
 
 /**
+ * Schema条目，一个物理量对应一个SchemaEntry
+ * ID表中记录什么元数据，肯定是精确到物理量的元数据，
+ * 所以ID表管理的就是SchemaEntry，一个个的物理量信息，一个个的物理量也就是一条条的时间序列
+ *
+ * ID table的 schema 条目
  * Schema entry of id table <br>
+ * 注意，这个类也是最后一个缓存的最后一个缓存容器
  * Notice that this class is also a last cache container for last cache
  */
 public class SchemaEntry implements ILastCacheContainer {
@@ -47,11 +53,11 @@ public class SchemaEntry implements ILastCacheContainer {
   /*  1 byte of compressor  */
   /*   1 byte of encoding   */
   /*    1 byte of type      */
-  private long schema;
+  private long schema; // 模式
 
-  private long lastTime;
+  private long lastTime; // 最新的时间
 
-  private TsPrimitiveType lastValue;
+  private TsPrimitiveType lastValue; // 最新的值
 
   /** This static field will not occupy memory */
   private static IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();

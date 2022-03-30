@@ -43,7 +43,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** A skeleton class for expression */
+/**
+ * 表达式的骨架类
+ * A skeleton class for expression */
 public abstract class Expression {
 
   private String expressionStringCache;

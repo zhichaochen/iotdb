@@ -34,6 +34,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * 时间序列读取器，通过一个默认的时间
+ */
 public class SeriesReaderByTimestamp implements IReaderByTimestamp {
 
   private final SeriesReader seriesReader;
@@ -48,7 +51,9 @@ public class SeriesReaderByTimestamp implements IReaderByTimestamp {
       QueryDataSource dataSource,
       TsFileFilter fileFilter,
       boolean ascending) {
+    // 默认的时间过滤器， 给了一个long的最大、最小值
     Filter timeFilter = TimeFilter.defaultTimeFilter(ascending);
+    // 创建序列读取器
     this.seriesReader =
         seriesPath.createSeriesReader(
             allSensors, dataType, context, dataSource, timeFilter, null, fileFilter, ascending);

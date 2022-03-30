@@ -42,6 +42,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 
+/**
+ * iot db 配置检查器
+ */
 public class IoTDBConfigCheck {
 
   private static final Logger logger = LoggerFactory.getLogger(IoTDBConfigCheck.class);

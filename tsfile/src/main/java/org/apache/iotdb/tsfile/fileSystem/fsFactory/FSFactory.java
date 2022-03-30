@@ -27,9 +27,13 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
+/**
+ * 文件系统工厂
+ */
 public interface FSFactory {
 
   /**
+   * 通过给定的目录下创建文件
    * get file with parent
    *
    * @param pathname pathname

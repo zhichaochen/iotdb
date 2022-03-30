@@ -23,9 +23,14 @@ import org.apache.iotdb.db.query.udf.api.customizer.config.UDTFConfigurations;
 import org.apache.iotdb.db.query.udf.api.customizer.parameter.UDFParameterValidator;
 import org.apache.iotdb.db.query.udf.api.customizer.parameter.UDFParameters;
 
+/**
+ * 用户定义函数
+ * 所有的用户自定义的函数，都要实现该接口
+ */
 public interface UDF {
 
   /**
+   * 开始前校验
    * This method is mainly used to validate {@link UDFParameters} and it is executed before {@link
    * UDTF#beforeStart(UDFParameters, UDTFConfigurations)} is called.
    *

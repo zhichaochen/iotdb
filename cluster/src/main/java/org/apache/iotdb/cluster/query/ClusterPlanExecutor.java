@@ -80,6 +80,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * 集群计划执行器
+ */
 public class ClusterPlanExecutor extends PlanExecutor {
 
   private static final Logger logger = LoggerFactory.getLogger(ClusterPlanExecutor.class);
@@ -94,12 +97,26 @@ public class ClusterPlanExecutor extends PlanExecutor {
     this.queryRouter = new ClusterQueryRouter(metaGroupMember);
   }
 
+  /**
+   * 处理查询
+   * @param queryPlan
+   * @param context
+   * @return
+   * @throws IOException
+   * @throws StorageEngineException
+   * @throws QueryFilterOptimizationException
+   * @throws QueryProcessException
+   * @throws MetadataException
+   * @throws InterruptedException
+   */
   @Override
   public QueryDataSet processQuery(PhysicalPlan queryPlan, QueryContext context)
       throws IOException, StorageEngineException, QueryFilterOptimizationException,
           QueryProcessException, MetadataException, InterruptedException {
+    // 查询计划
     if (queryPlan instanceof QueryPlan) {
       logger.debug("Executing a query: {}", queryPlan);
+      // 处理数据查询
       return processDataQuery((QueryPlan) queryPlan, context);
     } else if (queryPlan instanceof ShowPlan) {
       try {

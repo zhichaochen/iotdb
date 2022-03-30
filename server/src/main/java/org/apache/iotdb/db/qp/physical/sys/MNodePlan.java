@@ -30,6 +30,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * 元数据节点计划
+ */
 public class MNodePlan extends PhysicalPlan {
   protected String name;
   protected int childSize;

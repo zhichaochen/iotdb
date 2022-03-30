@@ -27,6 +27,9 @@ import org.apache.iotdb.tsfile.read.common.RowRecord;
 
 import java.util.List;
 
+/**
+ * Session数据集包装器
+ */
 public class SessionDataSetWrapper implements AutoCloseable {
 
   SessionDataSet sessionDataSet;

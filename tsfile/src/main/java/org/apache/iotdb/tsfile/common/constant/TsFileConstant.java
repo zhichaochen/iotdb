@@ -18,6 +18,9 @@
  */
 package org.apache.iotdb.tsfile.common.constant;
 
+/**
+ * TsFile常量
+ */
 public class TsFileConstant {
 
   public static final String TSFILE_SUFFIX = ".tsfile";

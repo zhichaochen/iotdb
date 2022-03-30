@@ -89,6 +89,12 @@ public class WritableMemChunkGroup implements IWritableMemChunkGroup {
     return memChunkMap.containsKey(measurement);
   }
 
+  /**
+   * 写入
+   * @param insertTime
+   * @param objectValue
+   * @param schemaList
+   */
   @Override
   public void write(long insertTime, Object[] objectValue, List<IMeasurementSchema> schemaList) {
     int emptyColumnCount = 0;
@@ -97,8 +103,10 @@ public class WritableMemChunkGroup implements IWritableMemChunkGroup {
         emptyColumnCount++;
         continue;
       }
+      // 获取一个可写入的内存块
       IWritableMemChunk memChunk =
           createMemChunkIfNotExistAndGet(schemaList.get(i - emptyColumnCount));
+      // 写入数据
       memChunk.write(insertTime, objectValue[i]);
     }
   }

@@ -36,11 +36,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+/**
+ * 元数据工具类
+ */
 public class MetaUtils {
 
   private MetaUtils() {}
 
   /**
+   * 将字符串路径切改成路数组路径
    * @param path the path will split. ex, root.ln.
    * @return string array. ex, [root, ln]
    * @throws IllegalPathException if path isn't correct, the exception will throw

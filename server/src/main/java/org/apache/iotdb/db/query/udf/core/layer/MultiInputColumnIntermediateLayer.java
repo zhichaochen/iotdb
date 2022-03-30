@@ -40,6 +40,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * 多个输入列的中间层
+ */
 public class MultiInputColumnIntermediateLayer extends IntermediateLayer
     implements IUDFInputDataSet {
 

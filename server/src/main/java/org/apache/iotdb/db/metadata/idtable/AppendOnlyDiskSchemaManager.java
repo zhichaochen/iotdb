@@ -40,7 +40,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-/** store id table schema in append only file */
+/**
+ *  存储ID表的Schema，该文件只能追加
+ * store id table schema in append only file */
 public class AppendOnlyDiskSchemaManager implements IDiskSchemaManager {
 
   private static final String FILE_NAME = "SeriesKeyMapping.meta";

@@ -194,6 +194,10 @@ public class IntegerStatistics extends Statistics<Integer> {
     this.sumValue = ReadWriteIOUtils.readLong(inputStream);
   }
 
+  /**
+   *
+   * @param byteBuffer
+   */
   @Override
   public void deserialize(ByteBuffer byteBuffer) {
     this.minValue = ReadWriteIOUtils.readInt(byteBuffer);

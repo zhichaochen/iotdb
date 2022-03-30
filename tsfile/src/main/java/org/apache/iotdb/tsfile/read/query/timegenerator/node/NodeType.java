@@ -18,7 +18,9 @@
  */
 package org.apache.iotdb.tsfile.read.query.timegenerator.node;
 
-/** Type of the node. */
+/**
+ * 节点类型
+ * Type of the node. */
 public enum NodeType {
   AND,
   OR,

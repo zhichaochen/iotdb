@@ -34,6 +34,8 @@ import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 
 /**
+ * 时间页写入器
+ * 这个写入器用于将时间写入一个page，好像也是仅仅适用于Align时间序列
  * This writer is used to write time into a page. It consists of a time encoder and respective
  * OutputStream.
  */
@@ -41,11 +43,11 @@ public class TimePageWriter {
 
   private static final Logger logger = LoggerFactory.getLogger(TimePageWriter.class);
 
-  private final ICompressor compressor;
+  private final ICompressor compressor; // 压缩器
 
   // time
-  private Encoder timeEncoder;
-  private final PublicBAOS timeOut;
+  private Encoder timeEncoder; // 时间编码器
+  private final PublicBAOS timeOut; // 时间输出字节数组
 
   /**
    * statistic of current page. It will be reset after calling {@code

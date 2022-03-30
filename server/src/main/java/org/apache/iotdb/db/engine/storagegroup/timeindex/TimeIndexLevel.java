@@ -19,6 +19,9 @@
 
 package org.apache.iotdb.db.engine.storagegroup.timeindex;
 
+/**
+ * 时间序列登记
+ */
 public enum TimeIndexLevel {
   /** v0.12 file to time index (small memory foot print) */
   V012_FILE_TIME_INDEX,

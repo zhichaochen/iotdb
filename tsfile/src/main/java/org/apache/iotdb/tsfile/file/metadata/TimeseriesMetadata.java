@@ -33,14 +33,19 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 时间序列索引元数据
+ */
 public class TimeseriesMetadata implements ITimeSeriesMetadata {
 
   /** used for old version tsfile */
   private long startOffsetOfChunkMetaDataList;
   /**
+   * 0表示此时间序列只有一个区块，无需在区块元数据中再次保存统计信息；
    * 0 means this time series has only one chunk, no need to save the statistic again in chunk
    * metadata;
    *
+   * 1表示此时间序列有多个区块，应在区块中再次保存统计数据元数据；
    * <p>1 means this time series has more than one chunk, should save the statistic again in chunk
    * metadata;
    *
@@ -70,7 +75,7 @@ public class TimeseriesMetadata implements ITimeSeriesMetadata {
   // used to save chunk metadata list while serializing
   private PublicBAOS chunkMetadataListBuffer;
 
-  private ArrayList<IChunkMetadata> chunkMetadataList;
+  private ArrayList<IChunkMetadata> chunkMetadataList; // chunk索引列表
 
   public TimeseriesMetadata() {}
 
@@ -99,23 +104,38 @@ public class TimeseriesMetadata implements ITimeSeriesMetadata {
     this.chunkMetadataList = new ArrayList<>(timeseriesMetadata.chunkMetadataList);
   }
 
+  /**
+   * 反序列化
+   */
   public static TimeseriesMetadata deserializeFrom(ByteBuffer buffer, boolean needChunkMetadata) {
+    // 创建时间序列对象
     TimeseriesMetadata timeseriesMetaData = new TimeseriesMetadata();
+    // 读取一个字节，该索引的索引类型
     timeseriesMetaData.setTimeSeriesMetadataType(ReadWriteIOUtils.readByte(buffer));
+    // 读取四个字节，物理量ID
     timeseriesMetaData.setMeasurementId(ReadWriteIOUtils.readVarIntString(buffer));
+    // 读取一个字节，数据类型
     timeseriesMetaData.setTSDataType(ReadWriteIOUtils.readDataType(buffer));
+    // 读取一个int值，chunk索引的列表的数据长度
     int chunkMetaDataListDataSize = ReadWriteForEncodingUtils.readUnsignedVarInt(buffer);
     timeseriesMetaData.setDataSizeOfChunkMetaDataList(chunkMetaDataListDataSize);
     timeseriesMetaData.setStatistics(Statistics.deserialize(buffer, timeseriesMetaData.dataType));
+    // 是否需要读取chunk的索引信息
     if (needChunkMetadata) {
+      // 从原先的大的bytebuffer中分出一个子ByteBuffer，那么这个bytebuffer中保存的全部是chunk的索引数据
       ByteBuffer byteBuffer = buffer.slice();
+      // 设置limit值
       byteBuffer.limit(chunkMetaDataListDataSize);
+      // chunk索引列表
       timeseriesMetaData.chunkMetadataList = new ArrayList<>();
+      // 如果有生
       while (byteBuffer.hasRemaining()) {
+        // 添加chunk索引数据到timeseriesMetaData
         timeseriesMetaData.chunkMetadataList.add(
             ChunkMetadata.deserializeFrom(byteBuffer, timeseriesMetaData));
       }
       // minimize the storage of an ArrayList instance.
+      // 删除动态增长的多余容量，减少内存占用
       timeseriesMetaData.chunkMetadataList.trimToSize();
     }
     buffer.position(buffer.position() + chunkMetaDataListDataSize);
@@ -130,7 +150,9 @@ public class TimeseriesMetadata implements ITimeSeriesMetadata {
    * @throws IOException IOException
    */
   public int serializeTo(OutputStream outputStream) throws IOException {
+    // 字节长度
     int byteLen = 0;
+    //
     byteLen += ReadWriteIOUtils.write(timeSeriesMetadataType, outputStream);
     byteLen += ReadWriteIOUtils.writeVar(measurementId, outputStream);
     byteLen += ReadWriteIOUtils.write(dataType, outputStream);

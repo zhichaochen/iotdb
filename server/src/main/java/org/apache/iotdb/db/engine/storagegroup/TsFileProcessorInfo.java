@@ -24,7 +24,10 @@ import org.apache.iotdb.db.service.metrics.Tag;
 import org.apache.iotdb.metrics.config.MetricConfigDescriptor;
 import org.apache.iotdb.metrics.utils.MetricLevel;
 
-/** The TsFileProcessorInfo records the memory cost of this TsFileProcessor. */
+/**
+ * TsFileProcessor的信息
+ * 记录当前TsFileProcessor的内存消耗
+ * The TsFileProcessorInfo records the memory cost of this TsFileProcessor. */
 public class TsFileProcessorInfo {
 
   /** Once tspInfo updated, report to storageGroupInfo that this TSP belongs to. */

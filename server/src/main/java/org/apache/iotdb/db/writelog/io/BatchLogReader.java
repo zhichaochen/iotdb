@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
+ * 批量日志读取器
  * BatchedLogReader reads logs from a binary batch of log in the format of ByteBuffer. The
  * ByteBuffer must be readable.
  */
@@ -48,6 +49,11 @@ public class BatchLogReader implements ILogReader {
     this.planIterator = logs.iterator();
   }
 
+  /**
+   * 读取日志
+   * @param buffer
+   * @return
+   */
   private List<PhysicalPlan> readLogs(ByteBuffer buffer) {
     List<PhysicalPlan> plans = new ArrayList<>();
     while (buffer.position() != buffer.limit()) {

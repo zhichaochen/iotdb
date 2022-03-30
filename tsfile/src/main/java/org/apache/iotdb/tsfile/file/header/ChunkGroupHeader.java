@@ -36,10 +36,10 @@ public class ChunkGroupHeader {
 
   private static final byte MARKER = MetaMarker.CHUNK_GROUP_HEADER;
 
-  private final String deviceID;
+  private final String deviceID; // 设置ID
 
   // this field does not need to be serialized.
-  private int serializedSize;
+  private int serializedSize; // 序列化后的大小
 
   /**
    * constructor of CHUNK_GROUP_HEADER.

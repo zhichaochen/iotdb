@@ -25,13 +25,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/** device entry in id table */
+/**
+ * 设备条目，一个设备对应一个DeviceEntry
+ *
+ * id表中的设备条目
+ * device entry in id table */
 public class DeviceEntry {
   /** for device ID reuse in memtable */
-  IDeviceID deviceID;
+  IDeviceID deviceID; // 设备ID
 
-  /** measurement schema map */
-  Map<String, SchemaEntry> measurementMap;
+  /**
+   * 物理量名称->和SchemaEntry的映射
+   * measurement schema map */
+  Map<String, SchemaEntry> measurementMap; // 物理量Map
 
   boolean isAligned;
 

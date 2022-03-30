@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 /**
+ * 最后的刷盘时间管理器
  * This class manages last time and flush time for sequence and unsequence determination This class
  * This class is NOT thread safe, caller should ensure synchronization
  */
@@ -40,11 +41,15 @@ public class LastFlushTimeManager implements ILastFlushTimeManager {
    */
   private Map<Long, Map<String, Long>> latestTimeForEachDevice = new HashMap<>();
   /**
+   * 时间分区id->map，其中包含设备->要提交给asyncTryToFlush partitionLatestFlushedTimeForEachDevice的最新memtable的最大时间戳。
+   * 设备确定数据点应放入顺序文件还是非顺序文件。时间戳小于或等于设备最晚FlushedTime的某些设备的数据应放入非连续文件。
+   *
    * time partition id -> map, which contains device -> largest timestamp of the latest memtable to
    * be submitted to asyncTryToFlush partitionLatestFlushedTimeForEachDevice determines whether a
    * data point should be put into a sequential file or an unsequential file. Data of some device
    * with timestamp less than or equals to the device's latestFlushedTime should go into an
    * unsequential file.
+   *
    */
   private Map<Long, Map<String, Long>> partitionLatestFlushedTimeForEachDevice = new HashMap<>();
   /** used to record the latest flush time while upgrading and inserting */

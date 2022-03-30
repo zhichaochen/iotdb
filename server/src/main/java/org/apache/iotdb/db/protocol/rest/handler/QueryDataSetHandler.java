@@ -46,11 +46,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+/**
+ * 查询数据集处理器
+ */
 public class QueryDataSetHandler {
 
   private QueryDataSetHandler() {}
 
   /**
+   * 填充查询数据集
    * @param actualRowSizeLimit max number of rows to return. no limit when actualRowSizeLimit <= 0.
    */
   public static Response fillQueryDataSet(
@@ -69,6 +73,7 @@ public class QueryDataSetHandler {
           sourceDataSet, (AggregationPlan) physicalPlan, actualRowSizeLimit);
     } else if (sourceDataSet instanceof GroupByLevelDataSet) {
       return fillGroupByLevelDataSet(sourceDataSet, actualRowSizeLimit, 1);
+      // 如果是查询计划
     } else if (physicalPlan instanceof QueryPlan) {
       return fillDataSetWithTimestamps(
           sourceDataSet, (QueryPlan) physicalPlan, actualRowSizeLimit, 1);

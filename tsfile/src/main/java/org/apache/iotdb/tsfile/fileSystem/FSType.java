@@ -19,6 +19,9 @@
 
 package org.apache.iotdb.tsfile.fileSystem;
 
+/**
+ * 文件系统类型
+ */
 public enum FSType {
   LOCAL,
   HDFS

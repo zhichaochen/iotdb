@@ -45,6 +45,9 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+/**
+ * V2版本的TsFile读取器
+ */
 public class TsFileSequenceReaderForV2 extends TsFileSequenceReader implements AutoCloseable {
 
   private List<Pair<Long, Long>> versionInfo;

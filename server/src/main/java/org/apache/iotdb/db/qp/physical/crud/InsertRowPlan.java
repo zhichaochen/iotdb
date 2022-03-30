@@ -49,22 +49,24 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-
+/**
+ * 插入一行的计划
+ */
 public class InsertRowPlan extends InsertPlan {
 
   private static final Logger logger = LoggerFactory.getLogger(InsertRowPlan.class);
-  private static final byte TYPE_RAW_STRING = -1;
-  private static final byte TYPE_NULL = -2;
+  private static final byte TYPE_RAW_STRING = -1; // 字符串类型，当类型为null的话，写入这种类型
+  private static final byte TYPE_NULL = -2; // null值得类型
 
-  private long time;
-  private Object[] values;
+  private long time; // 时间戳
+  private Object[] values; // 所有插入的值
 
   // if isNeedInferType is true, the values must be String[], so we could infer types from them
   // if values is object[], we could use the raw type of them, and we should set this to false
-  private boolean isNeedInferType = false;
+  private boolean isNeedInferType = false; // 是否需要推断类型
 
-  private List<Object> failedValues;
-  private List<PartialPath> paths;
+  private List<Object> failedValues; // 失败的值
+  private List<PartialPath> paths; // 路径
 
   public InsertRowPlan() {
     super(OperatorType.INSERT);
@@ -220,6 +222,8 @@ public class InsertRowPlan extends InsertPlan {
   }
 
   /**
+   * 转换数据类型
+   * 如果需要推断类型，则转换String[]中的值为指定的数据类型
    * if inferType is true, transfer String[] values to specific data types (Integer, Long, Float,
    * Double, Binary)
    */
@@ -404,18 +408,28 @@ public class InsertRowPlan extends InsertPlan {
     }
   }
 
+  /**
+   * 将物理量对应的值写入bytebuffer
+   * @param buffer
+   * @throws QueryProcessException
+   */
   private void putValues(ByteBuffer buffer) throws QueryProcessException {
+    // 遍历所有的值
     for (int i = 0; i < values.length; i++) {
+      // 如果是null值，仅仅写入个类型
       if (values[i] == null) {
         ReadWriteIOUtils.write(TYPE_NULL, buffer);
         continue;
       }
       // types are not determined, the situation mainly occurs when the plan uses string values
       // and is forwarded to other nodes
+      // 类型不确定，这种情况主要发生在计划使用字符串值并转发到其他节点时
+      // 如果数据类型不确定，则将其以字符串形式写入
       if (dataTypes == null || dataTypes[i] == null) {
         ReadWriteIOUtils.write(TYPE_RAW_STRING, buffer);
         ReadWriteIOUtils.write(values[i].toString(), buffer);
       } else {
+        // 写入数据类型，和其对应的值
         ReadWriteIOUtils.write(dataTypes[i], buffer);
         switch (dataTypes[i]) {
           case BOOLEAN:
@@ -443,7 +457,9 @@ public class InsertRowPlan extends InsertPlan {
     }
   }
 
-  /** Make sure the values is already inited before calling this */
+  /**
+   * 填充类型
+   * Make sure the values is already inited before calling this */
   public void fillValues(ByteBuffer buffer) throws QueryProcessException {
     for (int i = 0; i < dataTypes.length; i++) {
       // types are not determined, the situation mainly occurs when the plan uses string values
@@ -479,39 +495,56 @@ public class InsertRowPlan extends InsertPlan {
     }
   }
 
+  /**
+   * 会被父类调用，序列化方法的实现
+   * @param buffer
+   */
   @Override
   public void serializeImpl(ByteBuffer buffer) {
+    // Insert类型
     int type = PhysicalPlanType.INSERT.ordinal();
+    // 写入类型，占用一个字节
     buffer.put((byte) type);
+    // 子序列化
     subSerialize(buffer);
   }
 
   public void subSerialize(ByteBuffer buffer) {
+    // 写入时间，占用8个字节
     buffer.putLong(time);
+    // 写入全路径
     putString(buffer, devicePath.getFullPath());
+    // 序列化物理量和值
     serializeMeasurementsAndValues(buffer);
   }
 
+  /*序列化物理量和其对应的值*/
   void serializeMeasurementsAndValues(ByteBuffer buffer) {
+    // 写入正常的物理量的个数（没有失败的）
     buffer.putInt(
         measurements.length - (failedMeasurements == null ? 0 : failedMeasurements.size()));
 
+    // 遍历所有物理量，并写入
     for (String measurement : measurements) {
       if (measurement != null) {
         putString(buffer, measurement);
       }
     }
     try {
+      // 写入物理量的【数据类型的长度】
       buffer.putInt(dataTypes.length);
+      // 写入物理量对应的值
       putValues(buffer);
     } catch (QueryProcessException e) {
       logger.error("Failed to serialize values for {}", this, e);
     }
 
     // the types are not inferred before the plan is serialized
+    // 在计划序列化之前不会推断类型，infer：推断的意思
     buffer.put((byte) (isNeedInferType ? 1 : 0));
+    // 写入index，暂不清楚啥意思
     buffer.putLong(index);
-
+    // 写入是否对其
     buffer.put((byte) (isAligned ? 1 : 0));
   }
 

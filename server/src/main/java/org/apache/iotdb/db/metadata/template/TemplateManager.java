@@ -51,11 +51,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 模板管理器
+ */
 public class TemplateManager {
 
   private static final Logger logger = LoggerFactory.getLogger(TemplateManager.class);
 
   // template name -> template
+  // 模板名称 -> 模板
   private Map<String, Template> templateMap = new ConcurrentHashMap<>();
 
   private final Map<String, Set<Template>> templateUsageInStorageGroup = new ConcurrentHashMap<>();

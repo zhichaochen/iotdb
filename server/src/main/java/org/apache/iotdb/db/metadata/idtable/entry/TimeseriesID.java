@@ -20,11 +20,13 @@ package org.apache.iotdb.db.metadata.idtable.entry;
 
 import org.apache.iotdb.db.metadata.path.PartialPath;
 
-/** A po class contains device id and measurement, represents a timeseries */
+/**
+ * 时间序列ID
+ * A po class contains device id and measurement, represents a timeseries */
 public class TimeseriesID {
 
-  private IDeviceID deviceID;
-  private String measurement;
+  private IDeviceID deviceID; // 设备ID
+  private String measurement; // 物理量
 
   /** build timeseries id from full path */
   public TimeseriesID(PartialPath fullPath) {

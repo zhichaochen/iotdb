@@ -124,6 +124,8 @@ import static org.apache.iotdb.db.engine.storagegroup.TsFileResource.TEMP_SUFFIX
 import static org.apache.iotdb.tsfile.common.constant.TsFileConstant.TSFILE_SUFFIX;
 
 /**
+ * 对于序列数据，StorageGroupProcessor有一些TSFileProcessor，其中只有一个处于工作状态的TSFileProcessor。
+ *
  * For sequence data, a StorageGroupProcessor has some TsFileProcessors, in which there is only one
  * TsFileProcessor in the working status. <br>
  *
@@ -142,6 +144,9 @@ import static org.apache.iotdb.tsfile.common.constant.TsFileConstant.TSFILE_SUFF
  *
  * <p>When a TsFileProcessor is closed, the closeUnsealedTsFileProcessorCallBack() method will be
  * called as a callback.
+ *
+ * 虚拟存储组处理器
+ * 虚拟存储组：在存储组的基础之上，再根据InsertPlan中的设备名进行hash，确定其虚拟存储组名称
  */
 public class VirtualStorageGroupProcessor {
 
@@ -163,6 +168,8 @@ public class VirtualStorageGroupProcessor {
       IoTDBDescriptor.getInstance().getConfig().getWalBufferSize() / 2;
   private final boolean enableMemControl = config.isEnableMemControl();
   /**
+   * 插入的读写锁
+   * 注意是一个读写锁，读的时候可以并发，写的时候不可以
    * a read write lock for guaranteeing concurrent safety when accessing all fields in this class
    * (i.e., schema, (un)sequenceFileList, work(un)SequenceTsFileProcessor,
    * closing(Un)SequenceTsFileProcessor, latestTimeForEachDevice, and
@@ -172,6 +179,7 @@ public class VirtualStorageGroupProcessor {
   /** closeStorageGroupCondition is used to wait for all currently closing TsFiles to be done. */
   private final Object closeStorageGroupCondition = new Object();
   /**
+   * 读写锁，关闭查询锁
    * avoid some tsfileResource is changed (e.g., from unsealed to sealed) when a query is executed.
    */
   private final ReadWriteLock closeQueryLock = new ReentrantReadWriteLock();
@@ -224,6 +232,7 @@ public class VirtualStorageGroupProcessor {
   /** file flush policy */
   private TsFileFlushPolicy fileFlushPolicy;
   /**
+   * 在每个分区中对应的最大版本号，版本号是自增的
    * The max file versions in each partition. By recording this, if several IoTDB instances have the
    * same policy of closing file and their ingestion is identical, then files of the same version in
    * different IoTDB instance will have identical data, providing convenience for data comparison
@@ -254,6 +263,7 @@ public class VirtualStorageGroupProcessor {
   private ILastFlushTimeManager lastFlushTimeManager;
 
   /**
+   * 记录SG中的insertWriteLock被哪个方法持有，如果有一个方法持有insertWriteLock，它将是空字符串
    * record the insertWriteLock in SG is being hold by which method, it will be empty string if on
    * one holds the insertWriteLock
    */
@@ -360,6 +370,7 @@ public class VirtualStorageGroupProcessor {
   }
 
   /**
+   * 构造一个存储组处理器
    * constrcut a storage group processor
    *
    * @param systemDir system dir path
@@ -377,10 +388,13 @@ public class VirtualStorageGroupProcessor {
     this.logicalStorageGroupName = logicalStorageGroupName;
     this.fileFlushPolicy = fileFlushPolicy;
 
+    // 存储组所在目录
     storageGroupSysDir = SystemFileFactory.INSTANCE.getFile(systemDir, virtualStorageGroupId);
+    // 创建TsFile管理器
     this.tsFileManager =
         new TsFileManager(
             logicalStorageGroupName, virtualStorageGroupId, storageGroupSysDir.getPath());
+    // 创建存储组目录
     if (storageGroupSysDir.mkdirs()) {
       logger.info(
           "Storage Group system Directory {} doesn't exist, create it",
@@ -390,9 +404,12 @@ public class VirtualStorageGroupProcessor {
     }
 
     // if use id table, we use id table flush time manager
+    // 如果能够使用ID_TABLE，则我们使用id table 刷写时间管理器
     if (config.isEnableIDTable()) {
       try {
+        // 获取存储组的ID表，一个存储组一个ID表
         idTable = IDTableManager.getInstance().getIDTable(new PartialPath(logicalStorageGroupName));
+        // 创建刷写时间管理器
         lastFlushTimeManager = new IDTableFlushTimeManager(idTable);
       } catch (IllegalPathException e) {
         logger.error("failed to create id table");
@@ -401,8 +418,10 @@ public class VirtualStorageGroupProcessor {
       lastFlushTimeManager = new LastFlushTimeManager();
     }
     // recover tsfiles
+    // 恢复ts文件
     recover();
 
+    // 指标收集
     if (MetricConfigDescriptor.getInstance().getMetricConfig().getEnableMetric()) {
       MetricsService.getInstance()
           .getMetricManager()
@@ -416,6 +435,7 @@ public class VirtualStorageGroupProcessor {
     }
 
     // start trim task at last
+    // 调度任务
     walTrimScheduleTask =
         IoTDBThreadPoolFactory.newSingleThreadScheduledExecutor(
             ThreadName.WAL_TRIM.getName()
@@ -490,7 +510,9 @@ public class VirtualStorageGroupProcessor {
     }
   }
 
-  /** recover from file */
+  /**
+   * 从ts
+   * recover from file */
   private void recover() throws StorageGroupProcessorException {
     try {
       recoverCompaction();
@@ -867,6 +889,7 @@ public class VirtualStorageGroupProcessor {
   }
 
   /**
+   * 插入一行数据
    * insert one row of data
    *
    * @param insertRowPlan one row of data
@@ -874,22 +897,27 @@ public class VirtualStorageGroupProcessor {
   public void insert(InsertRowPlan insertRowPlan)
       throws WriteProcessException, TriggerExecutionException {
     // reject insertions that are out of ttl
+    // 拒绝ttl之外的插入
     if (!isAlive(insertRowPlan.getTime())) {
       throw new OutOfTTLException(insertRowPlan.getTime(), (System.currentTimeMillis() - dataTTL));
     }
+    //
     writeLock("InsertRow");
     try {
       // init map
+      // 通过事件进行分区，得到slot
       long timePartitionId = StorageEngine.getTimePartition(insertRowPlan.getTime());
-
+      // 在lastFlushTimeManager中需要管理当前分区的最新时间，用一个map结构，如果没有则创建
       lastFlushTimeManager.ensureFlushedTimePartition(timePartitionId);
 
+      // 是否是有序的，写入的时间大于上一条的刷盘时间，则表示是有序的。
       boolean isSequence =
           insertRowPlan.getTime()
               > lastFlushTimeManager.getFlushedTime(
                   timePartitionId, insertRowPlan.getDevicePath().getFullPath());
 
       // is unsequence and user set config to discard out of order data
+      // 如果可以丢弃无序数据，则丢弃无序数据
       if (!isSequence
           && IoTDBDescriptor.getInstance().getConfig().isEnableDiscardOutOfOrderData()) {
         return;
@@ -898,19 +926,22 @@ public class VirtualStorageGroupProcessor {
       lastFlushTimeManager.ensureLastTimePartition(timePartitionId);
 
       // fire trigger before insertion
+      // 插入前触发
       TriggerEngine.fire(TriggerEvent.BEFORE_INSERT, insertRowPlan);
       // insert to sequence or unSequence file
+      // TODO 插入到序列或非序列文件，这里是真正插入数据文件
       insertToTsFileProcessor(insertRowPlan, isSequence, timePartitionId);
       // fire trigger after insertion
+      // 插入后触发
       TriggerEngine.fire(TriggerEvent.AFTER_INSERT, insertRowPlan);
     } finally {
+      // 释放写锁
       writeUnlock();
     }
   }
 
   /**
-   * 插入一个tablet到这个存储组
-   * tablet ：多个行属于相同的设备s
+   * 插入一个tablet（多个行属于相同的设备）进存储组
    * Insert a tablet (rows belonging to the same devices) into this storage group.
    *
    * @throws BatchProcessException if some of the rows failed to be inserted
@@ -926,12 +957,15 @@ public class VirtualStorageGroupProcessor {
       boolean noFailure = true;
 
       /*
+         假设该批次已按客户分类
        * assume that batch has been sorted by client
        */
-      int loc = 0;
+      int loc = 0; // 行技术
+      // 遍历行
       while (loc < insertTabletPlan.getRowCount()) {
         long currTime = insertTabletPlan.getTimes()[loc];
         // skip points that do not satisfy TTL
+        // 跳过不满足TTL的点
         if (!isAlive(currTime)) {
           results[loc] =
               RpcUtils.getStatus(
@@ -949,12 +983,15 @@ public class VirtualStorageGroupProcessor {
       }
 
       // fire trigger before insertion
+      // 在插入前启动触发器
       final int firePosition = loc;
       TriggerEngine.fire(TriggerEvent.BEFORE_INSERT, insertTabletPlan, firePosition);
 
       // before is first start point
+      // before 是第一个开始点
       int before = loc;
       // before time partition
+      // TODO 对时间进行分区，默认一周一个分区，也就是一周新建一个TsFile。
       long beforeTimePartition =
           StorageEngine.getTimePartition(insertTabletPlan.getTimes()[before]);
       // init map
@@ -1035,7 +1072,6 @@ public class VirtualStorageGroupProcessor {
   }
 
   /**
-   *
    * insert batch to tsfile processor thread-safety that the caller need to guarantee The rows to be
    * inserted are in the range [start, end) Null value in each column values will be replaced by the
    * subsequent non-null value, e.g., {1, null, 3, null, 5} will be {1, 3, 5, null, 5}
@@ -1060,6 +1096,7 @@ public class VirtualStorageGroupProcessor {
       return true;
     }
 
+    // TODO 根据时间分区ID timePartitionId，获取或者创建一个TsFileProcessor
     TsFileProcessor tsFileProcessor = getOrCreateTsFileProcessor(timePartitionId, sequence);
     if (tsFileProcessor == null) {
       for (int i = start; i < end; i++) {
@@ -1122,26 +1159,40 @@ public class VirtualStorageGroupProcessor {
     }
   }
 
+  /**
+   * 插入到时间序列文件处理器中
+   * TODO timePartitionId 这个字段很重要
+   * @param insertRowPlan
+   * @param sequence
+   * @param timePartitionId
+   * @throws WriteProcessException
+   */
   private void insertToTsFileProcessor(
       InsertRowPlan insertRowPlan, boolean sequence, long timePartitionId)
       throws WriteProcessException {
+    // 获取一个TS文件处理器
     TsFileProcessor tsFileProcessor = getOrCreateTsFileProcessor(timePartitionId, sequence);
     if (tsFileProcessor == null) {
       return;
     }
 
+    // TODO 这里会插入WAL
     tsFileProcessor.insert(insertRowPlan);
 
     // try to update the latest time of the device of this tsRecord
+    // 尝试去更新这条ts记录的设备的最新时间
     lastFlushTimeManager.updateLastTime(
         timePartitionId, insertRowPlan.getDevicePath().getFullPath(), insertRowPlan.getTime());
 
+    // 更新全局最新的刷盘时间
     long globalLatestFlushTime =
         lastFlushTimeManager.getGlobalFlushedTime(insertRowPlan.getDevicePath().getFullPath());
 
+    // g
     tryToUpdateInsertLastCache(insertRowPlan, globalLatestFlushTime);
 
     // check memtable size and may asyncTryToFlush the work memtable
+    //
     if (tsFileProcessor.shouldFlush()) {
       fileFlushPolicy.apply(this, tsFileProcessor, sequence);
     }
@@ -1189,13 +1240,21 @@ public class VirtualStorageGroupProcessor {
     }
   }
 
+  /**
+   * 获取或者创建一个TsFileProcessor
+   * @param timeRangeId
+   * @param sequence
+   * @return
+   */
   private TsFileProcessor getOrCreateTsFileProcessor(long timeRangeId, boolean sequence) {
     TsFileProcessor tsFileProcessor = null;
     try {
       if (sequence) {
+        // 有序
         tsFileProcessor =
             getOrCreateTsFileProcessorIntern(timeRangeId, workSequenceTsFileProcessors, true);
       } else {
+        // 无序
         tsFileProcessor =
             getOrCreateTsFileProcessorIntern(timeRangeId, workUnsequenceTsFileProcessors, false);
       }
@@ -1213,6 +1272,7 @@ public class VirtualStorageGroupProcessor {
   }
 
   /**
+   *
    * get processor from hashmap, flush oldest processor if necessary
    *
    * @param timeRangeId time partition range
@@ -1223,10 +1283,12 @@ public class VirtualStorageGroupProcessor {
       long timeRangeId, TreeMap<Long, TsFileProcessor> tsFileProcessorTreeMap, boolean sequence)
       throws IOException, DiskSpaceInsufficientException {
 
+    // 获取tsFile处理器
     TsFileProcessor res = tsFileProcessorTreeMap.get(timeRangeId);
 
     if (null == res) {
       // build new processor, memory control module will control the number of memtables
+      // 如果处理器为空，则构建一个新的处理器，并将其加入tsFileProcessorTreeMap
       res = newTsFileProcessor(sequence, timeRangeId);
       tsFileProcessorTreeMap.put(timeRangeId, res);
       tsFileManager.add(res.getTsFileResource(), sequence);
@@ -1235,11 +1297,16 @@ public class VirtualStorageGroupProcessor {
     return res;
   }
 
+  /**
+   * 创建一个新的TsFileProcess
+   */
   private TsFileProcessor newTsFileProcessor(boolean sequence, long timePartitionId)
       throws IOException, DiskSpaceInsufficientException {
 
+    // 创建TsFIle的版本号的规则是 + 1
     long version = partitionMaxFileVersions.getOrDefault(timePartitionId, 0L) + 1;
     partitionMaxFileVersions.put(timePartitionId, version);
+    // 生成新的TsFile
     String filePath =
         TsFileNameGenerator.generateNewTsFilePathWithMkdir(
             sequence,
@@ -1254,9 +1321,13 @@ public class VirtualStorageGroupProcessor {
     return getTsFileProcessor(sequence, filePath, timePartitionId);
   }
 
+  /**
+   * 创建TsFileProcessor
+   */
   private TsFileProcessor getTsFileProcessor(
       boolean sequence, String filePath, long timePartitionId) throws IOException {
     TsFileProcessor tsFileProcessor;
+    // 有序的TsFile文件
     if (sequence) {
       tsFileProcessor =
           new TsFileProcessor(
@@ -1266,7 +1337,9 @@ public class VirtualStorageGroupProcessor {
               this::closeUnsealedTsFileProcessorCallBack,
               this::updateLatestFlushTimeCallback,
               true);
-    } else {
+    }
+    // 无序的TsFile文件
+    else {
       tsFileProcessor =
           new TsFileProcessor(
               logicalStorageGroupName + File.separator + virtualStorageGroupId,
@@ -1277,6 +1350,7 @@ public class VirtualStorageGroupProcessor {
               false);
     }
 
+    // 内存控制
     if (enableMemControl) {
       TsFileProcessorInfo tsFileProcessorInfo = new TsFileProcessorInfo(storageGroupInfo);
       tsFileProcessor.setTsFileProcessorInfo(tsFileProcessorInfo);
@@ -1297,6 +1371,7 @@ public class VirtualStorageGroupProcessor {
    */
   private String getNewTsFileName(long timePartitionId) {
     long version = partitionMaxFileVersions.getOrDefault(timePartitionId, 0L) + 1;
+    // 更新最大版本号
     partitionMaxFileVersions.put(timePartitionId, version);
     return getNewTsFileName(System.currentTimeMillis(), version, 0, 0);
   }
@@ -1678,6 +1753,7 @@ public class VirtualStorageGroupProcessor {
   }
 
   /**
+   * 通过搜索所有符合查询过滤器的TSF文件来构建查询数据源
    * build query data source by searching all tsfile which fit in query filter
    *
    * @param pathList data paths
@@ -1694,8 +1770,10 @@ public class VirtualStorageGroupProcessor {
       QueryFileManager filePathsManager,
       Filter timeFilter)
       throws QueryProcessException {
+    // 加读锁
     readLock();
     try {
+      // 获取当前查询涉及的有序TsFileResource
       List<TsFileResource> seqResources =
           getFileResourceListForQuery(
               tsFileManager.getTsFileList(true),
@@ -1705,6 +1783,7 @@ public class VirtualStorageGroupProcessor {
               context,
               timeFilter,
               true);
+      // 获取当前查询涉及的无序TsFileResource
       List<TsFileResource> unseqResources =
           getFileResourceListForQuery(
               tsFileManager.getTsFileList(false),
@@ -1714,13 +1793,17 @@ public class VirtualStorageGroupProcessor {
               context,
               timeFilter,
               false);
+      // 构建查询数据源
       QueryDataSource dataSource = new QueryDataSource(seqResources, unseqResources);
       // used files should be added before mergeLock is unlocked, or they may be deleted by
       // running merge
       // is null only in tests
+      // 如果filePathsManager不为null
       if (filePathsManager != null) {
+        // 添加本次使用到的数据源
         filePathsManager.addUsedFilesForQuery(context.getQueryId(), dataSource);
       }
+      // 设置
       dataSource.setDataTTL(dataTTL);
       return dataSource;
     } catch (MetadataException e) {
@@ -1730,23 +1813,33 @@ public class VirtualStorageGroupProcessor {
     }
   }
 
-  /** lock the read lock of the insert lock */
+  /**
+   * 加读锁
+   * lock the read lock of the insert lock */
   public void readLock() {
     // apply read lock for SG insert lock to prevent inconsistent with concurrently writing memtable
+    // 为存储组 insert lock应用read lock，以防止与并发写入memtable不一致
     insertLock.readLock().lock();
     // apply read lock for TsFileResource list
+    // 为TsFileResource list应用读锁
     tsFileManager.readLock();
   }
 
-  /** unlock the read lock of insert lock */
+  /**
+   * 取消读锁
+   * unlock the read lock of insert lock */
   public void readUnlock() {
     tsFileManager.readUnlock();
     insertLock.readLock().unlock();
   }
 
-  /** lock the write lock of the insert lock */
+  /**
+   * 锁定插入锁的写锁
+   * lock the write lock of the insert lock */
   public void writeLock(String holder) {
+    // 写锁
     insertLock.writeLock().lock();
+    // 记录持有者
     insertWriteLockHolder = holder;
   }
 
@@ -1757,6 +1850,7 @@ public class VirtualStorageGroupProcessor {
   }
 
   /**
+   * 获取当前查询的TsFileResource列表
    * @param tsFileResources includes sealed and unsealed tsfile resources
    * @return fill unsealed tsfile resources with memory data and ChunkMetadataList of data in disk
    */
@@ -1779,6 +1873,7 @@ public class VirtualStorageGroupProcessor {
           (timeFilter == null ? "null" : timeFilter));
     }
 
+    // 结果列表
     List<TsFileResource> tsfileResourcesForQuery = new ArrayList<>();
 
     long timeLowerBound =
@@ -1786,19 +1881,24 @@ public class VirtualStorageGroupProcessor {
     context.setQueryTimeLowerBound(timeLowerBound);
 
     // for upgrade files and old files must be closed
+    // 对于升级文件和旧文件，必须关闭
+    // 遍历升级的TsFileResources
     for (TsFileResource tsFileResource : upgradeTsFileResources) {
+      // 如果不满足则继续
       if (!tsFileResource.isSatisfied(
           singleDeviceId, timeFilter, isSeq, dataTTL, context.isDebug())) {
         continue;
       }
       closeQueryLock.readLock().lock();
       try {
+        // 如果满足则加入列表
         tsfileResourcesForQuery.add(tsFileResource);
       } finally {
         closeQueryLock.readLock().unlock();
       }
     }
 
+    // 遍历tsFileResources，做相同的操作
     for (TsFileResource tsFileResource : tsFileResources) {
       if (!tsFileResource.isSatisfied(
           singleDeviceId, timeFilter, isSeq, dataTTL, context.isDebug())) {
@@ -1821,6 +1921,7 @@ public class VirtualStorageGroupProcessor {
   }
 
   /**
+   * 删除数据
    * Delete data whose timestamp <= 'timestamp' and belongs to the time series
    * deviceId.measurementId.
    *
@@ -1893,6 +1994,14 @@ public class VirtualStorageGroupProcessor {
     }
   }
 
+  /**
+   * 日志删除
+   * @param startTime
+   * @param endTime
+   * @param path
+   * @param timePartitionFilter
+   * @throws IOException
+   */
   private void logDeletion(
       long startTime, long endTime, PartialPath path, TimePartitionFilter timePartitionFilter)
       throws IOException {
@@ -1905,6 +2014,7 @@ public class VirtualStorageGroupProcessor {
             && entry.getKey() <= timePartitionEndId
             && (timePartitionFilter == null
                 || timePartitionFilter.satisfy(logicalStorageGroupName, entry.getKey()))) {
+          // 在删除数据中也要首先进行WAL
           entry.getValue().getLogNode().write(deletionPlan);
         }
       }
@@ -1914,6 +2024,7 @@ public class VirtualStorageGroupProcessor {
             && entry.getKey() <= timePartitionEndId
             && (timePartitionFilter == null
                 || timePartitionFilter.satisfy(logicalStorageGroupName, entry.getKey()))) {
+          // 在删除数据中也要首先进行WAL
           entry.getValue().getLogNode().write(deletionPlan);
         }
       }

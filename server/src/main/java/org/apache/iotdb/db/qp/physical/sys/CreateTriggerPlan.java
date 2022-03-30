@@ -35,13 +35,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+/**
+ * 创建触发器计划
+ */
 public class CreateTriggerPlan extends PhysicalPlan {
 
-  private String triggerName;
-  private TriggerEvent event;
-  private PartialPath fullPath;
-  private String className;
-  private Map<String, String> attributes;
+  private String triggerName; // 触发器名称
+  private TriggerEvent event; // 触发器事件
+  private PartialPath fullPath; // 全路径
+  private String className; // 类名
+  private Map<String, String> attributes; // 属性集合
 
   /**
    * This field is mainly used for the stage of recovering trigger registration information, so it

@@ -23,6 +23,9 @@ import org.apache.iotdb.db.engine.memtable.IMemTable;
 
 import java.io.IOException;
 
+/**
+ * 刷盘监听器
+ */
 public interface FlushListener {
 
   void onFlushStart(IMemTable memTable) throws IOException;

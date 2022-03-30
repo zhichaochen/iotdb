@@ -26,9 +26,14 @@ import org.apache.iotdb.tsfile.read.reader.IChunkReader;
 
 import java.io.IOException;
 
+/**
+ * chunk加载器
+ */
 public interface IChunkLoader {
 
-  /** read all content of any chunk. */
+  /**
+   * 读取chunk的所有内容
+   * read all content of any chunk. */
   Chunk loadChunk(ChunkMetadata chunkMetaData) throws IOException;
 
   /** close the file reader. */

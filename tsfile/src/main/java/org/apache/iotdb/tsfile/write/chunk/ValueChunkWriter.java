@@ -39,6 +39,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.Serializable;
 
+/**
+ * 值块的写入器
+ * NOTE ： 当前类仅仅用于对齐的时间序列
+ */
 public class ValueChunkWriter {
 
   private static final Logger logger = LoggerFactory.getLogger(ValueChunkWriter.class);
@@ -97,6 +101,7 @@ public class ValueChunkWriter {
     // init statistics for this chunk and page
     this.statistics = Statistics.getStatsByType(dataType);
 
+    // 创建
     this.pageWriter =
         new ValuePageWriter(valueEncoder, ICompressor.getCompressor(compressionType), dataType);
   }

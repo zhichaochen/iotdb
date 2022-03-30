@@ -37,6 +37,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+/**
+ * 内存工具类
+ */
+// 注意：此方法可能不准确
 // Notice : methods in this class may not be accurate.
 public class MemUtils {
 

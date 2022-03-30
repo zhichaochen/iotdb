@@ -38,7 +38,9 @@ import java.util.function.Function;
  * TSFile描述器
  * TSFileDescriptor被用于加载TSFileConfig和提供配置信息
  */
-/** TSFileDescriptor is used to load TSFileConfig and provide configure information. */
+/**
+ * TsFile描述器，被用于加载TsFile的配置和提供配置信息
+ * TSFileDescriptor is used to load TSFileConfig and provide configure information. */
 public class TSFileDescriptor {
 
   private static final Logger logger = LoggerFactory.getLogger(TSFileDescriptor.class);

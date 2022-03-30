@@ -26,6 +26,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+/**
+ * 时间的统计信息
+ */
 public class TimeStatistics extends Statistics<Long> {
 
   static final int TIME_STATISTICS_FIXED_RAM_SIZE = 40;

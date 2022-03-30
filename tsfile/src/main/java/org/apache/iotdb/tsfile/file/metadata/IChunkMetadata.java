@@ -29,6 +29,9 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.List;
 
+/**
+ * chunk索引
+ */
 public interface IChunkMetadata {
 
   Statistics<? extends Serializable> getStatistics();

@@ -36,6 +36,7 @@ import java.util.NoSuchElementException;
 import java.util.zip.CRC32;
 
 /**
+ * 单文件日志读取器
  * SingleFileLogReader reads binarized WAL logs from a file through a DataInputStream by scanning
  * the file from head to tail.
  */

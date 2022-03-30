@@ -40,6 +40,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
+ * 多文件日志节点管理器
+ * 管理所有的ExclusiveWriteLogNodes
  * MultiFileLogNodeManager manages all ExclusiveWriteLogNodes, each manages WALs of a TsFile (either
  * seq or unseq).
  */
@@ -54,7 +56,7 @@ public class MultiFileLogNodeManager implements WriteLogNodeManager, IService {
   private static final long REGISTER_BUFFER_REJECT_THRESHOLD_IN_MS =
       config.getRegisterBufferRejectThresholdInMs();
 
-  private final Map<String, WriteLogNode> nodeMap;
+  private final Map<String, WriteLogNode> nodeMap; // 写日志节点集合
 
   private ScheduledExecutorService executorService;
 
@@ -92,9 +94,17 @@ public class MultiFileLogNodeManager implements WriteLogNodeManager, IService {
     return InstanceHolder.instance;
   }
 
+  /**
+   * 获取写日志节点
+   * @param identifier -identifier, the format: "{storageGroupName}-{BufferWrite/Overflow}-{
+   * @param supplier
+   * @return
+   */
   @Override
   public WriteLogNode getNode(String identifier, Supplier<ByteBuffer[]> supplier) {
+    // 日志节点
     WriteLogNode node = nodeMap.get(identifier);
+    // 如果不存在则创建一个
     if (node == null) {
       node = new ExclusiveWriteLogNode(identifier);
       WriteLogNode oldNode = nodeMap.putIfAbsent(identifier, node);

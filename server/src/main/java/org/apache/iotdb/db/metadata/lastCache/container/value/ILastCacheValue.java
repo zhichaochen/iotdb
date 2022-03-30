@@ -22,6 +22,7 @@ package org.apache.iotdb.db.metadata.lastCache.container.value;
 import org.apache.iotdb.tsfile.read.TimeValuePair;
 import org.apache.iotdb.tsfile.utils.TsPrimitiveType;
 
+// 此接口声明lastCacheValue的最简单存储操作
 // this interface declares the simplest storage operation of lastCacheValue
 public interface ILastCacheValue {
 

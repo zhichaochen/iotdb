@@ -25,7 +25,10 @@ import org.apache.iotdb.db.metadata.path.PartialPath;
 
 import java.util.function.Function;
 
-/** factory to build device id according to configured algorithm */
+/**
+ * 设备ID工厂类
+ * 根据配置逻辑去构建设置ID
+ * factory to build device id according to configured algorithm */
 public class DeviceIDFactory {
   Function<String, IDeviceID> getDeviceIDFunction;
 
@@ -62,6 +65,7 @@ public class DeviceIDFactory {
   // endregion
 
   /**
+   * 通过全路径作为设备ID
    * get device id by full path
    *
    * @param devicePath device path of the timeseries

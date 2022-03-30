@@ -75,6 +75,11 @@ import java.time.ZoneId;
  *
  * @see UDTF
  * @see UDTFConfigurations
+ *
+ * 滑动时间窗口策略
+ *
+ * 以滑动时间窗口的方式处理原始数据。框架会为每一个原始数据输入窗口调用一次transform方法。
+ * 一个窗口可能存在多行数据，每一行数据对应的是输入序列按时间对齐后的结果（一行数据中，可能存在某一列为null值，但不会全部都是null）。
  */
 public class SlidingTimeWindowAccessStrategy implements AccessStrategy {
 

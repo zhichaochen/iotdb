@@ -19,6 +19,9 @@
 
 package org.apache.iotdb.db.metadata.template;
 
+/**
+ * 模板查询类型
+ */
 public enum TemplateQueryType {
   COUNT_MEASUREMENTS,
   IS_MEASUREMENT,

@@ -40,6 +40,12 @@ import java.util.List;
 import java.util.Random;
 
 /**
+ * 修改文件
+ * TsFile中的删除不是真正的删除，而是将删除的数据写入修改文件，查询的时候将修改文件中的数据过滤掉
+ * 数据删除是通过记录墓碑文件的形式（打标记）完成的。
+ *
+ * ModificationFile将TsFile或unseq文件的修改存储在同一目录下的另一个文件中。为了并发安全，此类中的方法是高度同步的。
+ *
  * ModificationFile stores the Modifications of a TsFile or unseq file in another file in the same
  * directory. Methods in this class are highly synchronized for concurrency safety.
  */

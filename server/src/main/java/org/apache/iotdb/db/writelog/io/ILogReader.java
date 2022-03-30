@@ -24,6 +24,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 /**
+ * 日志读取器
+ * 日志读取器是一个物理计划的迭代器，但是包含一个close方法，用完之后记住关闭它。
  * ILogReader is an iterator of PhysicalPlan but throws IOException and provide a close() method.
  * This class can be used just like java iterators, but remember to close it after use.
  */

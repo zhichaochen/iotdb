@@ -38,6 +38,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 聚合计划
+ */
 public class AggregationPlan extends RawDataQueryPlan {
 
   // e.g., for select count(s1), count(s1), count(s2), count(s2), sum (s1)

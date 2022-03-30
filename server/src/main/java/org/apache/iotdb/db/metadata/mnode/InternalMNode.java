@@ -29,6 +29,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * Mtree的内部节点，树的内部的节点，注意不是叶子节点，叶子节点上是物理量
+ *
  * This class is the implementation of Metadata Node. One MNode instance represents one node in the
  * Metadata Tree
  */
@@ -37,6 +39,7 @@ public class InternalMNode extends MNode {
   private static final long serialVersionUID = -770028375899514063L;
 
   /**
+   * 当前节点的子节点
    * use in Measurement Node so it's protected suppress warnings reason: volatile for double
    * synchronized check
    *
@@ -46,9 +49,9 @@ public class InternalMNode extends MNode {
   protected transient volatile Map<String, IMNode> children = null;
 
   // schema template
-  protected Template schemaTemplate = null;
+  protected Template schemaTemplate = null; // 元数据模板
 
-  private volatile boolean useTemplate = false;
+  private volatile boolean useTemplate = false; // 是否使用模板
 
   /** Constructor of MNode. */
   public InternalMNode(IMNode parent, String name) {
@@ -61,7 +64,9 @@ public class InternalMNode extends MNode {
     return (children != null && children.containsKey(name));
   }
 
-  /** get the child with the name */
+  /**
+   * 通过名称获取子节点
+   * get the child with the name */
   @Override
   public IMNode getChild(String name) {
     IMNode child = null;
@@ -72,6 +77,7 @@ public class InternalMNode extends MNode {
   }
 
   /**
+   * 添加子节点
    * add a child to current mnode
    *
    * @param name child's name
@@ -84,6 +90,7 @@ public class InternalMNode extends MNode {
      * measurementNode's children should be null to save memory
      * add child method will only be called when writing MTree, which is not a frequent operation
      */
+    // 设置子节点，如果子节点集合不存在，则同步创建
     if (children == null) {
       // double check, children is volatile
       synchronized (this) {
@@ -92,6 +99,7 @@ public class InternalMNode extends MNode {
         }
       }
     }
+    // 设置当前节点，作为其父节点
     child.setParent(this);
     IMNode existingChild = children.putIfAbsent(name, child);
     return existingChild == null ? child : existingChild;
@@ -184,6 +192,7 @@ public class InternalMNode extends MNode {
   }
 
   /**
+   * 得到这个节点的上模板，记住我们得到了这个节点到根最近的模板
    * get upper template of this node, remember we get nearest template alone this node to root
    *
    * @return upper template
@@ -221,10 +230,17 @@ public class InternalMNode extends MNode {
     this.useTemplate = useTemplate;
   }
 
+  /**
+   * 序列化到logWriter，这里做的是WAL
+   * 会将当前节点的所有子节点（包括子节点的子节点）都序列化到磁盘
+   * @param logWriter
+   * @throws IOException
+   */
   @Override
   public void serializeTo(MLogWriter logWriter) throws IOException {
+    // 首先序列化当前节点的子节点
     serializeChildren(logWriter);
-
+    // 序列化当前节点
     logWriter.serializeMNode(this);
   }
 
@@ -232,6 +248,7 @@ public class InternalMNode extends MNode {
     if (children == null) {
       return;
     }
+    // 这里会递归调用到serializeTo
     for (Entry<String, IMNode> entry : children.entrySet()) {
       entry.getValue().serializeTo(logWriter);
     }

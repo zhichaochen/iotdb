@@ -20,6 +20,9 @@ package org.apache.iotdb.db.metadata;
 
 import org.apache.iotdb.commons.conf.IoTDBConstant;
 
+/**
+ * 元数据常量
+ */
 public class MetadataConstant {
 
   private MetadataConstant() {

@@ -41,35 +41,52 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 原生数据查询计划
+ * 就是收到传感器的数据后，写入TsFile中的原生数据，没有经过聚合、分组、转化等操作
+ */
 public class RawDataQueryPlan extends QueryPlan {
 
   private List<PartialPath> deduplicatedPaths = new ArrayList<>();
 
-  private IExpression expression = null;
+  private IExpression expression = null; // 表达式
   private Map<String, Set<String>> deviceToMeasurements = new HashMap<>();
 
   // TODO: remove this when all types of query supporting vector
   /** used to group all the sub sensors of one vector into VectorPartialPath */
+  // 用于将一个向量的所有子传感器分组为VectorPartialPath
   private List<PartialPath> deduplicatedVectorPaths = new ArrayList<>();
 
   public RawDataQueryPlan() {
     super();
   }
 
+  /**
+   * 对查询中的路径进行去重
+   * @param physicalGenerator
+   * @throws MetadataException
+   */
   @Override
   public void deduplicate(PhysicalGenerator physicalGenerator) throws MetadataException {
     // sort paths by device, to accelerate the metadata read process
+    // 按设备对路径进行排序，以加快元数据读取过程
     List<Pair<PartialPath, Integer>> indexedPaths = new ArrayList<>();
     for (int i = 0; i < paths.size(); i++) {
       indexedPaths.add(new Pair<>(paths.get(i), i));
     }
+    // 对索引路径进行排序
     indexedPaths.sort(Comparator.comparing(pair -> pair.left));
 
+    // 要读取的列
     Set<String> columnForReaderSet = new HashSet<>();
+    // 要展示的列
     Set<String> columnForDisplaySet = new HashSet<>();
 
+    // 遍历所有索引路径
     for (Pair<PartialPath, Integer> indexedPath : indexedPaths) {
+      // 路径
       PartialPath originalPath = indexedPath.left;
+      // 下标
       Integer originalIndex = indexedPath.right;
 
       // TODO this method must have some big problem
@@ -83,6 +100,7 @@ public class RawDataQueryPlan extends QueryPlan {
         columnForReaderSet.add(columnForReader);
       }
 
+      // 获取要展示的列
       String columnForDisplay = getColumnForDisplay(columnForReader, originalIndex);
       if (!columnForDisplaySet.contains(columnForDisplay)) {
         setColumnNameToDatasetOutputIndex(columnForDisplay, getPathToIndex().size());
@@ -91,6 +109,7 @@ public class RawDataQueryPlan extends QueryPlan {
     }
 
     // group all the aligned sensors of one device into one AlignedPath
+    // 对一个设备的所有的对齐的传感进行分组，分组成一个对其的路径。
     groupVectorPaths(physicalGenerator);
   }
 
@@ -206,6 +225,7 @@ public class RawDataQueryPlan extends QueryPlan {
   }
 
   /**
+   * RawQueryWithoutValueFilter应调用此方法以使用分组向量部分路径替换以前的deduplicatedPaths
    * RawQueryWithoutValueFilter should call this method to use grouped vector partial path to
    * replace the previous deduplicatedPaths
    */

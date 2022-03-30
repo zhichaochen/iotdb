@@ -48,9 +48,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+/**
+ * 抽象的内存表
+ */
 public abstract class AbstractMemTable implements IMemTable {
 
   /** DeviceId -> chunkGroup(MeasurementId -> chunk) */
+  // 设备ID和Chunk group的映射，两者是1对1的关系，一个设备就是一个chunk group
   private final Map<IDeviceID, IWritableMemChunkGroup> memTableMap;
 
   /**
@@ -77,9 +81,9 @@ public abstract class AbstractMemTable implements IMemTable {
 
   private long totalPointsNumThreshold = 0;
 
-  private long maxPlanIndex = Long.MIN_VALUE;
+  private long maxPlanIndex = Long.MIN_VALUE; // 当前内存表最小的索引
 
-  private long minPlanIndex = Long.MAX_VALUE;
+  private long minPlanIndex = Long.MAX_VALUE; // 当前内存表最大的索引
 
   private long createdTime = System.currentTimeMillis();
 
@@ -137,19 +141,27 @@ public abstract class AbstractMemTable implements IMemTable {
     return memChunkGroup;
   }
 
+  /**
+   * 插入一行
+   * @param insertRowPlan insertRowPlan
+   */
   @Override
   public void insert(InsertRowPlan insertRowPlan) {
     // if this insert plan isn't from storage engine (mainly from test), we should set a temp device
     // id for it
+    // 如果这个insert计划不是从存储引擎而来（主要来自于测试），我们应该为它设置一个临时的设备Id
     if (insertRowPlan.getDeviceID() == null) {
       insertRowPlan.setDeviceID(
           DeviceIDFactory.getInstance().getDeviceID(insertRowPlan.getDevicePath()));
     }
 
+    // 更新计划索引
     updatePlanIndexes(insertRowPlan.getIndex());
+    // 获取字段名和值
     String[] measurements = insertRowPlan.getMeasurements();
     Object[] values = insertRowPlan.getValues();
 
+    // 遍历获取物理量的schema与类型
     List<IMeasurementSchema> schemaList = new ArrayList<>();
     List<TSDataType> dataTypes = new ArrayList<>();
     for (int i = 0; i < insertRowPlan.getMeasurements().length; i++) {
@@ -160,16 +172,19 @@ public abstract class AbstractMemTable implements IMemTable {
       schemaList.add(schema);
       dataTypes.add(schema.getType());
     }
+    // 计算所需内存
     memSize += MemUtils.getRecordsSize(dataTypes, values, disableMemControl);
     // TODO 一个chunk，就代表一列数据，也就是一个物理量的数组
     // 将物理量写入内存
     write(insertRowPlan.getDeviceID(), schemaList, insertRowPlan.getTime(), values);
 
+    // 已经插入的数据点
     int pointsInserted =
         insertRowPlan.getMeasurements().length - insertRowPlan.getFailedMeasurementNumber();
 
     totalPointsNum += pointsInserted;
 
+    // 统计插入的总数
     if (MetricConfigDescriptor.getInstance().getMetricConfig().getEnableMetric()) {
       MetricsService.getInstance()
           .getMetricManager()
@@ -286,8 +301,10 @@ public abstract class AbstractMemTable implements IMemTable {
       List<IMeasurementSchema> schemaList,
       long insertTime,
       Object[] objectValue) {
+    // 创建内存
     IWritableMemChunkGroup memChunkGroup =
         createMemChunkGroupIfNotExistAndGet(deviceId, schemaList);
+    // 写入
     memChunkGroup.write(insertTime, objectValue, schemaList);
   }
 

@@ -23,7 +23,9 @@ import org.apache.iotdb.tsfile.common.constant.TsFileConstant;
 import java.io.Serializable;
 
 /**
+ * 时间序列路径，包含设备和物理量
  *
+ * 这个类代表在TsFile中的一个时间序列，通常通过一个设备和物理量来定义
  * This class represent a time series in TsFile, which is usually defined by a device and a
  * measurement.
  *
@@ -33,9 +35,9 @@ import java.io.Serializable;
 public class Path implements Serializable, Comparable<Path> {
 
   private static final long serialVersionUID = 3405277066329298200L;
-  private String measurement; // 度量
-  protected String device; // 设备
-  protected String fullPath; // 全路径
+  private String measurement; // 当前物理量
+  protected String device; // 当前设备
+  protected String fullPath; // 表示Sql中完整的字符串路径
   private static final String ILLEGAL_PATH_ARGUMENT = "Path parameter is null";
 
   public Path() {}

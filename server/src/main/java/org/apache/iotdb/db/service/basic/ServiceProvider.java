@@ -57,6 +57,9 @@ import java.sql.SQLException;
 
 import static org.apache.iotdb.db.utils.ErrorHandlingUtils.onNPEOrUnexpectedException;
 
+/**
+ * 服务提供器
+ */
 public abstract class ServiceProvider {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ServiceProvider.class);
@@ -255,14 +258,19 @@ public abstract class ServiceProvider {
     }
   }
 
-  /** create QueryDataSet and buffer it for fetchResults */
+  /**
+   * 创建QueryDataSet
+   * create QueryDataSet and buffer it for fetchResults */
   public QueryDataSet createQueryDataSet(
       QueryContext context, PhysicalPlan physicalPlan, int fetchSize)
       throws QueryProcessException, QueryFilterOptimizationException, StorageEngineException,
           IOException, MetadataException, SQLException, TException, InterruptedException {
 
+    // 处理查询
     QueryDataSet queryDataSet = executor.processQuery(physicalPlan, context);
+    // 设置拉取size
     queryDataSet.setFetchSize(fetchSize);
+    // 设置查询数据集
     SESSION_MANAGER.setDataset(context.getQueryId(), queryDataSet);
     return queryDataSet;
   }

@@ -28,6 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 查询任务管理器
+ * 该线程池用于执行所有来自客户端的查询任务，并返回TSExecuteStatementResp
+ *
  * This pool is used to execute all query task send from client, and return TSExecuteStatementResp.
  * Thread named by Query.
  *

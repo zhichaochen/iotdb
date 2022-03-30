@@ -423,6 +423,9 @@ public abstract class TsPrimitiveType implements Serializable {
     }
   }
 
+  /**
+   * 二进制的值
+   */
   public static class TsBinary extends TsPrimitiveType {
 
     private Binary value;

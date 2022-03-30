@@ -30,9 +30,16 @@ import java.util.List;
 
 /**
  * 查询数据集，依赖TimeGenerator生成时间戳
+ * TODO 适用于什么什么情况
+ *  包含值过滤条件的查询（注意：也可能会包含时间）
  *
- * TODO 与DataSetWithoutTimeGenerator有什么区别呢？
- *
+ *  * TODO 为啥需要时间生成器？？？
+ *  *  如果有过滤条件，那么我们肯定要查询符合条件的数据，那么过滤之后取那个时间呢，由时间生成器提供。
+ *  *
+ *  * TODO 查询步骤是怎样的呢？
+ *  *  1、通过表达式构建节点树，叶子节点都是数据读取器，比如：FileSeriesReader
+ *  *  1、获取我们需要的时间戳
+ *  *  2、通过FileSeriesReaderByTimestamp,通过时间戳查询目标数据。
  *
  * DataSetWithTimeGenerator是一个QueryDataSet数据类型
  * 查询处理：（1）按具有筛选器的序列生成时间（2）获取不具有筛选器的序列的值（3）构造行记录。

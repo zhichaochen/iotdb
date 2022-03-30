@@ -21,18 +21,27 @@ package org.apache.iotdb.db.engine.trigger.api;
 
 import org.apache.iotdb.tsfile.utils.Binary;
 
+/**
+ * 触发器接口，自定义的触发器都需要实现该接口
+ * 其中：fire ：侦听数据变动的钩子，目前仅仅能侦听插入的操作，其中入参入参timestamp和value即是这一次插入数据点的时间和数据值。
+ *
+ */
 /** User Guide: docs/UserGuide/Operation Manual/Triggers.md */
 public interface Trigger {
 
+  /*当创建触发器的时候做些什么事情*/
   @SuppressWarnings("squid:S112")
   default void onCreate(TriggerAttributes attributes) throws Exception {}
 
+  /*当删除触发器的时候做些什么*/
   @SuppressWarnings("squid:S112")
   default void onDrop() throws Exception {}
 
+  /*手动启动触发器后，该方法会被调用*/
   @SuppressWarnings("squid:S112")
   default void onStart() throws Exception {}
 
+  /*当手动停止触发器后，该方法会被调用*/
   @SuppressWarnings("squid:S112")
   default void onStop() throws Exception {}
 

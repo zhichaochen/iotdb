@@ -34,6 +34,9 @@ import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import java.time.ZoneId;
 
 /**
+ * UDTF配置
+ * 必须使用 UDTFConfigurations 指定 UDF 访问原始数据时采取的策略和输出结果序列的类型。
+ *
  * Used in {@link UDTF#beforeStart(UDFParameters, UDTFConfigurations)}.
  * <p>
  * Supports calling methods in a chain.
@@ -49,13 +52,14 @@ import java.time.ZoneId;
  */
 public class UDTFConfigurations extends UDFConfigurations {
 
-  protected final ZoneId zoneId;
+  protected final ZoneId zoneId; // 时区
 
   public UDTFConfigurations(ZoneId zoneId) {
     this.zoneId = zoneId;
   }
 
   /**
+   * 用于指定UDTF输出数据的类型
    * Used to specify the output data type of the UDTF. In other words, the data type you set here
    * determines the type of data that the PointCollector in {@link UDTF#transform(Row,
    * PointCollector)}, {@link UDTF#transform(RowWindow, PointCollector)} or {@link

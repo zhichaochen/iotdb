@@ -33,8 +33,8 @@ import java.nio.ByteBuffer;
  */
 public class PageHeader {
 
-  private int uncompressedSize;
-  private int compressedSize;
+  private int uncompressedSize; // 压缩后的大小
+  private int compressedSize; // 未压缩的大小
   private Statistics<? extends Serializable> statistics;
   private boolean modified; // 当前Page是否被修改过，比如Page中有一部分数据已经被删除
 

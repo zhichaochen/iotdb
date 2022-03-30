@@ -32,6 +32,9 @@ import org.apache.iotdb.tsfile.read.filter.factory.FilterFactory;
 
 import java.util.List;
 
+/**
+ * 表达式优化器
+ */
 public class ExpressionOptimizer {
 
   private ExpressionOptimizer() {}

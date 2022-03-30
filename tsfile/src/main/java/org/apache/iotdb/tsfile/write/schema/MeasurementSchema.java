@@ -38,6 +38,10 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
+ * 物理量schema
+ * 此类描述在{@linkplain Schema FileSchema}中注册的度量信息，包括度量id、数据类型、编码和压缩程序类型。
+ * 对于每个编码，MeasurementSchema维护各自的编码生成器；对于TSDataType，到目前为止，只有ENUM有TSDataTypeConverter。
+ *
  * This class describes a measurement's information registered in {@linkplain Schema FileSchema},
  * including measurement id, data type, encoding and compressor type. For each TSEncoding,
  * MeasurementSchema maintains respective TSEncodingBuilder; For TSDataType, only ENUM has
@@ -46,12 +50,12 @@ import java.util.Objects;
 public class MeasurementSchema
     implements IMeasurementSchema, Comparable<MeasurementSchema>, Serializable {
 
-  private String measurementId;
-  private byte type;
-  private byte encoding;
+  private String measurementId;// 物理量ID
+  private byte type; // 数据类型
+  private byte encoding; // 编码器
   private TSEncodingBuilder encodingConverter;
-  private byte compressor;
-  private Map<String, String> props = null;
+  private byte compressor; // 压缩器
+  private Map<String, String> props = null; // 属性
 
   public MeasurementSchema() {}
 
@@ -80,6 +84,7 @@ public class MeasurementSchema
   }
 
   /**
+   * 物理量元数据
    * Constructor of MeasurementSchema.
    *
    * <p>props - information in encoding method. For RLE, Encoder.MAX_POINT_NUMBER For PLAIN,
@@ -217,7 +222,9 @@ public class MeasurementSchema
     this.props = props;
   }
 
-  /** function for getting time encoder. */
+  /**
+   * 获取时间编码器
+   * function for getting time encoder. */
   @Override
   public Encoder getTimeEncoder() {
     TSEncoding timeEncoding =

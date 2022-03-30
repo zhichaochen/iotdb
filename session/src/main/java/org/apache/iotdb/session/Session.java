@@ -112,7 +112,7 @@ public class Session {
    * Timeout of query can be set by users. A negative number means using the default configuration
    * of server. And value 0 will disable the function of query timeout.
    */
-  private long queryTimeoutInMs = -1;
+  private long queryTimeoutInMs = -1; // 查询超时时间，负数表示使用默认的超时时间
 
   protected boolean enableRPCCompression;
   protected int connectionTimeoutInMs;
@@ -642,6 +642,7 @@ public class Session {
   }
 
   /**
+   * 执行查询语句
    * execute query sql
    *
    * @param sql query statement
@@ -710,6 +711,7 @@ public class Session {
   }
 
   /**
+   * 执行原生的数据查询，没有经过 group等操作，例如：下面的语句
    * query eg. select * from paths where time >= startTime and time < endTime time interval include
    * startTime and exclude endTime
    *

@@ -27,13 +27,15 @@ import java.io.IOException;
 import java.util.List;
 
 /**
+ * UDAF查询输入数据集
+ * 它接受任何查询结果作为输入，而不是原始结果时间序列数据
  * the input data set of an UDAF query. It accepts any query results as input instead of raw
  * timeseries data
  */
 public class UDFInputDataSet implements IUDFInputDataSet {
 
-  private final QueryDataSet dataSet;
-  private List<TSDataType> dataTypes;
+  private final QueryDataSet dataSet; // 查询数据集
+  private List<TSDataType> dataTypes; // 数据类型列表
 
   public UDFInputDataSet(QueryDataSet dataSet, List<TSDataType> dataTypes) {
     this.dataSet = dataSet;

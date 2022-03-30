@@ -19,7 +19,10 @@
 
 package org.apache.iotdb.db.metadata.idtable.entry;
 
-/** device id interface */
+
+/**
+ * 设备ID
+ * device id interface */
 public interface IDeviceID {
 
   /**

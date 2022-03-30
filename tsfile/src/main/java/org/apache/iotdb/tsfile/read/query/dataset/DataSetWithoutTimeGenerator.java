@@ -31,8 +31,14 @@ import java.util.*;
 
 /**
  * 多路归并数据集，不需要使用时间生成器
+ * TODO 适用于什么情况呢？
+ *  无过滤条件或仅包含时间过滤条件查询。
+ *
  * TODO 什么是多路归并
- * 核心思想是将多批次数据都加入优先队列，然后时间从小到大就进行排列了，然后逐条提取。
+ *  核心思想是将多批次数据都加入优先队列，然后时间从小到大就进行排列了，然后逐条提取。
+ *
+ * TODO 为啥不需要生成时间戳呢？
+ *  因为只有时间戳这个条件，那么
  *
  * multi-way merging data set, no need to use TimeGenerator. */
 public class DataSetWithoutTimeGenerator extends QueryDataSet {

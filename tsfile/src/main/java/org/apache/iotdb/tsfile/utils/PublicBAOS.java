@@ -23,6 +23,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
+ * 公开的字节数组
+ * 一个子类，通过tearrayoutputstream扩展<code>。它用于直接返回字节数组。
+ * 请注意，字节数组的大小大于有效内容的实际大小，因此用于配合<code>size（）</code>或<code>capacity=size</code>
  * A subclass extending <code>ByteArrayOutputStream</code>. It's used to return the byte array
  * directly. Note that the size of byte array is large than actual size of valid contents, thus it's
  * used cooperating with <code>size()</code> or <code>capacity = size</code>

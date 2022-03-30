@@ -22,9 +22,12 @@ package org.apache.iotdb.db.query.udf.api.customizer.config;
 import org.apache.iotdb.db.exception.query.QueryProcessException;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 
+/**
+ * UDF配置
+ */
 public abstract class UDFConfigurations {
 
-  protected TSDataType outputDataType;
+  protected TSDataType outputDataType; // 输出数据类型
 
   public TSDataType getOutputDataType() {
     return outputDataType;

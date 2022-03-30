@@ -49,6 +49,9 @@ import org.apache.iotdb.tsfile.read.reader.IPointReader;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * 集群时间生成器
+ */
 public class ClusterTimeGenerator extends ServerTimeGenerator {
 
   private ClusterReaderFactory readerFactory;

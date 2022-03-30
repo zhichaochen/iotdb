@@ -32,7 +32,9 @@ import java.util.List;
 
 import static org.apache.iotdb.db.query.udf.datastructure.SerializableList.INITIAL_BYTE_ARRAY_LENGTH_FOR_MEMORY_CONTROL;
 
-/** An elastic list of records that implements memory control using LRU strategy. */
+/**
+ * 使用LRU策略实现内存控制的弹性记录列表。
+ * An elastic list of records that implements memory control using LRU strategy. */
 public class ElasticSerializableRowRecordList {
 
   protected static final int MEMORY_CHECK_THRESHOLD = 1000;
@@ -160,6 +162,7 @@ public class ElasticSerializableRowRecordList {
   }
 
   /**
+   *
    * Put the row in the list with an any-field-null marker, this method is faster than calling put
    * directly
    */

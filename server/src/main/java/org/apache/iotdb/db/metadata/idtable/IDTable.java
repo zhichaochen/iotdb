@@ -45,6 +45,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * ID表
+ */
 public interface IDTable {
   /** logger */
   Logger logger = LoggerFactory.getLogger(IDTable.class);
@@ -53,6 +56,7 @@ public interface IDTable {
   IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
 
   /**
+   * 创建对其时间序列
    * create aligned timeseries
    *
    * @param plan create aligned timeseries plan
@@ -61,6 +65,7 @@ public interface IDTable {
   void createAlignedTimeseries(CreateAlignedTimeSeriesPlan plan) throws MetadataException;
 
   /**
+   * 创建时间序列
    * create timeseries
    *
    * @param plan create timeseries plan

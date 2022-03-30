@@ -23,7 +23,9 @@ import org.apache.iotdb.tsfile.common.constant.TsFileConstant;
 
 import java.io.IOException;
 
-/** MetaMarker denotes the type of headers and footers. Enum is not used for space saving. */
+/**
+ * MetaMarker表示页眉和页脚的类型。枚举不用于节省空间。
+ * MetaMarker denotes the type of headers and footers. Enum is not used for space saving. */
 @SuppressWarnings({"squid:S1133"}) // Deprecated code should be removed
 public class MetaMarker {
 
@@ -31,7 +33,7 @@ public class MetaMarker {
   /** Chunk header marker and this chunk has more than one page. */
   public static final byte CHUNK_HEADER = 1;
 
-  public static final byte SEPARATOR = 2;
+  public static final byte SEPARATOR = 2; // 分隔符
   /**
    * @deprecated (Since TsFile version 3, the marker VERSION is no longer used in TsFile. It should
    *     be removed when TsFile upgrade to version 4)
@@ -41,7 +43,8 @@ public class MetaMarker {
   // following this marker are two longs marking the minimum and maximum indices of operations
   // involved in the last flushed MemTable, which are generally used to support checkpoint,
   // snapshot, or backup.
-  public static final byte OPERATION_INDEX_RANGE = 4;
+  // 在这个标记后面是两个长标记，分别标记最后一次刷新的MemTable中涉及的操作的最小索引和最大索引，它们通常用于支持检查点、快照或备份。
+  public static final byte OPERATION_INDEX_RANGE = 4; // 操作索引范围
 
   /** Chunk header marker and this chunk has only one page. */
   public static final byte ONLY_ONE_PAGE_CHUNK_HEADER = 5;

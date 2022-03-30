@@ -49,6 +49,7 @@ import static org.apache.iotdb.tsfile.utils.ReadWriteIOUtils.ClassSerializeId.NU
 import static org.apache.iotdb.tsfile.utils.ReadWriteIOUtils.ClassSerializeId.STRING;
 
 /**
+ * 读写IO工具类
  * ConverterUtils is a utility class. It provides conversion between normal datatype and byte array.
  */
 public class ReadWriteIOUtils {
@@ -262,6 +263,7 @@ public class ReadWriteIOUtils {
   }
 
   /**
+   * bytebuffer中写入一个int值
    * write a int n to byteBuffer.
    *
    * @return The number of bytes used to represent n.
@@ -361,19 +363,25 @@ public class ReadWriteIOUtils {
   }
 
   /**
+   * 向bytebuffer中写入一个字符串
    * write string to byteBuffer.
    *
    * @return the length of string represented by byte[].
    */
   public static int write(String s, ByteBuffer buffer) {
+    // 如果为null写入一个int类型的-1
     if (s == null) {
       return write(-1, buffer);
     }
+    // TODO 记录本次写入的总长度，其中包括，1、四个字节的字符串长度，真实值的长度。
     int len = 0;
     byte[] bytes = s.getBytes();
+    // 写入字符串所占字节长度，占用四个字节
     len += write(bytes.length, buffer);
+    // 写入字符串
     buffer.put(bytes);
     len += bytes.length;
+    // 返回长度
     return len;
   }
 

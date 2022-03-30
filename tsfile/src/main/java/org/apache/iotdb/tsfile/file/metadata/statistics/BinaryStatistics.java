@@ -30,7 +30,9 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-/** Statistics for string type. */
+/**
+ * String类型统计信息
+ * Statistics for string type. */
 public class BinaryStatistics extends Statistics<Binary> {
 
   private Binary firstValue = new Binary("");

@@ -28,6 +28,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+/**
+ * 可恢复的读取器，用于恢复 ts file
+ */
 public class TsFileRestorableReader extends TsFileSequenceReader {
 
   private static final Logger logger = LoggerFactory.getLogger(TsFileRestorableReader.class);

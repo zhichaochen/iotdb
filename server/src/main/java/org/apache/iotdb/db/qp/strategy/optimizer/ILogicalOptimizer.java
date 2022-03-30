@@ -22,9 +22,17 @@ import org.apache.iotdb.db.exception.query.LogicalOptimizeException;
 import org.apache.iotdb.db.exception.query.PathNumOverLimitException;
 import org.apache.iotdb.db.qp.logical.Operator;
 
-/** provide a context, transform it for optimization. */
+/**
+ * 逻辑计划优化器
+ * provide a context, transform it for optimization. */
 @FunctionalInterface
 public interface ILogicalOptimizer {
-
+  /**
+   * 转换
+   * @param operator
+   * @return
+   * @throws LogicalOptimizeException
+   * @throws PathNumOverLimitException
+   */
   Operator transform(Operator operator) throws LogicalOptimizeException, PathNumOverLimitException;
 }

@@ -25,12 +25,15 @@ import java.util.Map;
 /**
  * 实现的LRU缓存
  */
-/** This class is not thread safe. */
+/**
+ *  This class is not thread safe. */
 public abstract class LRUCache<K, T> implements Cache<K, T> {
 
+  // 缓存的Map
   protected Map<K, T> cache;
 
   public LRUCache(int cacheSize) {
+    // 创建linkedHashMap，并重写其removeEldestEntry方法
     this.cache =
         new LinkedHashMap<K, T>(cacheSize, 0.75f, true) {
           @Override

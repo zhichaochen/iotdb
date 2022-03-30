@@ -30,24 +30,35 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Note: it is NOT thread safe. */
+/**
+ * 触发器的类加载器管理器
+ * Note: it is NOT thread safe. */
 public class TriggerClassLoaderManager {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TriggerClassLoaderManager.class);
 
+  // 触发器根目录
   private static final String LIB_ROOT = IoTDBDescriptor.getInstance().getConfig().getTriggerDir();
 
+  // 类名 -> 类加载器
   private final Map<String, Pair<TriggerClassLoader, Integer>> classNameToClassLoaderUsagePairMap;
 
   private TriggerClassLoaderManager() {
     classNameToClassLoaderUsagePairMap = new HashMap<>();
   }
 
+  /**
+   * 注册触发器类
+   * @param className
+   * @return
+   * @throws TriggerManagementException
+   */
   public TriggerClassLoader register(String className) throws TriggerManagementException {
     Pair<TriggerClassLoader, Integer> classLoaderUsagePair =
         classNameToClassLoaderUsagePairMap.get(className);
     if (classLoaderUsagePair == null) {
       try {
+        // 创建触发器的类加载器，并缓存
         TriggerClassLoader classLoader = new TriggerClassLoader(LIB_ROOT);
         classLoaderUsagePair = new Pair<>(classLoader, 0);
         classNameToClassLoaderUsagePairMap.put(className, classLoaderUsagePair);

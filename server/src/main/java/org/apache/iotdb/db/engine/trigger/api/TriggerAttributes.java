@@ -21,6 +21,9 @@ package org.apache.iotdb.db.engine.trigger.api;
 
 import java.util.Map;
 
+/**
+ * 触发器属性
+ */
 public class TriggerAttributes {
 
   private final Map<String, String> attributes;

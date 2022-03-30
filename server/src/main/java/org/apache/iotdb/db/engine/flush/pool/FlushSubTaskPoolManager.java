@@ -26,6 +26,9 @@ import org.apache.iotdb.db.rescon.AbstractPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 刷盘线程池
+ */
 public class FlushSubTaskPoolManager extends AbstractPoolManager {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FlushSubTaskPoolManager.class);

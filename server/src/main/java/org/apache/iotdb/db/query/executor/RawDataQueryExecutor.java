@@ -53,7 +53,11 @@ import java.util.stream.Collectors;
 
 import static org.apache.iotdb.tsfile.read.query.executor.ExecutorWithTimeGenerator.markFilterdPaths;
 
-/** IoTDB query executor. */
+/**
+ * 原生数据查询执行器，查询TsFile中的数据
+ * 单机查询，入股是集群查询，可以查看其子类
+ *
+ * IoTDB query executor. */
 public class RawDataQueryExecutor {
 
   protected RawDataQueryPlan queryPlan;
@@ -64,7 +68,9 @@ public class RawDataQueryExecutor {
 
   private static final Logger logger = LoggerFactory.getLogger(RawDataQueryExecutor.class);
 
-  /** without filter or with global time filter. */
+  /**
+   * 没有过滤器或者有一个全局时间过滤器
+   * without filter or with global time filter. */
   public QueryDataSet executeWithoutValueFilter(QueryContext context)
       throws StorageEngineException, QueryProcessException {
     QueryDataSet dataSet = needRedirect(context, false);
@@ -86,10 +92,12 @@ public class RawDataQueryExecutor {
 
   public final QueryDataSet executeNonAlign(QueryContext context)
       throws StorageEngineException, QueryProcessException {
+    // 是否需要重定向到其他节点，因为存在集群模式
     QueryDataSet dataSet = needRedirect(context, false);
     if (dataSet != null) {
       return dataSet;
     }
+    // 初始化被管理的序列读取器
     List<ManagedSeriesReader> readersOfSelectedSeries = initManagedSeriesReader(context);
     return new NonAlignEngineDataSet(
         context.getQueryId(),
@@ -106,15 +114,19 @@ public class RawDataQueryExecutor {
     }
 
     List<ManagedSeriesReader> readersOfSelectedSeries = new ArrayList<>();
+    //
     Pair<List<VirtualStorageGroupProcessor>, Map<VirtualStorageGroupProcessor, List<PartialPath>>>
         lockListAndProcessorToSeriesMapPair =
             StorageEngine.getInstance().mergeLock(queryPlan.getDeduplicatedPaths());
+    // 锁列表
     List<VirtualStorageGroupProcessor> lockList = lockListAndProcessorToSeriesMapPair.left;
+    //
     Map<VirtualStorageGroupProcessor, List<PartialPath>> processorToSeriesMap =
         lockListAndProcessorToSeriesMapPair.right;
 
     try {
       // init QueryDataSource cache
+      // 初始化QueryDataSource缓存
       QueryResourceManager.getInstance()
           .initQueryDataSourceCache(processorToSeriesMap, context, timeFilter);
     } catch (Exception e) {
@@ -303,6 +315,7 @@ public class RawDataQueryExecutor {
   }
 
   /**
+   * 检查是否需要将查询重定向到其他节点。（因为是集群模式嘛）
    * Check whether need to redirect query to other node.
    *
    * @param context query context

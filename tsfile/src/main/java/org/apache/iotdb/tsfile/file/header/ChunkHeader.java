@@ -214,6 +214,7 @@ public class ChunkHeader {
   }
 
   /**
+   * 序列化chunk头到outputStream
    * serialize to outputStream.
    *
    * @param outputStream outputStream
@@ -222,11 +223,17 @@ public class ChunkHeader {
    */
   public int serializeTo(OutputStream outputStream) throws IOException {
     int length = 0;
+    // 写入chunk类型
     length += ReadWriteIOUtils.write(chunkType, outputStream);
+    // 写入物理量ID
     length += ReadWriteIOUtils.writeVar(measurementID, outputStream);
+    // 写入数据大小
     length += ReadWriteForEncodingUtils.writeUnsignedVarInt(dataSize, outputStream);
+    // 写入数据类型
     length += ReadWriteIOUtils.write(dataType, outputStream);
+    // 写入压缩类型
     length += ReadWriteIOUtils.write(compressionType, outputStream);
+    // 写入编码类型
     length += ReadWriteIOUtils.write(encodingType, outputStream);
     return length;
   }

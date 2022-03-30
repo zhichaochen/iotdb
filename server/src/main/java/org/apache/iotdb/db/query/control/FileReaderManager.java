@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * 文件读取器管理器，用于管理所有的文件读取器，确保每个文件最多打开一次
  * FileReaderManager is a singleton, which is used to manage all file readers(opened file streams)
  * to ensure that each file is opened at most once.
  */

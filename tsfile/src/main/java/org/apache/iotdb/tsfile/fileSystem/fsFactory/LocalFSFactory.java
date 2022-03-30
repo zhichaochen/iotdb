@@ -36,6 +36,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 
+/**
+ * 本地文件系统工厂
+ */
 public class LocalFSFactory implements FSFactory {
 
   private static final Logger logger = LoggerFactory.getLogger(LocalFSFactory.class);

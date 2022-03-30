@@ -28,6 +28,9 @@ import java.io.IOException;
 import java.util.List;
 
 /**
+ * TsFile中的区块组包含多个系列。ChunkGroupWriter应该实现write方法
+ * 它以时间戳（在TimeValue类中）和数据点列表作为输入。它还应该提供序列化到本地文件系统或HDFS的刷新方法。
+ *
  * A chunk group in TsFile contains several series. A ChunkGroupWriter should implement write method
  * which takes a timestamp(in TimeValue class) and a list of data points as input. It should also
  * provide flushing method for serializing to local file system or HDFS.

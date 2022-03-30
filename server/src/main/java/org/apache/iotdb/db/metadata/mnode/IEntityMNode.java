@@ -22,6 +22,9 @@ import org.apache.iotdb.db.metadata.lastCache.container.ILastCacheContainer;
 
 import java.util.Map;
 
+/**
+ * 实体节点
+ */
 public interface IEntityMNode extends IMNode {
 
   boolean addAlias(String alias, IMeasurementMNode child);

@@ -26,6 +26,7 @@ import java.io.FileNotFoundException;
 import java.util.NoSuchElementException;
 
 /**
+ * 多文件日志读取器
  * MultiFileLogReader constructs SingleFileLogReaders for a list of WAL files, and retrieve logs
  * from the files one-by-one.
  */

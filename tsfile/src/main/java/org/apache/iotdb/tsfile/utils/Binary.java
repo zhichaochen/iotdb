@@ -24,6 +24,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
+ * 表示一个二进制的值
  * Override compareTo() and equals() function to Binary class. This class is used to accept Java
  * String type
  */
@@ -32,7 +33,7 @@ public class Binary implements Comparable<Binary>, Serializable {
   private static final long serialVersionUID = 6394197743397020735L;
   public static final Binary EMPTY_VALUE = new Binary("");
 
-  private byte[] values;
+  private byte[] values; // 字节数组
 
   /** if the bytes v is modified, the modification is visible to this binary. */
   public Binary(byte[] v) {

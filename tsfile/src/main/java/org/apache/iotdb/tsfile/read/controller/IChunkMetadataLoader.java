@@ -24,9 +24,14 @@ import org.apache.iotdb.tsfile.file.metadata.ITimeSeriesMetadata;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * chunk的元数据加载器
+ */
 public interface IChunkMetadataLoader {
 
-  /** read all chunk metadata of one time series in one file. */
+  /**
+   * 读取一个文件中的一个
+   * read all chunk metadata of one time series in one file. */
   List<IChunkMetadata> loadChunkMetadataList(ITimeSeriesMetadata timeSeriesMetadata)
       throws IOException;
 }

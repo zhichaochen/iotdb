@@ -34,13 +34,14 @@ import org.apache.iotdb.db.service.metrics.MetricsService;
 import org.apache.iotdb.db.service.metrics.Tag;
 import org.apache.iotdb.metrics.config.MetricConfigDescriptor;
 import org.apache.iotdb.metrics.utils.MetricLevel;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
- * 持久化管理器
+ * 刷盘管理器
  */
 public class FlushManager implements FlushManagerMBean, IService {
 
@@ -50,14 +51,22 @@ public class FlushManager implements FlushManagerMBean, IService {
   private ConcurrentLinkedDeque<TsFileProcessor> tsFileProcessorQueue =
       new ConcurrentLinkedDeque<>();
 
+  //
   private FlushTaskPoolManager flushPool = FlushTaskPoolManager.getInstance();
 
+  /**
+   * 启动刷盘管理器
+   * @throws StartupException
+   */
   @Override
   public void start() throws StartupException {
+    // 获取线程池
     FlushSubTaskPoolManager.getInstance().start();
     flushPool.start();
     try {
+      // 注册当服务
       JMXService.registerMBean(this, ServiceType.FLUSH_SERVICE.getJmxName());
+      // 收集统计信息
       if (MetricConfigDescriptor.getInstance().getMetricConfig().getEnableMetric()) {
         MetricsService.getInstance()
             .getMetricManager()
@@ -120,28 +129,36 @@ public class FlushManager implements FlushManagerMBean, IService {
     return FlushSubTaskPoolManager.getInstance().getWaitingTasksNumber();
   }
 
-  /** a flush thread handles flush task */
+  /**
+   * 刷盘线程
+   * 处理刷盘的任务
+   *  a flush thread handles flush task */
   class FlushThread extends WrappedRunnable {
 
     @Override
     public void runMayThrow() {
+      // 弹出一个
       TsFileProcessor tsFileProcessor = tsFileProcessorQueue.poll();
       if (null == tsFileProcessor) {
         return;
       }
-
+      // 刷写内存表
       tsFileProcessor.flushOneMemTable();
+      // 设置不被管理
       tsFileProcessor.setManagedByFlushManager(false);
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug(
             "Flush Thread re-register TSProcessor {} to the queue.",
             tsFileProcessor.getTsFileResource().getTsFile().getAbsolutePath());
       }
+      // 注册TsFileProcessor
       registerTsFileProcessor(tsFileProcessor);
     }
   }
 
   /**
+   * 注册TsFileProcessor
+   * 添加tsFileProcessor到asyncTryToFlush管理器
    * Add tsFileProcessor to asyncTryToFlush manager
    *
    * @param tsFileProcessor tsFileProcessor to be flushed
@@ -149,12 +166,15 @@ public class FlushManager implements FlushManagerMBean, IService {
   @SuppressWarnings("squid:S2445")
   public void registerTsFileProcessor(TsFileProcessor tsFileProcessor) {
     synchronized (tsFileProcessor) {
+      // 如果已经被管理
       if (tsFileProcessor.isManagedByFlushManager()) {
         LOGGER.debug(
             "{} is already in the flushPool, the given processor flushMemtable number = {}",
             tsFileProcessor.getTsFileResource().getTsFile().getAbsolutePath(),
             tsFileProcessor.getFlushingMemTableSize());
-      } else {
+      }
+      // 否则进行注册
+      else {
         if (tsFileProcessor.getFlushingMemTableSize() > 0) {
           tsFileProcessorQueue.add(tsFileProcessor);
           if (LOGGER.isDebugEnabled()) {
@@ -164,8 +184,9 @@ public class FlushManager implements FlushManagerMBean, IService {
                 tsFileProcessor.getFlushingMemTableSize(),
                 tsFileProcessorQueue.size());
           }
+          // 表示tsFileProcessor已经被管理
           tsFileProcessor.setManagedByFlushManager(true);
-          // TODO 启动一个刷写线程
+          // 启动一个刷盘线程
           flushPool.submit(new FlushThread());
         } else {
           if (LOGGER.isDebugEnabled()) {

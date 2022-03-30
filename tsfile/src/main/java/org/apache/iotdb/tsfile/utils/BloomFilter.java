@@ -30,12 +30,12 @@ import java.util.Objects;
  */
 public class BloomFilter {
 
-  private static final int MINIMAL_SIZE = 256;
-  private static final int MAXIMAL_HASH_FUNCTION_SIZE = 8;
-  private static final int[] SEEDS = new int[] {5, 7, 11, 19, 31, 37, 43, 59};
+  private static final int MINIMAL_SIZE = 256; // 最小size
+  private static final int MAXIMAL_HASH_FUNCTION_SIZE = 8; //
+  private static final int[] SEEDS = new int[] {5, 7, 11, 19, 31, 37, 43, 59}; // 种子
   private int size;
-  private int hashFunctionSize;
-  private BitSet bits;
+  private int hashFunctionSize; // hash函数的size
+  private BitSet bits; //
   private HashFunction[] func;
 
   // do not try to initialize the filter by construction method
@@ -153,10 +153,13 @@ public class BloomFilter {
     return Objects.hash(size, hashFunctionSize, bits, func);
   }
 
+  /**
+   * hash函数
+   */
   private class HashFunction {
 
-    private int cap;
-    private int seed;
+    private int cap; // 间隔
+    private int seed; // 种子
 
     HashFunction(int cap, int seed) {
       this.cap = cap;

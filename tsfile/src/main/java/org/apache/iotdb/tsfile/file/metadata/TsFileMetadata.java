@@ -30,19 +30,26 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Set;
 
-/** TSFileMetaData collects all metadata info and saves in its data structure. */
+/**
+ * TsFile元数据
+ * 该类现在叫做，IndexOfTimeseriesIndex，是TimeseriesIndex的索引，用来查找时间序列的。
+ * TODO 是时间序列元数据的元数据，【时间序列元数据的索引】
+ *
+ * TSFileMetaData收集所有元数据信息并保存在其数据结构中。
+ * TSFileMetaData collects all metadata info and saves in its data structure. */
 public class TsFileMetadata {
 
   // bloom filter
-  private BloomFilter bloomFilter;
+  private BloomFilter bloomFilter; // 布隆过滤器，是用来过滤【device】的
 
   // List of <name, offset, childMetadataIndexType>
-  private MetadataIndexNode metadataIndex;
+  private MetadataIndexNode metadataIndex; // 元数据索引节点
 
   // offset of MetaMarker.SEPARATOR
-  private long metaOffset;
+  private long metaOffset; // 元数据偏移量
 
   /**
+   * 从缓存中反序列化TsFile的元数据
    * deserialize data from the buffer.
    *
    * @param buffer -buffer use to deserialize
@@ -52,17 +59,23 @@ public class TsFileMetadata {
     TsFileMetadata fileMetaData = new TsFileMetadata();
 
     // metadataIndex
+    // 反序列化
     fileMetaData.metadataIndex = MetadataIndexNode.deserializeFrom(buffer);
 
     // metaOffset
+    // 读取元数据的偏移量
     long metaOffset = ReadWriteIOUtils.readLong(buffer);
     fileMetaData.setMetaOffset(metaOffset);
 
     // read bloom filter
     if (buffer.hasRemaining()) {
+      // 读取
       byte[] bytes = ReadWriteIOUtils.readByteBufferWithSelfDescriptionLength(buffer);
+      // 过滤器size，
       int filterSize = ReadWriteForEncodingUtils.readUnsignedVarInt(buffer);
+      // 使用几个hash函数
       int hashFunctionSize = ReadWriteForEncodingUtils.readUnsignedVarInt(buffer);
+      // 构建bloom过滤器
       fileMetaData.bloomFilter = BloomFilter.buildBloomFilter(bytes, filterSize, hashFunctionSize);
     }
 

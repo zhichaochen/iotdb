@@ -50,6 +50,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
+ * 查询路由器
+ * IoTDB查询过程的查询入口类。所有查询子句都将转换为物理子句计划，物理计划将由EngineQueryRouter执行。
  * Query entrance class of IoTDB query process. All query clause will be transformed to physical
  * plan, physical plan will be executed by EngineQueryRouter.
  */
@@ -57,24 +59,34 @@ public class QueryRouter implements IQueryRouter {
 
   private static Logger logger = LoggerFactory.getLogger(QueryRouter.class);
 
+  /**
+   * 查询原生数据
+   */
   @Override
   public QueryDataSet rawDataQuery(RawDataQueryPlan queryPlan, QueryContext context)
       throws StorageEngineException, QueryProcessException {
+    // 原生数据查询执行器
     RawDataQueryExecutor rawDataQueryExecutor = getRawDataQueryExecutor(queryPlan);
 
+    // 是否通过时间对齐
     if (!queryPlan.isAlignByTime()) {
       // group the vector partial paths for raw query after optimize the expression
       // because path in expressions should not be grouped
+      // 优化表达式后，对原始查询的向量部分路径进行分组，因为表达式中的路径不应分组
       queryPlan.transformToVector();
+      // 执行非对其的查询
       return rawDataQueryExecutor.executeNonAlign(context);
     }
 
     if (queryPlan.getExpression() != null
         && queryPlan.getExpression().getType() != ExpressionType.GLOBAL_TIME) {
+      // 通过数据值进行过滤
       return rawDataQueryExecutor.executeWithValueFilter(context);
     } else if (queryPlan.getExpression() != null
         && queryPlan.getExpression().getType() == ExpressionType.GLOBAL_TIME) {
+      // 通过时间进行过滤
       Filter timeFilter = ((GlobalTimeExpression) queryPlan.getExpression()).getFilter();
+      // 提取时间间隔
       TimeValuePairUtils.Intervals intervals = TimeValuePairUtils.extractTimeInterval(timeFilter);
       if (intervals.isEmpty()) {
         logger.warn("The interval of the filter {} is empty.", timeFilter);
@@ -84,7 +96,9 @@ public class QueryRouter implements IQueryRouter {
 
     // group the vector partial paths for raw query after optimize the expression
     // because path in expressions should not be grouped
+    // 优化表达式后，对原始查询的向量部分路径进行分组, 因为表达式中的路径不应分组
     queryPlan.transformToVector();
+    // 没有值过滤
     return rawDataQueryExecutor.executeWithoutValueFilter(context);
   }
 
@@ -92,6 +106,9 @@ public class QueryRouter implements IQueryRouter {
     return new RawDataQueryExecutor(queryPlan);
   }
 
+  /**
+   * 聚合查询
+   */
   @Override
   public QueryDataSet aggregate(AggregationPlan aggregationPlan, QueryContext context)
       throws StorageEngineException, QueryProcessException, IOException {
@@ -108,12 +125,14 @@ public class QueryRouter implements IQueryRouter {
               + aggregationPlan.getDeduplicatedAggregations());
     }
 
+    // 获取聚合执行器
     AggregationExecutor engineExecutor = getAggregationExecutor(context, aggregationPlan);
 
     QueryDataSet dataSet;
 
     if (aggregationPlan.getExpression() != null
         && aggregationPlan.getExpression().getType() != ExpressionType.GLOBAL_TIME) {
+      // 执行值的查询，也就是物理量的查询
       dataSet = engineExecutor.executeWithValueFilter(aggregationPlan);
     } else {
       dataSet = engineExecutor.executeWithoutValueFilter(aggregationPlan);

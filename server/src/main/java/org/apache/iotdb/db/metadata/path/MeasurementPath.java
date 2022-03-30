@@ -61,6 +61,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 物理量路径
+ */
 public class MeasurementPath extends PartialPath {
 
   private static final Logger logger = LoggerFactory.getLogger(MeasurementPath.class);

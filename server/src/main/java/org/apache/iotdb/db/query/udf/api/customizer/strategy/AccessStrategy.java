@@ -25,6 +25,7 @@ import org.apache.iotdb.db.query.udf.api.customizer.config.UDTFConfigurations;
 import org.apache.iotdb.db.query.udf.api.customizer.parameter.UDFParameters;
 
 /**
+ * 访问行数据的斜掠
  * Used to customize the strategy for accessing raw data in {@link UDTF#beforeStart(UDFParameters,
  * UDTFConfigurations)}.
  */
@@ -43,6 +44,7 @@ public interface AccessStrategy {
   }
 
   /**
+   * 检查访问策略
    * Used by the system to check the access strategy.
    *
    * @throws QueryProcessException if invalid strategy is set
@@ -50,6 +52,7 @@ public interface AccessStrategy {
   void check() throws QueryProcessException;
 
   /**
+   * 返回访问策略的类型
    * Returns the actual access strategy type.
    *
    * @return the actual access strategy type

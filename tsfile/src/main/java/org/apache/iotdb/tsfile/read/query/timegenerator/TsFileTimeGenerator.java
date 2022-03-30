@@ -44,7 +44,7 @@ public class TsFileTimeGenerator extends TimeGenerator {
     this.chunkLoader = chunkLoader;
     this.metadataQuerier = metadataQuerier;
 
-    // TODO 构造节点
+    // TODO 通过表达式构造节点树
     super.constructNode(iexpression);
   }
 

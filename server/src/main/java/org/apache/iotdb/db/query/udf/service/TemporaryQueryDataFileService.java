@@ -38,10 +38,15 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 临时文件管理服务（query data，表示用于查询时候）
+ * 在计算过程中，可能内存有容量限制，当需求内存过大时，需要先把部分数据写入文件
+ */
 public class TemporaryQueryDataFileService implements IService {
 
   private static final Logger logger = LoggerFactory.getLogger(TemporaryQueryDataFileService.class);
 
+  // 临时文件目录
   private static final String TEMPORARY_FILE_DIR =
       IoTDBDescriptor.getInstance().getConfig().getSystemDir()
           + File.separator
@@ -49,7 +54,8 @@ public class TemporaryQueryDataFileService implements IService {
           + File.separator
           + "tmp";
 
-  private final AtomicLong uniqueDataId;
+  private final AtomicLong uniqueDataId; // ID
+  // ID -> 记录器列表
   private final Map<Long, List<SerializationRecorder>> recorders;
 
   private TemporaryQueryDataFileService() {
@@ -57,7 +63,14 @@ public class TemporaryQueryDataFileService implements IService {
     recorders = new ConcurrentHashMap<>();
   }
 
+  /**
+   *
+   * @param recorder
+   * @return
+   * @throws IOException
+   */
   public String register(SerializationRecorder recorder) throws IOException {
+    //
     long queryId = recorder.getQueryId();
     if (!recorders.containsKey(queryId)) {
       recorders.put(queryId, new ArrayList<>());

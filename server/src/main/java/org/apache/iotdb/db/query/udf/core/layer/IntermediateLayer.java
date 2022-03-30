@@ -30,6 +30,9 @@ import org.apache.iotdb.db.query.udf.core.reader.LayerRowWindowReader;
 
 import java.io.IOException;
 
+/**
+ * 中间层
+ */
 public abstract class IntermediateLayer {
 
   protected static final int CACHE_BLOCK_SIZE = 2;
@@ -37,8 +40,8 @@ public abstract class IntermediateLayer {
   // for debug
   protected final Expression expression;
 
-  protected final long queryId;
-  protected final float memoryBudgetInMB;
+  protected final long queryId; // 查询ID
+  protected final float memoryBudgetInMB; // 内存预算
 
   protected IntermediateLayer(Expression expression, long queryId, float memoryBudgetInMB) {
     this.expression = expression;

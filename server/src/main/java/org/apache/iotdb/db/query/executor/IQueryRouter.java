@@ -34,13 +34,18 @@ import org.apache.iotdb.tsfile.read.query.dataset.QueryDataSet;
 
 import java.io.IOException;
 
+/**
+ * 查询路由器接口
+ */
 public interface IQueryRouter {
 
   /** Execute physical plan. */
   QueryDataSet rawDataQuery(RawDataQueryPlan queryPlan, QueryContext context)
       throws StorageEngineException, QueryProcessException;
 
-  /** Execute aggregation query. */
+  /**
+   * 执行聚合查询
+   * Execute aggregation query. */
   QueryDataSet aggregate(AggregationPlan aggregationPlan, QueryContext context)
       throws QueryFilterOptimizationException, StorageEngineException, IOException,
           QueryProcessException;

@@ -19,6 +19,9 @@
 
 package org.apache.iotdb.db.engine.trigger.executor;
 
+/**
+ * 触发器事件
+ */
 public enum TriggerEvent {
   BEFORE_INSERT((byte) 0, "before insert"),
   AFTER_INSERT((byte) 1, "after insert");

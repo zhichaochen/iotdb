@@ -26,6 +26,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
+/**
+ * UDF日志写入器
+ */
 public class UDFLogWriter {
 
   public static final Byte REGISTER_TYPE = 0;

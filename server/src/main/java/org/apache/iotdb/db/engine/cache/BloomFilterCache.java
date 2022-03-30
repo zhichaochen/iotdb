@@ -38,7 +38,9 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
-/** This class is used to cache <code>BloomFilter</code> in IoTDB. The caching strategy is LRU. */
+/**
+ * 布隆过滤器缓存
+ * This class is used to cache <code>BloomFilter</code> in IoTDB. The caching strategy is LRU. */
 public class BloomFilterCache {
 
   private static final Logger logger = LoggerFactory.getLogger(BloomFilterCache.class);

@@ -20,12 +20,21 @@ package org.apache.iotdb.tsfile.file.metadata;
 
 import java.util.List;
 
-/** Only maintained when writing, not serialized to TsFile */
+/**
+ * chunk group的元数据
+ *
+ * 怎么理解ChunkGroup呢？
+ * 每个chunk保存了某个字段的数据，也就是行式数据库的一列，chunk group保存了一个对象的多个字段，也就是多列。
+ * chunk group相当于一张表，其中的每个chunk是表中的一列数据
+ *
+ * 一个chunk包含多个page，page是该字段在一定时间范围内数据的集合。
+ *
+ * Only maintained when writing, not serialized to TsFile */
 public class ChunkGroupMetadata {
 
-  private String device;
+  private String device; // 设备
 
-  private List<ChunkMetadata> chunkMetadataList;
+  private List<ChunkMetadata> chunkMetadataList; // 当前设备的多个chunk的元数据列表
 
   public ChunkGroupMetadata(String device, List<ChunkMetadata> chunkMetadataList) {
     this.device = device;

@@ -32,11 +32,14 @@ import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
+/**
+ * 触发器日志写入器
+ */
 public class TriggerLogWriter implements AutoCloseable {
 
-  private final ByteBuffer logBuffer;
-  private final File logFile;
-  private final ILogWriter logWriter;
+  private final ByteBuffer logBuffer; // 持有的字节
+  private final File logFile; // 日志文件
+  private final ILogWriter logWriter; // 日志写入器
 
   public TriggerLogWriter(String logFilePath) throws IOException {
     logBuffer = ByteBuffer.allocate(IoTDBDescriptor.getInstance().getConfig().getTlogBufferSize());
@@ -44,6 +47,11 @@ public class TriggerLogWriter implements AutoCloseable {
     logWriter = new LogWriter(logFile, false);
   }
 
+  /**
+   * 写入
+   * @param plan
+   * @throws IOException
+   */
   public synchronized void write(PhysicalPlan plan) throws IOException {
     try {
       plan.serialize(logBuffer);

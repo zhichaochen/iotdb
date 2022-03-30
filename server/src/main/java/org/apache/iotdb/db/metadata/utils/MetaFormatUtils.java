@@ -37,13 +37,18 @@ import static org.apache.iotdb.commons.conf.IoTDBConstant.SDT_COMP_DEV;
 import static org.apache.iotdb.commons.conf.IoTDBConstant.SDT_COMP_MAX_TIME;
 import static org.apache.iotdb.commons.conf.IoTDBConstant.SDT_COMP_MIN_TIME;
 
+/**
+ * 元数据格式工具类
+ */
 public class MetaFormatUtils {
 
   private static final Logger logger = LoggerFactory.getLogger(MetaFormatUtils.class);
 
   public static String[] RESERVED_NODE_NAMES = {"time", "timestamp"};
 
-  /** check whether the given path is well formatted */
+  /**
+   *
+   * check whether the given path is well formatted */
   public static void checkTimeseries(PartialPath timeseries) throws IllegalPathException {
     try {
       checkCharacters(timeseries.getFullPath());

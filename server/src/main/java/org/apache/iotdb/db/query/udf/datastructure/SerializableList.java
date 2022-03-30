@@ -29,6 +29,9 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+/**
+ * 可序列化列表
+ */
 public interface SerializableList {
 
   int INITIAL_BYTE_ARRAY_LENGTH_FOR_MEMORY_CONTROL =
@@ -44,19 +47,22 @@ public interface SerializableList {
 
   SerializationRecorder getSerializationRecorder();
 
+  /**
+   * 序列化记录器
+   */
   class SerializationRecorder {
 
     protected static final int NOT_SERIALIZED = -1;
 
-    protected final long queryId;
+    protected final long queryId; // 查询ID
 
-    protected boolean isSerialized;
-    protected int serializedByteLength;
-    protected int serializedElementSize;
+    protected boolean isSerialized; // 是否已经序列化
+    protected int serializedByteLength; // 序列化的字节长度
+    protected int serializedElementSize; // 序列化的元素size
 
-    protected String fileName;
-    protected RandomAccessFile file;
-    protected FileChannel fileChannel;
+    protected String fileName; // 文件名
+    protected RandomAccessFile file; // 可随机访问的文件
+    protected FileChannel fileChannel; // 文件通道
 
     public SerializationRecorder(long queryId) {
       this.queryId = queryId;
@@ -95,9 +101,15 @@ public interface SerializableList {
       return serializedElementSize;
     }
 
+    /**
+     * 获取RandomAccessFile
+     * @return
+     * @throws IOException
+     */
     public RandomAccessFile getFile() throws IOException {
       if (file == null) {
         if (fileName == null) {
+          // 注册一个临时文件
           fileName = TemporaryQueryDataFileService.getInstance().register(this);
         }
         file = new RandomAccessFile(SystemFileFactory.INSTANCE.getFile(fileName), "rw");
@@ -134,19 +146,34 @@ public interface SerializableList {
     }
   }
 
+  /**
+   * 序列化
+   * @throws IOException
+   */
   default void serialize() throws IOException {
+    // 序列化记录器
     SerializationRecorder recorder = getSerializationRecorder();
+    // 如果已经序列化则返回
     if (recorder.isSerialized()) {
       return;
     }
+    // 创建一个ByteArrayOutputStream
     PublicBAOS outputStream = new PublicBAOS();
+    // 序列化
     serialize(outputStream);
+    // 分配bytebuffer
     ByteBuffer byteBuffer = ByteBuffer.allocate(outputStream.size());
+    // 将数组缓存转化为byteBuffer
     byteBuffer.put(outputStream.getBuf(), 0, outputStream.size());
+    // 回到第一个字节
     byteBuffer.flip();
+    // TODO 序列化的内容写入磁盘
     recorder.getFileChannel().write(byteBuffer);
+    // 关闭文件
     recorder.closeFile();
+    // 释放资源
     release();
+    // 标记为已序列化
     recorder.markAsSerialized();
   }
 

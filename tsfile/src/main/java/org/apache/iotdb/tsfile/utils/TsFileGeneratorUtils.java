@@ -40,7 +40,10 @@ import java.util.List;
 
 import static org.apache.iotdb.tsfile.common.constant.TsFileConstant.PATH_SEPARATOR;
 
-/** This class is only used for generating aligned or nonAligned tsfiles in test. */
+/**
+ * TODO 仅仅在测试中
+ * 此类仅用于在测试中生成对齐或未对齐的TSF文件。
+ * This class is only used for generating aligned or nonAligned tsfiles in test. */
 public class TsFileGeneratorUtils {
   private static final FSFactory fsFactory = FSFactoryProducer.getFSFactory();
   public static final String testStorageGroup = "root.testsg";
@@ -181,6 +184,9 @@ public class TsFileGeneratorUtils {
     return file;
   }
 
+  /**
+   * 生成对齐的ts文件
+   */
   public static File generateAlignedTsFile(
       String filePath,
       int deviceNum,
@@ -226,6 +232,10 @@ public class TsFileGeneratorUtils {
     return file;
   }
 
+  /**
+   * 生成非对齐的Ts文件
+   * @throws WriteProcessException
+   */
   public static File generateNonAlignedTsFile(
       String filePath,
       int deviceNum,
@@ -236,26 +246,34 @@ public class TsFileGeneratorUtils {
       int chunkGroupSize,
       int pageSize)
       throws IOException, WriteProcessException {
+    // 文件
     File file = fsFactory.getFile(filePath);
     if (file.exists()) {
       file.delete();
     }
+    // chunk 组大于0，则设置多少内存就刷写到磁盘，默认128M
     if (chunkGroupSize > 0)
       TSFileDescriptor.getInstance().getConfig().setGroupSizeInByte(chunkGroupSize);
+    // 每页的最大数据点，默认1024 * 1024
     if (pageSize > 0)
       TSFileDescriptor.getInstance().getConfig().setMaxNumberOfPointsInPage(pageSize);
+    // 创建Ts文件写入器
     try (TsFileWriter tsFileWriter = new TsFileWriter(file)) {
       // register nonAlign timeseries
+      // 非对齐的物理量，也就是时间序列
       List<MeasurementSchema> measurementSchemas = new ArrayList<>();
       for (int i = 0; i < measurementNum; i++) {
         measurementSchemas.add(new MeasurementSchema("s" + i, TSDataType.INT64, TSEncoding.PLAIN));
       }
+      // 设备数量
       for (int i = 0; i < deviceNum; i++) {
+        // 注册时间序列
         tsFileWriter.registerTimeseries(
             new Path(testStorageGroup + PATH_SEPARATOR + "d" + i), measurementSchemas);
       }
 
       // write with record
+      //
       for (int i = 0; i < deviceNum; i++) {
         writeWithTsRecord(
             tsFileWriter,

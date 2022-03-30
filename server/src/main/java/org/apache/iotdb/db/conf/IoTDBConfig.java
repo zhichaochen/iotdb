@@ -50,6 +50,9 @@ import java.util.regex.Pattern;
 
 import static org.apache.iotdb.tsfile.common.constant.TsFileConstant.PATH_SEPARATOR;
 
+/**
+ * 配置文件
+ */
 public class IoTDBConfig {
 
   /* Names of Watermark methods */
@@ -139,19 +142,25 @@ public class IoTDBConfig {
   /** If storage group increased more than this threshold, report to system. Unit: byte */
   private long storageGroupSizeReportThreshold = 16 * 1024 * 1024L;
 
-  /** When inserting rejected, waiting period to check system again. Unit: millisecond */
+  /**
+   * 插入被拒绝，默认等待50ms
+   * When inserting rejected, waiting period to check system again. Unit: millisecond */
   private int checkPeriodWhenInsertBlocked = 50;
 
   /** When inserting rejected exceeds this, throw an exception. Unit: millisecond */
   private int maxWaitingTimeWhenInsertBlockedInMs = 10000;
-  /** Is the write ahead log enable. */
+  /**
+   * 是否能否写wal，默认为true
+   * Is the write ahead log enable. */
   private boolean enableWal = true;
 
   private volatile boolean readOnly = false;
 
+  // 是否可以丢弃无序数据
   private boolean enableDiscardOutOfOrderData = false;
 
   /**
+   * 刷写wal的门槛，默认一万条刷写
    * When a certain amount of write ahead logs is reached, they will be flushed to the disk. It is
    * possible to lose at most flush_wal_threshold operations.
    */
@@ -239,11 +248,15 @@ public class IoTDBConfig {
   /** External lib directory, stores user-uploaded JAR files */
   private String extDir = IoTDBConstant.EXT_FOLDER_NAME;
 
-  /** External lib directory for UDF, stores user-uploaded JAR files */
+  /**
+   * UDF的外部lib目录，存储用户上传的JAR文件
+   * External lib directory for UDF, stores user-uploaded JAR files */
   private String udfDir =
       IoTDBConstant.EXT_FOLDER_NAME + File.separator + IoTDBConstant.UDF_FOLDER_NAME;
 
-  /** External lib directory for trigger, stores user-uploaded JAR files */
+  /**
+   * 触发器的目录，存储了用户上传的jar文件
+   * External lib directory for trigger, stores user-uploaded JAR files */
   private String triggerDir =
       IoTDBConstant.EXT_FOLDER_NAME + File.separator + IoTDBConstant.TRIGGER_FOLDER_NAME;
 
@@ -518,7 +531,9 @@ public class IoTDBConfig {
   /** Watermark method and parameters */
   private String watermarkMethod = "GroupBasedLSBMethod(embed_row_cycle=2,embed_lsb_num=5)";
 
-  /** Switch of creating schema automatically */
+  /**
+   * 是否可以自动创建schema
+   * Switch of creating schema automatically */
   private boolean enableAutoCreateSchema = true;
 
   /** register time series as which type when receiving boolean string "true" or "false" */
@@ -693,10 +708,13 @@ public class IoTDBConfig {
   /** The default value of primitive array size in array pool */
   private int primitiveArraySize = 32;
 
-  /** whether enable data partition. If disabled, all data belongs to partition 0 */
+  /**
+   * 数据是否需要分区，默认不分区，所有数据都属于分区0
+   * whether enable data partition. If disabled, all data belongs to partition 0 */
   private boolean enablePartition = false;
 
   /**
+   * 在每个存储组内对数据进行分区的时间范围，单位为秒。默认时间为一周。
    * Time range for partitioning data inside each storage group, the unit is second. Default time is
    * a week.
    */
@@ -801,6 +819,7 @@ public class IoTDBConfig {
   private boolean enableIDTable = false;
 
   /**
+   * 是否创建ID表的映射文件，这个文件能映射TsFIle中 设备ID和设备路径的映射
    * whether create mapping file of id table. This file can map device id in tsfile to device path
    */
   private boolean enableIDTableLogFile = false;

@@ -86,6 +86,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * 物理计划
+ * （本质来说是存储了一个操作（insert）所需的数据，并提供了其特定的编解码格式）
+ * 这个类是所有物理计划的抽象类
+ * TODO 每个物理计划都提供了序列化、反序列化方法，用于将数据持久化到磁盘
+ */
 /** This class is a abstract class for all type of PhysicalPlan. */
 public abstract class PhysicalPlan implements IConsensusRequest {
   private static final Logger logger = LoggerFactory.getLogger(PhysicalPlan.class);
@@ -104,7 +110,7 @@ public abstract class PhysicalPlan implements IConsensusRequest {
   private String loginUserName;
 
   // a bridge from a cluster raft log to a physical plan
-  protected long index;
+  protected long index; // 索引，集群raft log到一个物理计划的桥梁
 
   private boolean debug;
 
@@ -197,6 +203,10 @@ public abstract class PhysicalPlan implements IConsensusRequest {
   }
 
   /**
+   * 序列化一个物理计划 ，本质来说是，是将其以固定的格式将其写入磁盘
+   *
+   * 将计划序列到一个给定的buffer中。这是提供给wal使用的，所以能被恢复的字段将不被序列化
+   * 如果序列化这个计划中出错，这个buffer将被重置。
    * Serialize the plan into the given buffer. This is provided for WAL, so fields that can be
    * recovered will not be serialized. If error occurs when serializing this plan, the buffer will
    * be reset.
@@ -204,16 +214,21 @@ public abstract class PhysicalPlan implements IConsensusRequest {
    * @param buffer
    */
   public final void serialize(ByteBuffer buffer) {
+    // mark的作用，从源码来看会记录position字段，那么在reset的时候会使用该字段，恢复到mark的地方
     buffer.mark();
     try {
+      // 调用子类的序列化方法
       serializeImpl(buffer);
     } catch (UnsupportedOperationException e) {
       // ignore and throw
+      // 如果是不支持的异常，说明没有做处理，也就不需要reset
       throw e;
     } catch (BufferOverflowException e) {
+      // buffer溢出异常的话，就reset一下。
       buffer.reset();
       throw e;
     } catch (Exception e) {
+      // 其他异常，输入到日志中，然后进行reset
       logger.error(
           "Rollback buffer entry because error occurs when serializing this physical plan.", e);
       buffer.reset();
@@ -226,6 +241,7 @@ public abstract class PhysicalPlan implements IConsensusRequest {
   }
 
   /**
+   * 从给定的buffer中反序列化计划
    * Deserialize the plan from the given buffer. This is provided for WAL, and must be used with
    * serializeToWAL.
    *
@@ -235,10 +251,17 @@ public abstract class PhysicalPlan implements IConsensusRequest {
     throw new UnsupportedOperationException(SERIALIZATION_UNIMPLEMENTED);
   }
 
+  /**
+   * 写入缓存一个字符串
+   * @param buffer
+   * @param value
+   */
   protected void putString(ByteBuffer buffer, String value) {
+    // 如果值为null，写入一个int类型的-1，-1就表示null
     if (value == null) {
       buffer.putInt(NULL_VALUE_LEN);
     } else {
+      // 写入值
       ReadWriteIOUtils.write(value, buffer);
     }
   }
@@ -298,17 +321,30 @@ public abstract class PhysicalPlan implements IConsensusRequest {
     return getPaths();
   }
 
+  /**
+   * 创建物理计划的工厂
+   */
   public static class Factory {
 
     private Factory() {
       // hidden initializer
     }
 
+    /**
+     * 创建物理计划
+     * 根据物理计划类型创建不同的物理计划
+     * @param buffer
+     * @return
+     * @throws IOException
+     * @throws IllegalPathException
+     */
     public static PhysicalPlan create(ByteBuffer buffer) throws IOException, IllegalPathException {
+      // 获取一个int类型，该数据表示计划类型
       int typeNum = buffer.get();
       if (typeNum >= PhysicalPlanType.values().length) {
         throw new IOException("unrecognized log type " + typeNum);
       }
+      // 获取物理类型
       PhysicalPlanType type = PhysicalPlanType.values()[typeNum];
       PhysicalPlan plan;
       // TODO-Cluster: support more plans
@@ -498,7 +534,9 @@ public abstract class PhysicalPlan implements IConsensusRequest {
     }
   }
 
-  /** If you want to add new PhysicalPlanType, you must add it in the last. */
+  /**
+   * 物理计划类型
+   * If you want to add new PhysicalPlanType, you must add it in the last. */
   public enum PhysicalPlanType {
     INSERT,
     DELETE,

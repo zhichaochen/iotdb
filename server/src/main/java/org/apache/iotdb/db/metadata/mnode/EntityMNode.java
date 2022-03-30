@@ -25,6 +25,11 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 由实体节点，物理量节点呢都是放在EntityMNode中的
+ *
+ * EntityMNode是物理量节点的上一层，可能用来控制别名的。
+ */
 public class EntityMNode extends InternalMNode implements IEntityMNode {
 
   /**
@@ -32,11 +37,13 @@ public class EntityMNode extends InternalMNode implements IEntityMNode {
    *
    * <p>This will be a ConcurrentHashMap instance
    */
+  //
   @SuppressWarnings("squid:S3077")
   private transient volatile Map<String, IMeasurementMNode> aliasChildren = null;
 
-  private volatile boolean isAligned = false;
+  private volatile boolean isAligned = false; // 是否对其
 
+  //
   private volatile Map<String, ILastCacheContainer> lastCacheMap = null;
 
   /**
@@ -69,7 +76,9 @@ public class EntityMNode extends InternalMNode implements IEntityMNode {
     return aliasChildren == null ? null : aliasChildren.get(name);
   }
 
-  /** add an alias */
+  /**
+   * 如果别名存在，则添加别名
+   * add an alias */
   @Override
   public boolean addAlias(String alias, IMeasurementMNode child) {
     if (aliasChildren == null) {

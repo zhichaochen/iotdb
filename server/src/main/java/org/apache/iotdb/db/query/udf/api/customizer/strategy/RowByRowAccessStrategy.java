@@ -46,6 +46,7 @@ import org.apache.iotdb.db.query.udf.api.customizer.parameter.UDFParameters;
  *
  * @see UDTF
  * @see UDTFConfigurations
+ * 逐行访问策略
  */
 public class RowByRowAccessStrategy implements AccessStrategy {
 

@@ -59,12 +59,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 模板
+ */
 public class Template {
-  private String name;
-  private Map<String, IMNode> directNodes;
-  private boolean isDirectAligned;
-  private int measurementsCount;
-  private Map<String, IMeasurementSchema> schemaMap;
+  private String name; // 模板名称
+  private Map<String, IMNode> directNodes; // 当前模板对应的节点
+  private boolean isDirectAligned; //
+  private int measurementsCount; // 物理量数量
+  private Map<String, IMeasurementSchema> schemaMap; // 模板名称和模板Schema的映射
 
   // accelerate template query and check
   private Map<String, Set<SchemaRegionId>> relatedSchemaRegion;

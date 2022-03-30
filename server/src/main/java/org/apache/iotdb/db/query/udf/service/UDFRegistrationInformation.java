@@ -23,13 +23,16 @@ import org.apache.iotdb.db.query.udf.api.UDTF;
 
 import java.lang.reflect.InvocationTargetException;
 
+/**
+ * UDF的注册信息
+ */
 public class UDFRegistrationInformation {
 
-  private final String functionName;
-  private final String className;
-  private final boolean isBuiltin;
+  private final String functionName; // 函数名
+  private final String className; // 类名
+  private final boolean isBuiltin; // 是否是内置的函数
 
-  private Class<?> functionClass;
+  private Class<?> functionClass; // 函数的Class
 
   public UDFRegistrationInformation(
       String functionName, String className, boolean isBuiltin, Class<?> functionClass) {

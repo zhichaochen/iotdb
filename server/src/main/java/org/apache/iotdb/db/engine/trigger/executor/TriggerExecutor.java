@@ -32,6 +32,10 @@ import org.apache.iotdb.tsfile.utils.Binary;
 
 import java.lang.reflect.InvocationTargetException;
 
+/**
+ * 触发器执行器，每个触发器都会创建一个触发器执行器
+ * 作用应该是触发->触发器的动作
+ */
 public class TriggerExecutor {
 
   private final TriggerRegistrationInformation registrationInformation;
@@ -57,9 +61,15 @@ public class TriggerExecutor {
     this.measurementMNode = measurementMNode;
     seriesDataType = measurementMNode.getSchema().getType();
 
+    // TODO 实例化触发器类
     trigger = constructTriggerInstance();
   }
 
+  /**
+   * 通过反射实例化类触发器
+   * @return
+   * @throws TriggerManagementException
+   */
   private Trigger constructTriggerInstance() throws TriggerManagementException {
     try {
       Class<?> triggerClass =
@@ -105,16 +115,27 @@ public class TriggerExecutor {
     }
   }
 
+  /**
+   * 启动触发器
+   * @throws TriggerExecutionException
+   */
   public synchronized void onStart() throws TriggerExecutionException {
     // The execution order of statement here cannot be swapped!
+    // 此处语句的执行顺序不能互换！
+    // 调用Trigger的onstart方法
     invokeOnStart();
+    // 设置标志位为启动
     registrationInformation.markAsStarted();
   }
 
+  /*调用启动方法*/
   private void invokeOnStart() throws TriggerExecutionException {
+    // 设置线程上下文为当前类加载器
+    // Trigger是通过classLoader加载的，想调用到Trigger必须使用加载它的类加载器
     Thread.currentThread().setContextClassLoader(classLoader);
 
     try {
+      // 通知触发器
       trigger.onStart();
     } catch (Exception e) {
       onTriggerExecutionError("onStart()", e);
@@ -177,6 +198,13 @@ public class TriggerExecutor {
     }
   }
 
+  /**
+   * 执行fire
+   * @param event
+   * @param timestamps
+   * @param values
+   * @throws TriggerExecutionException
+   */
   public void fireIfActivated(TriggerEvent event, long[] timestamps, Object values)
       throws TriggerExecutionException {
     if (!registrationInformation.isStopped() && event.equals(registrationInformation.getEvent())) {

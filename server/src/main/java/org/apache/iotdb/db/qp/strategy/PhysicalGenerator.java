@@ -30,12 +30,24 @@ import org.apache.iotdb.db.qp.physical.sys.LoadConfigurationPlan.LoadConfigurati
 
 import java.util.List;
 
-/** Used to convert logical operator to physical plan */
+/**
+ * 物理计划生成器
+ * 用户将逻辑计划转换成物理计划
+ * Used to convert logical operator to physical plan */
 public class PhysicalGenerator {
 
+  /**
+   * 将逻辑算子转化成物理计划
+   * @param operator
+   * @return
+   * @throws QueryProcessException
+   */
   public PhysicalPlan transformToPhysicalPlan(Operator operator) throws QueryProcessException {
+    // 生成物理计划
     PhysicalPlan physicalPlan = operator.generatePhysicalPlan(this);
+    // 设置debug
     physicalPlan.setDebug(operator.isDebug());
+    // 设置前缀匹配
     physicalPlan.setPrefixMatch(operator.isPrefixMatchPath());
     return physicalPlan;
   }

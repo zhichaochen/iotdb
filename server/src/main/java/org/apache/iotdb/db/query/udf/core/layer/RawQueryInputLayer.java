@@ -37,11 +37,14 @@ import org.apache.iotdb.tsfile.utils.Binary;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * 原生查询输入层
+ */
 public class RawQueryInputLayer {
 
-  private IUDFInputDataSet queryDataSet;
-  private TSDataType[] dataTypes;
-  private int timestampIndex;
+  private IUDFInputDataSet queryDataSet; // 查询数据集
+  private TSDataType[] dataTypes; // 数据类型
+  private int timestampIndex; // 时间戳下标
 
   private ElasticSerializableRowRecordList rowRecordList;
   private SafetyLine safetyLine;
@@ -98,6 +101,9 @@ public class RawQueryInputLayer {
     return new InputLayerPointReader(columnIndex);
   }
 
+  /**
+   * 输入层数据点读取器
+   */
   private class InputLayerPointReader implements LayerPointReader {
 
     private final SafetyPile safetyPile;
