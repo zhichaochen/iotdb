@@ -50,7 +50,10 @@ public class TriggerEngine {
    */
   public static void fire(TriggerEvent event, InsertRowPlan insertRowPlan)
       throws TriggerExecutionException {
-    // 插入的物理量
+    if (TriggerRegistrationService.getInstance().executorSize() == 0) {
+      return;
+    }
+
     IMeasurementMNode[] mNodes = insertRowPlan.getMeasurementMNodes();
     int size = mNodes.length;
 
@@ -65,17 +68,18 @@ public class TriggerEngine {
       if (mNode == null) {
         continue;
       }
-      // 触发器执行器
-      TriggerExecutor executor = mNode.getTriggerExecutor();
-      if (executor == null) {
-        continue;
+      for (TriggerExecutor executor : mNode.getUpperTriggerExecutorList()) {
+        executor.fireIfActivated(event, timestamp, values[i], mNode.getSchema().getType());
       }
-      executor.fireIfActivated(event, timestamp, values[i]);
     }
   }
 
   public static void fire(TriggerEvent event, InsertTabletPlan insertTabletPlan, int firePosition)
       throws TriggerExecutionException {
+    if (TriggerRegistrationService.getInstance().executorSize() == 0) {
+      return;
+    }
+
     IMeasurementMNode[] mNodes = insertTabletPlan.getMeasurementMNodes();
     int size = mNodes.length;
 
@@ -91,11 +95,9 @@ public class TriggerEngine {
       if (mNode == null) {
         continue;
       }
-      TriggerExecutor executor = mNode.getTriggerExecutor();
-      if (executor == null) {
-        continue;
+      for (TriggerExecutor executor : mNode.getUpperTriggerExecutorList()) {
+        executor.fireIfActivated(event, timestamps, columns[i], mNode.getSchema().getType());
       }
-      executor.fireIfActivated(event, timestamps, columns[i]);
     }
   }
 

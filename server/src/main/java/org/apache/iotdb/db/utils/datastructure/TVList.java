@@ -21,6 +21,7 @@ package org.apache.iotdb.db.utils.datastructure;
 
 import org.apache.iotdb.commons.utils.TestOnly;
 import org.apache.iotdb.db.rescon.PrimitiveArrayManager;
+import org.apache.iotdb.db.wal.buffer.WALEntryValue;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSDataType;
 import org.apache.iotdb.tsfile.file.metadata.enums.TSEncoding;
 import org.apache.iotdb.tsfile.read.TimeValuePair;
@@ -28,7 +29,9 @@ import org.apache.iotdb.tsfile.read.common.TimeRange;
 import org.apache.iotdb.tsfile.read.reader.IPointReader;
 import org.apache.iotdb.tsfile.utils.Binary;
 import org.apache.iotdb.tsfile.utils.BitMap;
+import org.apache.iotdb.tsfile.utils.ReadWriteIOUtils;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +44,7 @@ import static org.apache.iotdb.tsfile.utils.RamUsageEstimator.NUM_BYTES_OBJECT_R
 /**
  * 内存中的数据结构，表示真正的数据
  */
-public abstract class TVList {
+public abstract class TVList implements WALEntryValue {
 
   protected static final int SMALL_ARRAY_LENGTH = 32;
   protected static final String ERR_DATATYPE_NOT_CONSISTENT = "DataType not consistent";
@@ -618,7 +621,26 @@ public abstract class TVList {
 
   public abstract TSDataType getDataType();
 
-  public long getLastTime() {
-    return getTime(rowCount - 1);
+  public static TVList deserialize(DataInputStream stream) throws IOException {
+    TSDataType dataType = ReadWriteIOUtils.readDataType(stream);
+    switch (dataType) {
+      case TEXT:
+        return BinaryTVList.deserialize(stream);
+      case FLOAT:
+        return FloatTVList.deserialize(stream);
+      case INT32:
+        return IntTVList.deserialize(stream);
+      case INT64:
+        return LongTVList.deserialize(stream);
+      case DOUBLE:
+        return DoubleTVList.deserialize(stream);
+      case BOOLEAN:
+        return BooleanTVList.deserialize(stream);
+      case VECTOR:
+        return AlignedTVList.deserialize(stream);
+      default:
+        break;
+    }
+    return null;
   }
 }

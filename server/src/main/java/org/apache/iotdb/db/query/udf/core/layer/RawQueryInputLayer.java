@@ -97,6 +97,10 @@ public class RawQueryInputLayer {
     rowRecordList.setEvictionUpperBound(safetyLine.getSafetyLine());
   }
 
+  public int getInputColumnCount() {
+    return dataTypes.length;
+  }
+
   public LayerPointReader constructPointReader(int columnIndex) {
     return new InputLayerPointReader(columnIndex);
   }

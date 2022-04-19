@@ -21,7 +21,7 @@ package org.apache.iotdb.db.metadata.tag;
 import org.apache.iotdb.db.conf.IoTDBConfig;
 import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.engine.StorageEngine;
-import org.apache.iotdb.db.engine.storagegroup.VirtualStorageGroupProcessor;
+import org.apache.iotdb.db.engine.storagegroup.DataRegion;
 import org.apache.iotdb.db.exception.StorageEngineException;
 import org.apache.iotdb.db.exception.metadata.MetadataException;
 import org.apache.iotdb.db.exception.query.QueryProcessException;
@@ -85,15 +85,14 @@ public class TagManager {
     tagLogFile = new TagLogFile(sgSchemaDirPath, MetadataConstant.TAG_LOG);
   }
 
-  /**
-   * 恢复索引
-   * @param offset
-   * @param measurementMNode
-   * @throws IOException
-   */
-  public void recoverIndex(long offset, IMeasurementMNode measurementMNode) throws IOException {
-    // 读取tag，并将其加入到索引中
-    addIndex(tagLogFile.readTag(config.getTagAttributeTotalSize(), offset), measurementMNode);
+  public boolean recoverIndex(long offset, IMeasurementMNode measurementMNode) throws IOException {
+    Map<String, String> tags = tagLogFile.readTag(config.getTagAttributeTotalSize(), offset);
+    if (tags == null || tags.isEmpty()) {
+      return false;
+    } else {
+      addIndex(tags, measurementMNode);
+      return true;
+    }
   }
 
   /**
@@ -177,11 +176,9 @@ public class TagManager {
     // timestamp
     // 是否热排序，如果是，则通过访问热度进行排序，否则，我们就按字母顺序排序
     if (plan.isOrderByHeat()) {
-      List<VirtualStorageGroupProcessor> list;
+      List<DataRegion> list;
       try {
-        Pair<
-                List<VirtualStorageGroupProcessor>,
-                Map<VirtualStorageGroupProcessor, List<PartialPath>>>
+        Pair<List<DataRegion>, Map<DataRegion, List<PartialPath>>>
             lockListAndProcessorToSeriesMapPair =
                 StorageEngine.getInstance()
                     .mergeLock(
@@ -189,7 +186,7 @@ public class TagManager {
                             .map(IMeasurementMNode::getMeasurementPath)
                             .collect(toList()));
         list = lockListAndProcessorToSeriesMapPair.left;
-        Map<VirtualStorageGroupProcessor, List<PartialPath>> processorToSeriesMap =
+        Map<DataRegion, List<PartialPath>> processorToSeriesMap =
             lockListAndProcessorToSeriesMapPair.right;
 
         try {

@@ -19,14 +19,12 @@
 package org.apache.iotdb.db.metadata.mnode;
 
 import org.apache.iotdb.db.metadata.logfile.MLogWriter;
+import org.apache.iotdb.db.metadata.mnode.container.IMNodeContainer;
+import org.apache.iotdb.db.metadata.mnode.container.MNodeContainers;
 import org.apache.iotdb.db.metadata.template.Template;
 import org.apache.iotdb.db.qp.physical.sys.MNodePlan;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Mtree的内部节点，树的内部的节点，注意不是叶子节点，叶子节点上是物理量
@@ -46,7 +44,7 @@ public class InternalMNode extends MNode {
    * <p>This will be a ConcurrentHashMap instance
    */
   @SuppressWarnings("squid:S3077")
-  protected transient volatile Map<String, IMNode> children = null;
+  protected transient volatile IMNodeContainer children = null;
 
   // schema template
   protected Template schemaTemplate = null; // 元数据模板
@@ -95,7 +93,7 @@ public class InternalMNode extends MNode {
       // double check, children is volatile
       synchronized (this) {
         if (children == null) {
-          children = new ConcurrentHashMap<>();
+          children = MNodeContainers.getNewMNodeContainer();
         }
       }
     }
@@ -126,7 +124,7 @@ public class InternalMNode extends MNode {
       // double check, children is volatile
       synchronized (this) {
         if (children == null) {
-          children = new ConcurrentHashMap<>();
+          children = MNodeContainers.getNewMNodeContainer();
         }
       }
     }
@@ -138,10 +136,11 @@ public class InternalMNode extends MNode {
 
   /** delete a child */
   @Override
-  public void deleteChild(String name) {
+  public IMNode deleteChild(String name) {
     if (children != null) {
-      children.remove(name);
+      return children.remove(name);
     }
+    return null;
   }
 
   /**
@@ -162,7 +161,7 @@ public class InternalMNode extends MNode {
 
     oldChildNode.moveDataToNewMNode(newChildNode);
 
-    children.replace(oldChildName, newChildNode);
+    children.replace(newChildNode.getName(), newChildNode);
   }
 
   @Override
@@ -179,15 +178,15 @@ public class InternalMNode extends MNode {
   }
 
   @Override
-  public Map<String, IMNode> getChildren() {
+  public IMNodeContainer getChildren() {
     if (children == null) {
-      return Collections.emptyMap();
+      return MNodeContainers.emptyMNodeContainer();
     }
     return children;
   }
 
   @Override
-  public void setChildren(Map<String, IMNode> children) {
+  public void setChildren(IMNodeContainer children) {
     this.children = children;
   }
 
@@ -249,8 +248,8 @@ public class InternalMNode extends MNode {
       return;
     }
     // 这里会递归调用到serializeTo
-    for (Entry<String, IMNode> entry : children.entrySet()) {
-      entry.getValue().serializeTo(logWriter);
+    for (IMNode child : children.values()) {
+      child.serializeTo(logWriter);
     }
   }
 

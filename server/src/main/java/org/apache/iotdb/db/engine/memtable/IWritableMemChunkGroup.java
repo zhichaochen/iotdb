@@ -20,6 +20,7 @@
 package org.apache.iotdb.db.engine.memtable;
 
 import org.apache.iotdb.db.metadata.path.PartialPath;
+import org.apache.iotdb.db.wal.buffer.WALEntryValue;
 import org.apache.iotdb.tsfile.utils.BitMap;
 import org.apache.iotdb.tsfile.write.schema.IMeasurementSchema;
 
@@ -31,7 +32,7 @@ import java.util.Map;
  * TODO 其实一个chunk group就是一个entity，一个设备，chunk表示一列数据，chunk group表示一个实体的多列数据
  * 表示一个驻扎在内存中的ChunkGroup，记录了chunk group的信息
  */
-public interface IWritableMemChunkGroup {
+public interface IWritableMemChunkGroup extends WALEntryValue {
 
   void writeValues(
       long[] times,

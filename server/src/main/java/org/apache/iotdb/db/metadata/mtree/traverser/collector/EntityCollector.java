@@ -21,19 +21,22 @@ package org.apache.iotdb.db.metadata.mtree.traverser.collector;
 import org.apache.iotdb.db.exception.metadata.MetadataException;
 import org.apache.iotdb.db.metadata.mnode.IEntityMNode;
 import org.apache.iotdb.db.metadata.mnode.IMNode;
+import org.apache.iotdb.db.metadata.mtree.store.IMTreeStore;
 import org.apache.iotdb.db.metadata.path.PartialPath;
 
 // EntityMNode结果收集器
 // This class defines EntityMNode as target node and defines the Entity process framework.
 public abstract class EntityCollector<T> extends CollectorTraverser<T> {
 
-  public EntityCollector(IMNode startNode, PartialPath path) throws MetadataException {
-    super(startNode, path);
+  public EntityCollector(IMNode startNode, PartialPath path, IMTreeStore store)
+      throws MetadataException {
+    super(startNode, path, store);
   }
 
-  public EntityCollector(IMNode startNode, PartialPath path, int limit, int offset)
+  public EntityCollector(
+      IMNode startNode, PartialPath path, IMTreeStore store, int limit, int offset)
       throws MetadataException {
-    super(startNode, path, limit, offset);
+    super(startNode, path, store, limit, offset);
   }
 
   @Override

@@ -154,7 +154,7 @@ public class TsFileIOWriter implements AutoCloseable {
    * @param deviceId
    * @throws IOException
    */
-  public void startChunkGroup(String deviceId) throws IOException {
+  public int startChunkGroup(String deviceId) throws IOException {
     this.currentChunkGroupDeviceId = deviceId;
     if (logger.isDebugEnabled()) {
       logger.debug("start chunk group:{}, file position {}", deviceId, out.getPosition());
@@ -163,8 +163,7 @@ public class TsFileIOWriter implements AutoCloseable {
     chunkMetadataList = new ArrayList<>();
     // 创建ChunkGroupHeader
     ChunkGroupHeader chunkGroupHeader = new ChunkGroupHeader(currentChunkGroupDeviceId);
-    // 序列化chunkGroupHeader
-    chunkGroupHeader.serializeTo(out.wrapAsStream());
+    return chunkGroupHeader.serializeTo(out.wrapAsStream());
   }
 
   /**
@@ -507,6 +506,10 @@ public class TsFileIOWriter implements AutoCloseable {
     ReadWriteIOUtils.write(minPlanIndex, out.wrapAsStream());
     ReadWriteIOUtils.write(maxPlanIndex, out.wrapAsStream());
     out.flush();
+  }
+
+  public void truncate(long offset) throws IOException {
+    out.truncate(offset);
   }
 
   /**

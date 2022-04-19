@@ -19,10 +19,9 @@
 
 package org.apache.iotdb.db.metadata.idtable.entry;
 
+import java.nio.ByteBuffer;
 
-/**
- * 设备ID
- * device id interface */
+/** device id interface */
 public interface IDeviceID {
 
   /**
@@ -31,4 +30,6 @@ public interface IDeviceID {
    * @return string format device id
    */
   public String toStringID();
+
+  public void serialize(ByteBuffer byteBuffer);
 }

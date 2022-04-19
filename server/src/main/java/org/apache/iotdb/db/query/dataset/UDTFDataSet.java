@@ -105,7 +105,7 @@ public abstract class UDTFDataSet extends QueryDataSet {
     initDataSetFields();
   }
 
-  protected UDTFDataSet(QueryContext queryContext, UDTFPlan udtfPlan, IUDFInputDataSet dataSet)
+  public UDTFDataSet(QueryContext queryContext, UDTFPlan udtfPlan, IUDFInputDataSet dataSet)
       throws QueryProcessException, IOException {
     queryId = queryContext.getQueryId();
     this.udtfPlan = udtfPlan;
@@ -129,6 +129,7 @@ public abstract class UDTFDataSet extends QueryDataSet {
                   udtfPlan,
                   rawQueryInputLayer,
                   UDF_TRANSFORMER_MEMORY_BUDGET_IN_MB + UDF_COLLECTOR_MEMORY_BUDGET_IN_MB)
+              .bindInputLayerColumnIndexWithExpression()
               .buildLayerMemoryAssigner()
               .buildResultColumnPointReaders()
               .setDataSetResultColumnDataTypes()

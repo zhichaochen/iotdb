@@ -22,7 +22,6 @@ import org.apache.iotdb.db.conf.IoTDBDescriptor;
 import org.apache.iotdb.db.engine.fileSystem.SystemFileFactory;
 import org.apache.iotdb.db.exception.metadata.MetadataException;
 import org.apache.iotdb.db.exception.metadata.PathNotExistException;
-import org.apache.iotdb.db.metadata.mnode.IStorageGroupMNode;
 import org.apache.iotdb.db.metadata.path.PartialPath;
 import org.apache.iotdb.db.service.IoTDB;
 import org.apache.iotdb.tsfile.utils.FilePathUtils;
@@ -89,13 +88,10 @@ public class IDTableManager {
    */
   public synchronized IDTable getIDTable(PartialPath devicePath) {
     try {
-      // 存储组节点
-      IStorageGroupMNode storageGroupMNode =
-          IoTDB.schemaProcessor.getStorageGroupNodeByPath(devicePath);
       // 如果没有则创建创建
       // TODO 由此可见，一个存储组一个IDTable
       return idTableMap.computeIfAbsent(
-          storageGroupMNode.getFullPath(),
+          IoTDB.schemaProcessor.getStorageGroupNodeByPath(devicePath).getFullPath(),
           storageGroupPath ->
               new IDTableHashmapImpl(
                   SystemFileFactory.INSTANCE.getFile(
@@ -105,6 +101,20 @@ public class IDTableManager {
     }
 
     return null;
+  }
+
+  /**
+   * get id table by storage group path
+   *
+   * @param sgPath storage group path
+   * @return id table belongs to path's storage group
+   */
+  public synchronized IDTable getIDTableDirectly(String sgPath) {
+    return idTableMap.computeIfAbsent(
+        sgPath,
+        storageGroupPath ->
+            new IDTableHashmapImpl(
+                SystemFileFactory.INSTANCE.getFile(systemDir + File.separator + storageGroupPath)));
   }
 
   /**

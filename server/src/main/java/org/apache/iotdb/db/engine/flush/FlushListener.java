@@ -27,23 +27,22 @@ import java.io.IOException;
  * 刷盘监听器
  */
 public interface FlushListener {
+  void onMemTableFlushStarted(IMemTable memTable) throws IOException;
 
-  void onFlushStart(IMemTable memTable) throws IOException;
+  void onMemTableFlushed(IMemTable memTable);
 
-  void onFlushEnd(IMemTable memTable);
+  class DefaultMemTableFLushListener implements FlushListener {
 
-  class EmptyListener implements FlushListener {
-
-    public static final EmptyListener INSTANCE = new EmptyListener();
+    public static final DefaultMemTableFLushListener INSTANCE = new DefaultMemTableFLushListener();
 
     @Override
-    public void onFlushStart(IMemTable memTable) {
-      // do nothing
+    public void onMemTableFlushStarted(IMemTable memTable) {
+      memTable.setFlushStatus(FlushStatus.FLUSHING);
     }
 
     @Override
-    public void onFlushEnd(IMemTable memTable) {
-      // do nothing
+    public void onMemTableFlushed(IMemTable memTable) {
+      memTable.setFlushStatus(FlushStatus.FLUSHED);
     }
   }
 }

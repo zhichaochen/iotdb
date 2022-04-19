@@ -250,6 +250,11 @@ public class RestorableTsFileIOWriter extends TsFileIOWriter {
     }
   }
 
+  /**
+   * Whether this TsFile is crashed.
+   *
+   * @return false when this TsFile is complete
+   */
   public boolean hasCrashed() {
     return crashed;
   }

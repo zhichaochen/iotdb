@@ -72,6 +72,13 @@ public class DAGBuilder {
     expressionDataTypeMap = new HashMap<>();
   }
 
+  public DAGBuilder bindInputLayerColumnIndexWithExpression() {
+    for (Expression expression : resultColumnExpressions) {
+      expression.bindInputLayerColumnIndexWithExpression(udtfPlan);
+    }
+    return this;
+  }
+
   public DAGBuilder buildLayerMemoryAssigner() {
     for (Expression expression : resultColumnExpressions) {
       expression.updateStatisticsForMemoryAssigner(memoryAssigner);
@@ -86,7 +93,7 @@ public class DAGBuilder {
           resultColumnExpressions[i]
               .constructIntermediateLayer(
                   queryId,
-                  udtfPlan,
+                  udtfPlan.getUdtfContext(),
                   rawTimeSeriesInputLayer,
                   expressionIntermediateLayerMap,
                   expressionDataTypeMap,
