@@ -19,6 +19,7 @@
 
 package org.apache.iotdb.db.mpp.buffer;
 
+import org.apache.iotdb.common.rpc.thrift.TEndPoint;
 import org.apache.iotdb.db.mpp.buffer.DataBlockManager.SourceHandleListener;
 import org.apache.iotdb.db.mpp.memory.LocalMemoryManager;
 import org.apache.iotdb.mpp.rpc.thrift.DataBlockService;
@@ -53,7 +54,7 @@ public class SourceHandle implements ISourceHandle {
 
   public static final int MAX_ATTEMPT_TIMES = 3;
 
-  private final String remoteHostname;
+  private final TEndPoint remoteEndpoint;
   private final TFragmentInstanceId remoteFragmentInstanceId;
   private final TFragmentInstanceId localFragmentInstanceId;
   private final String localPlanNodeId;
@@ -71,13 +72,11 @@ public class SourceHandle implements ISourceHandle {
   private int currSequenceId = 0;
   private int nextSequenceId = 0;
   private int lastSequenceId = Integer.MAX_VALUE;
-  private int numActiveGetDataBlocksTask = 0;
-  private boolean noMoreTsBlocks;
   private boolean closed;
   private Throwable throwable;
 
   public SourceHandle(
-      String remoteHostname,
+      TEndPoint remoteEndpoint,
       TFragmentInstanceId remoteFragmentInstanceId,
       TFragmentInstanceId localFragmentInstanceId,
       String localPlanNodeId,
@@ -86,7 +85,7 @@ public class SourceHandle implements ISourceHandle {
       DataBlockService.Iface client,
       TsBlockSerde serde,
       SourceHandleListener sourceHandleListener) {
-    this.remoteHostname = Validate.notNull(remoteHostname);
+    this.remoteEndpoint = Validate.notNull(remoteEndpoint);
     this.remoteFragmentInstanceId = Validate.notNull(remoteFragmentInstanceId);
     this.localFragmentInstanceId = Validate.notNull(localFragmentInstanceId);
     this.localPlanNodeId = Validate.notNull(localPlanNodeId);
@@ -160,7 +159,6 @@ public class SourceHandle implements ISourceHandle {
     if (future.isDone()) {
       nextSequenceId = endSequenceId;
       executorService.submit(new GetDataBlocksTask(startSequenceId, endSequenceId, reservedBytes));
-      numActiveGetDataBlocksTask += 1;
     } else {
       nextSequenceId = endSequenceId + 1;
       // The future being not completed indicates,
@@ -175,7 +173,6 @@ public class SourceHandle implements ISourceHandle {
         // Memory has been reserved. Submit a GetDataBlocksTask for these blocks.
         executorService.submit(
             new GetDataBlocksTask(startSequenceId, endSequenceId, reservedBytes));
-        numActiveGetDataBlocksTask += 1;
       }
 
       // Submit a GetDataBlocksTask when memory is freed.
@@ -188,7 +185,6 @@ public class SourceHandle implements ISourceHandle {
                     sequenceIdOfUnReservedDataBlock,
                     sequenceIdOfUnReservedDataBlock + 1,
                     sizeOfUnReservedDataBlock));
-            numActiveGetDataBlocksTask += 1;
             bufferRetainedSizeInBytes += sizeOfUnReservedDataBlock;
           },
           executorService);
@@ -211,7 +207,9 @@ public class SourceHandle implements ISourceHandle {
 
   synchronized void setNoMoreTsBlocks(int lastSequenceId) {
     this.lastSequenceId = lastSequenceId;
-    noMoreTsBlocks = true;
+    if (!blocked.isDone() && remoteTsBlockedConsumedUp()) {
+      blocked.set(null);
+    }
   }
 
   synchronized void updatePendingDataBlockInfo(int startSequenceId, List<Long> dataBlockSizes) {
@@ -226,6 +224,9 @@ public class SourceHandle implements ISourceHandle {
     if (closed) {
       return;
     }
+    if (blocked != null && !blocked.isDone()) {
+      blocked.cancel(true);
+    }
     sequenceIdToDataBlockSize.clear();
     if (bufferRetainedSizeInBytes > 0) {
       localMemoryManager
@@ -239,15 +240,18 @@ public class SourceHandle implements ISourceHandle {
 
   @Override
   public boolean isFinished() {
-    return throwable == null
-        && noMoreTsBlocks
-        && numActiveGetDataBlocksTask == 0
-        && currSequenceId - 1 == lastSequenceId
-        && sequenceIdToTsBlock.isEmpty();
+    return throwable == null && remoteTsBlockedConsumedUp();
   }
 
-  String getRemoteHostname() {
-    return remoteHostname;
+  // Return true indicates two points:
+  //   1. Remote SinkHandle has told SourceHandle the total count of TsBlocks by lastSequenceId
+  //   2. All the TsBlocks has been consumed up
+  private boolean remoteTsBlockedConsumedUp() {
+    return currSequenceId - 1 == lastSequenceId;
+  }
+
+  TEndPoint getRemoteEndpoint() {
+    return remoteEndpoint;
   }
 
   TFragmentInstanceId getRemoteFragmentInstanceId() {
@@ -275,7 +279,7 @@ public class SourceHandle implements ISourceHandle {
   @Override
   public String toString() {
     return new StringJoiner(", ", SourceHandle.class.getSimpleName() + "[", "]")
-        .add("remoteHostname='" + remoteHostname + "'")
+        .add("remoteEndpoint='" + remoteEndpoint + "'")
         .add("remoteFragmentInstanceId=" + remoteFragmentInstanceId)
         .add("localFragmentInstanceId=" + localFragmentInstanceId)
         .add("localPlanNodeId='" + localPlanNodeId + "'")
@@ -353,10 +357,14 @@ public class SourceHandle implements ISourceHandle {
               localMemoryManager
                   .getQueryPool()
                   .free(localFragmentInstanceId.getQueryId(), reservedBytes);
+              // That GetDataBlocksTask throws exception means some TsBlock cannot be
+              // fetched permanently. Someone maybe waiting the SourceHandle to be
+              // unblocked after fetching data. So the blocked should be released.
+              if (blocked != null && !blocked.isDone()) {
+                blocked.cancel(true);
+              }
             }
           }
-        } finally {
-          numActiveGetDataBlocksTask -= 1;
         }
       }
       // TODO: try to issue another GetDataBlocksTask to make the query run faster.

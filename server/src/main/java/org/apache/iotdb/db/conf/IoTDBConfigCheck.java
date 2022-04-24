@@ -102,6 +102,9 @@ public class IoTDBConfigCheck {
   private static final String ENABLE_ID_TABLE_LOG_FILE = "enable_id_table_log_file";
   private static String enableIdTableLogFile = String.valueOf(config.isEnableIDTableLogFile());
 
+  private static final String SCHEMA_ENGINE_MODE = "schema_engine_mode";
+  private static String schemaEngineMode = String.valueOf(config.getSchemaEngineMode());
+
   private static final String TIME_ENCODER_KEY = "time_encoder";
   private static String timeEncoderValue =
       String.valueOf(TSFileDescriptor.getInstance().getConfig().getTimeEncoder());
@@ -164,6 +167,7 @@ public class IoTDBConfigCheck {
     systemProperties.put(TIME_ENCODER_KEY, timeEncoderValue);
     systemProperties.put(ENABLE_ID_TABLE, enableIDTable);
     systemProperties.put(ENABLE_ID_TABLE_LOG_FILE, enableIdTableLogFile);
+    systemProperties.put(SCHEMA_ENGINE_MODE, schemaEngineMode);
   }
 
   /**
@@ -372,6 +376,10 @@ public class IoTDBConfigCheck {
 
     if (!(properties.getProperty(ENABLE_ID_TABLE_LOG_FILE).equals(enableIdTableLogFile))) {
       throwException(ENABLE_ID_TABLE_LOG_FILE, enableIdTableLogFile);
+    }
+
+    if (!(properties.getProperty(SCHEMA_ENGINE_MODE).equals(schemaEngineMode))) {
+      throwException(SCHEMA_ENGINE_MODE, schemaEngineMode);
     }
   }
 
