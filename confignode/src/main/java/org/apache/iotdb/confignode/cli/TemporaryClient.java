@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 临时客户端，将来会使用ClientPool代替
  * TODO: Replace TemporaryCli with ClientPool A temporary client for ConfigNode to send RPC request
  * to DataNode
  */

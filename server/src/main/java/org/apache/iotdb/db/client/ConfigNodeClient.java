@@ -53,6 +53,11 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * 配置节点客户端，用于和config node进行通信
+ * 这样看的话，config node就是服务端，各个数据节点就是客户端
+ *
+ */
 public class ConfigNodeClient {
   private static final Logger logger = LoggerFactory.getLogger(ConfigNodeClient.class);
 

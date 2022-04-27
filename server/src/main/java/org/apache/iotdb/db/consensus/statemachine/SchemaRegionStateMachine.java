@@ -34,6 +34,9 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.nio.ByteBuffer;
 
+/**
+ * 元数据分区状态机
+ */
 public class SchemaRegionStateMachine extends BaseStateMachine {
 
   private static final Logger logger = LoggerFactory.getLogger(SchemaRegionStateMachine.class);

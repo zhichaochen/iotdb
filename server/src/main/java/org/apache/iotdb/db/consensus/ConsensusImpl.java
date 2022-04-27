@@ -34,6 +34,7 @@ import org.apache.iotdb.db.metadata.schemaregion.SchemaEngine;
 import java.io.File;
 
 /**
+ * 共识层实现
  * We can use ConsensusImpl.getInstance() to obtain a consensus layer reference for reading and
  * writing
  */
@@ -50,6 +51,7 @@ public class ConsensusImpl {
     private static final IoTDBConfig conf = IoTDBDescriptor.getInstance().getConfig();
     private static final IConsensus INSTANCE =
         ConsensusFactory.getConsensusImpl(
+                // TODO 通过配置共识实现类，动态创建共识组，比如多个config节点组成的共识组
                 conf.getConsensusProtocolClass(),
                 new TEndPoint(conf.getInternalIp(), conf.getConsensusPort()),
                 new File(conf.getConsensusDir()),

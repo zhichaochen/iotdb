@@ -42,6 +42,9 @@ import org.apache.iotdb.confignode.persistence.PartitionInfo;
 import org.apache.iotdb.consensus.common.DataSet;
 import org.apache.iotdb.db.auth.AuthException;
 
+/**
+ * 配置节点相关的请求执行器
+ */
 public class ConfigRequestExecutor {
 
   private final DataNodeInfo dataNodeInfo;
@@ -59,6 +62,13 @@ public class ConfigRequestExecutor {
     this.authorInfo = AuthorInfo.getInstance();
   }
 
+  /**
+   * 查询计划
+   * @param req
+   * @return
+   * @throws UnknownPhysicalPlanTypeException
+   * @throws AuthException
+   */
   public DataSet executorQueryPlan(ConfigRequest req)
       throws UnknownPhysicalPlanTypeException, AuthException {
     switch (req.getType()) {
@@ -91,6 +101,13 @@ public class ConfigRequestExecutor {
     }
   }
 
+  /**
+   * 执行非查询计划
+   * @param req
+   * @return
+   * @throws UnknownPhysicalPlanTypeException
+   * @throws AuthException
+   */
   public TSStatus executorNonQueryPlan(ConfigRequest req)
       throws UnknownPhysicalPlanTypeException, AuthException {
     switch (req.getType()) {

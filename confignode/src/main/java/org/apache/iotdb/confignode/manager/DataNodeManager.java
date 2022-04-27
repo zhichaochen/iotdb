@@ -77,11 +77,14 @@ public class DataNodeManager {
   public DataSet registerDataNode(RegisterDataNodeReq plan) {
     DataNodeConfigurationResp dataSet = new DataNodeConfigurationResp();
 
+    // 注册的节点已经存在
     if (DataNodeInfo.getInstance().containsValue(plan.getLocation())) {
       TSStatus status = new TSStatus(TSStatusCode.DATANODE_ALREADY_REGISTERED.getStatusCode());
       status.setMessage("DataNode already registered.");
       dataSet.setStatus(status);
-    } else {
+    }
+    // 节点不存在，
+    else {
       // Persist DataNodeInfo
       plan.getLocation().setDataNodeId(DataNodeInfo.getInstance().generateNextDataNodeId());
       ConsensusWriteResponse resp = getConsensusManager().write(plan);

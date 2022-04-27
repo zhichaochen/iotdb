@@ -33,6 +33,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+/**
+ * raft 客户端，用于和其他节点进行通信
+ */
 public class RatisClient {
   private final Logger logger = LoggerFactory.getLogger(RatisClient.class);
   private final RaftGroup serveGroup;

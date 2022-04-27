@@ -45,7 +45,10 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/** manage data partition and schema partition */
+/**
+ * 分区信息
+ * 管理数据分区和元数据分区
+ * manage data partition and schema partition */
 public class PartitionInfo {
 
   // TODO: Serialize and Deserialize

@@ -41,6 +41,9 @@ import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
+/**
+ * 配置请求
+ */
 public abstract class ConfigRequest implements IConsensusRequest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ConfigRequest.class);

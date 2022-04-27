@@ -30,6 +30,9 @@ import org.apache.iotdb.rpc.TSStatusCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 状态机
+ */
 public abstract class BaseStateMachine implements IStateMachine {
 
   private static final Logger logger = LoggerFactory.getLogger(BaseStateMachine.class);

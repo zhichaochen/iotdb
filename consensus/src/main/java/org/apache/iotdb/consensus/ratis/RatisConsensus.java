@@ -95,6 +95,7 @@ class RatisConsensus implements IConsensus {
   private final RaftProperties properties = new RaftProperties();
   private final RaftClientRpc clientRpc;
 
+  // 客户端管理器，一个raft group一个client
   private final IClientManager<RaftGroup, RatisClient> clientManager =
       new IClientManager.Factory<RaftGroup, RatisClient>()
           .createClientManager(new RatisClientPoolFactory());
@@ -150,6 +151,7 @@ class RatisConsensus implements IConsensus {
   }
 
   /**
+   * 共识相关请求都会走这个接口
    * write将首先向本地服务器发送请求，并使用方法调用。
    * 如果本地服务器不是leader，它将使用RaftClient向read leader发送RPC
    *
@@ -168,6 +170,7 @@ class RatisConsensus implements IConsensus {
     }
 
     // serialize request into Message
+    // 序列化请求到message
     Message message = new RequestMessage(IConsensusRequest);
 
     // 1. first try the local server
@@ -198,7 +201,9 @@ class RatisConsensus implements IConsensus {
     // 2. try raft client
     TSStatus writeResult;
     try {
+      // 从缓存中获取一个客户端
       RatisClient client = getRaftClient(raftGroup);
+      // 由raft client 向leader发送消息
       RaftClientReply reply = client.getRaftClient().io().send(message);
       writeResult = Utils.deserializeFrom(reply.getMessage().getContent().asReadOnlyByteBuffer());
       client.returnSelf();
@@ -206,6 +211,7 @@ class RatisConsensus implements IConsensus {
       return failedWrite(new RatisRequestFailedException(e));
     }
 
+    // 如果有建议的leader，则响应回建议的leader，下次就可以直接向leader中发送消息了
     if (suggestedLeader != null) {
       TEndPoint leaderEndPoint = Utils.getEndpoint(suggestedLeader);
       writeResult.setRedirectNode(new TEndPoint(leaderEndPoint.getIp(), leaderEndPoint.getPort()));

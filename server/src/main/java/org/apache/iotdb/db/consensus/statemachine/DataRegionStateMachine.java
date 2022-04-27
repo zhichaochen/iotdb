@@ -42,6 +42,9 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+/**
+ * 数据分区状态机
+ */
 public class DataRegionStateMachine extends BaseStateMachine {
 
   private static final Logger logger = LoggerFactory.getLogger(DataRegionStateMachine.class);

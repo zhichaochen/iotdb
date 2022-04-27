@@ -21,6 +21,9 @@ package org.apache.iotdb.consensus.common.request;
 
 import java.nio.ByteBuffer;
 
+/**
+ * 共识请求
+ */
 public interface IConsensusRequest {
 
   void serializeRequest(ByteBuffer buffer);

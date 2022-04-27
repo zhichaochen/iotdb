@@ -91,10 +91,14 @@ public class ConsensusManager {
     for (TEndPoint endpoint : conf.getConfigNodeGroupAddressList()) {
       peerList.add(new Peer(consensusGroupId, endpoint));
     }
+    // 将多个ConfigNode组成一个raft共识组
     consensusImpl.addConsensusGroup(consensusGroupId, peerList);
   }
 
-  /** Transmit PhysicalPlan to confignode.consensus.statemachine */
+  /**
+   * 持久化一个计划
+   * 将PhysicalPlan传输到confignode。一致的意见状态机
+   * Transmit PhysicalPlan to confignode.consensus.statemachine */
   public ConsensusWriteResponse write(ConfigRequest plan) {
     return consensusImpl.write(consensusGroupId, plan);
   }

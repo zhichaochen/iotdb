@@ -195,6 +195,7 @@ public class ConfigManager implements Manager {
   public TSStatus setStorageGroup(SetStorageGroupReq setStorageGroupReq) {
     TSStatus status = confirmLeader();
     if (status.getCode() == TSStatusCode.SUCCESS_STATUS.getStatusCode()) {
+      // 调用集群元数据管理器设置存储组
       return clusterSchemaManager.setStorageGroup(setStorageGroupReq);
     } else {
       return status;

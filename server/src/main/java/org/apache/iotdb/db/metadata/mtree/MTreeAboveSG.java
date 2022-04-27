@@ -58,6 +58,7 @@ import java.util.TreeSet;
 import static org.apache.iotdb.commons.conf.IoTDBConstant.ONE_LEVEL_PATH_WILDCARD;
 import static org.apache.iotdb.commons.conf.IoTDBConstant.PATH_ROOT;
 
+// 由于MTREESG都存储在内存中，因此不限于通过MTreeStore管理MNode。
 // Since the MTreeAboveSG is all stored in memory, thus it is not restricted to manage MNode through
 // MTreeStore.
 public class MTreeAboveSG {
