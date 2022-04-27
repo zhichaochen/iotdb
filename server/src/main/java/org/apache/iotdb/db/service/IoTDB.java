@@ -117,6 +117,9 @@ public class IoTDB implements IoTDBMBean {
     return IoTDB.clusterMode;
   }
 
+  /**
+   * 启动当前节点
+   */
   public void active() {
     // 启动检查
     StartupChecks checks = new StartupChecks().withDefaultTest();
@@ -155,6 +158,7 @@ public class IoTDB implements IoTDBMBean {
     initServiceProvider();
     registerManager.register(MetricsService.getInstance());
     logger.info("recover the schema...");
+    // 初始化配置管理器
     initConfigManager();
     registerManager.register(new JMXService());
     registerManager.register(FlushManager.getInstance());
@@ -184,7 +188,7 @@ public class IoTDB implements IoTDBMBean {
     registerManager.register(MetricsService.getInstance());
 
     // in cluster mode, RPC service is not enabled.
-    //
+    // 在群集模式下，未启用RPC服务。
     if (IoTDBDescriptor.getInstance().getConfig().isEnableRpcService()) {
       registerManager.register(RPCService.getInstance());
     }

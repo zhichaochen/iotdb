@@ -32,6 +32,11 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
+ * 客户端管理器
+ * 我们应该从这位经理那里借用可重复使用的客户机，并在使用后归还客户机。
+ * 底层客户端池由Apache Commons池提供支持。根据当前使用情况，
+ * 该类提供了3个默认池组：RequestForwardClient、DataGroupClient、MetaGroupClient。
+ *
  * One should borrow the reusable client from this manager and return the client after use. The
  * underlying client pool is powered by Apache Commons Pool. The class provided 3 default pool group
  * according to current usage: RequestForwardClient, DataGroupClients, MetaGroupClients.

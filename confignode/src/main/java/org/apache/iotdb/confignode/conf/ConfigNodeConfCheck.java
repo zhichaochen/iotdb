@@ -49,6 +49,12 @@ public class ConfigNodeConfCheck {
     specialProperties = new Properties();
   }
 
+  /**
+   * 检查配置（初始化一些配置信息）
+   * @throws ConfigurationException
+   * @throws IOException
+   * @throws StartupException
+   */
   public void checkConfig() throws ConfigurationException, IOException, StartupException {
     // If systemDir does not exist, create systemDir
     File systemDir = new File(conf.getSystemDir());

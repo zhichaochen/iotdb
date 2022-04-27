@@ -57,6 +57,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * 元数据拉取器
+ */
 public class MetaPuller {
 
   private static final Logger logger = LoggerFactory.getLogger(MetaPuller.class);

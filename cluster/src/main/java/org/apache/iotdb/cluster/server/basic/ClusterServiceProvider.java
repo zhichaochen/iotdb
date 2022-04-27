@@ -39,6 +39,9 @@ import org.apache.iotdb.rpc.TSStatusCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 集群服务提供者
+ */
 public class ClusterServiceProvider extends ServiceProvider {
   private static final Logger logger = LoggerFactory.getLogger(ClusterServiceProvider.class);
 

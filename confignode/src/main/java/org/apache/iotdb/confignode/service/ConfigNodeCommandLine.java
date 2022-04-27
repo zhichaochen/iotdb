@@ -66,16 +66,20 @@ public class ConfigNodeCommandLine extends ServerCommandLine {
 
     LOGGER.info("Running mode {}", mode);
     if (MODE_START.equals(mode)) {
+      // TODO 启动配置节点
       try {
         // Startup environment check
+        // 启动时的环境检查
         StartupChecks checks = new StartupChecks().withDefaultTest();
         checks.verify();
         // Check special parameters
+        // 检查配置信息
         ConfigNodeConfCheck.getInstance().checkConfig();
       } catch (IOException | ConfigurationException | StartupException e) {
         LOGGER.error("Meet error when doing start checking", e);
         return -1;
       }
+      // 启动当前节点
       ConfigNode configNode = new ConfigNode();
       configNode.active();
     } else if (MODE_ADD.equals(mode)) {

@@ -89,7 +89,9 @@ import java.util.concurrent.TimeUnit;
 import static org.apache.iotdb.cluster.config.ClusterConstant.THREAD_POLL_WAIT_TERMINATION_TIME_S;
 import static org.apache.iotdb.cluster.utils.ClusterUtils.UNKNOWN_CLIENT_IP;
 
-/** we do not inherent IoTDB instance, as it may break the singleton mode of IoTDB. */
+/**
+ * 集群IOTDB实例
+ * we do not inherent IoTDB instance, as it may break the singleton mode of IoTDB. */
 public class ClusterIoTDB implements ClusterIoTDBMBean {
 
   private static final Logger logger = LoggerFactory.getLogger(ClusterIoTDB.class);
@@ -133,27 +135,37 @@ public class ClusterIoTDB implements ClusterIoTDBMBean {
     // we do not init anything here, so that we can re-initialize the instance in IT.
   }
 
-  /** initialize the current node and its services */
+  /**
+   * 初始化当前节点和他所有的服务
+   * initialize the current node and its services */
   public boolean initLocalEngines() {
+    // 集群配置
     ClusterConfig config = ClusterDescriptor.getInstance().getConfig();
     thisNode = new Node();
     // set internal rpc ip and ports
+    // 设置内部rpc ip和端口
     thisNode.setInternalIp(config.getInternalIp());
     thisNode.setMetaPort(config.getInternalMetaPort());
     thisNode.setDataPort(config.getInternalDataPort());
     // set client rpc ip and ports
+    // 设置客户端rpc ip和端口
     thisNode.setClientPort(config.getClusterRpcPort());
     thisNode.setClientIp(IoTDBDescriptor.getInstance().getConfig().getRpcAddress());
+    // 创建协调器
     coordinator = new Coordinator();
     // local engine
     TProtocolFactory protocolFactory =
         ThriftServiceThread.getProtocolFactory(
             IoTDBDescriptor.getInstance().getConfig().isRpcThriftCompressionEnable());
+    // 创建元数据组成员
     metaGroupMember = new MetaGroupMember(protocolFactory, thisNode, coordinator);
+    // 设置为集群模式
     IoTDB.setClusterMode();
+    //
     IoTDB.setSchemaProcessor(CSchemaProcessor.getInstance());
     ((CSchemaProcessor) IoTDB.schemaProcessor).setMetaGroupMember(metaGroupMember);
     ((CSchemaProcessor) IoTDB.schemaProcessor).setCoordinator(coordinator);
+    // 初始化元数据拉取器
     MetaPuller.getInstance().init(metaGroupMember);
     // set coordinator for serviceProvider construction
     try {
@@ -169,11 +181,14 @@ public class ClusterIoTDB implements ClusterIoTDBMBean {
     // future commit.
     DataGroupEngine.setProtocolFactory(protocolFactory);
     DataGroupEngine.setMetaGroupMember(metaGroupMember);
+    // 实例化数据组引擎
     dataGroupEngine = DataGroupEngine.getInstance();
+    // 创建客户端管理器
     clientManager =
         new ClientManager(
             ClusterDescriptor.getInstance().getConfig().isUseAsyncServer(),
             ClientManager.Type.RequestForwardClient);
+    // 初始化一些周期性任务
     initTasks();
     try {
       // we need to check config after initLocalEngines.
@@ -188,12 +203,16 @@ public class ClusterIoTDB implements ClusterIoTDBMBean {
   }
 
   private void initTasks() {
+    // 节点报告线程
     reportThread = IoTDBThreadPoolFactory.newSingleThreadScheduledExecutor("NodeReportThread");
+    // 每隔10秒，一个reporter线程就会打印该节点中所有raft成员的状态。
     reportThread.scheduleAtFixedRate(
         this::generateNodeReport,
         ClusterConstant.REPORT_INTERVAL_SEC,
         ClusterConstant.REPORT_INTERVAL_SEC,
         TimeUnit.SECONDS);
+    // 在快照期间，将创建数据文件的硬链接以供下载。
+    // 默认情况下，硬链接将每小时检查一次，以查看它们是否已过期，如果已过期，将进行清理。
     hardLinkCleanerThread =
         IoTDBThreadPoolFactory.newSingleThreadScheduledExecutor("HardLinkCleaner");
     hardLinkCleanerThread.scheduleAtFixedRate(
@@ -220,10 +239,20 @@ public class ClusterIoTDB implements ClusterIoTDBMBean {
     }
   }
 
+  /**
+   * 启动集群
+   * @param args
+   */
   public static void main(String[] args) {
     new ClusterIoTDBServerCommandLine().doMain(args);
   }
 
+  /**
+   * 检查服务并初始化
+   * @return
+   * @throws ConfigurationException
+   * @throws IOException
+   */
   protected boolean serverCheckAndInit() throws ConfigurationException, IOException {
     IoTDBConfigCheck.getInstance().checkConfig();
     IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
@@ -294,14 +323,17 @@ public class ClusterIoTDB implements ClusterIoTDBMBean {
   public void activeStartNodeMode() {
     try {
       // start iotdb server first
+      // 首先启动iotdb服务器
       IoTDB.getInstance().active();
       // some work about cluster
+      //
       preInitCluster();
       // try to build cluster
       metaGroupMember.buildCluster();
       // register service after cluster build
       postInitCluster();
       // init ServiceImpl to handle request of client
+      // 初始化ServiceImpl去处理客户端请求
       startClientRPC();
     } catch (StartupException
         | StartUpCheckFailureException
@@ -312,7 +344,12 @@ public class ClusterIoTDB implements ClusterIoTDBMBean {
     }
   }
 
+  /**
+   * 集群预初始化
+   * @throws StartupException
+   */
   private void preInitCluster() throws StartupException {
+    //
     stopRaftInfoReport();
     JMXService.registerMBean(this, mbeanName);
     // register MetaGroupMember. MetaGroupMember has the same position with "StorageEngine" in the
@@ -323,6 +360,7 @@ public class ClusterIoTDB implements ClusterIoTDBMBean {
     registerManager.register(dataGroupEngine);
 
     // rpc service initialize
+    // 初始化RPC服务
     DataGroupServiceImpls dataGroupServiceImpls = new DataGroupServiceImpls();
     if (ClusterDescriptor.getInstance().getConfig().isUseAsyncServer()) {
       MetaAsyncService metaAsyncService = new MetaAsyncService(metaGroupMember);
@@ -346,6 +384,10 @@ public class ClusterIoTDB implements ClusterIoTDBMBean {
     registerManager.register(MetaRaftService.getInstance());
   }
 
+  /**
+   * 集群后置初始化
+   * @throws StartupException
+   */
   private void postInitCluster() throws StartupException {
     logger.info("start Data Heartbeat RPC service... ");
     registerManager.register(DataRaftHeartBeatService.getInstance());
@@ -357,9 +399,15 @@ public class ClusterIoTDB implements ClusterIoTDBMBean {
     registerManager.register(ClusterMonitor.INSTANCE);
   }
 
+  /**
+   * 初始化ClusterTSServiceImpl服务，以处理客户端RPC请求
+   * @throws QueryProcessException
+   * @throws StartupException
+   */
   private void startClientRPC() throws QueryProcessException, StartupException {
     // we must wait until the metaGroup established.
     // So that the ClusterRPCService can work.
+    // 创建
     ClusterTSServiceImpl clusterServiceImpl = new ClusterTSServiceImpl();
     ServiceProvider.SESSION_MANAGER = ClusterSessionManager.getInstance();
     ClusterSessionManager.getInstance().setCoordinator(coordinator);
@@ -371,13 +419,19 @@ public class ClusterIoTDB implements ClusterIoTDBMBean {
     }
   }
 
-  /** Be added to the cluster by seed nodes */
+  /**
+   * 可以通过种子节点添加到集群
+   * Be added to the cluster by seed nodes */
   public void activeAddNodeMode() {
     try {
       final long startTime = System.currentTimeMillis();
+      // 前置初始化集群
       preInitCluster();
+      // 将当前节点加入元数据组
       metaGroupMember.joinCluster();
+      // 后置初始化集群
       postInitCluster();
+      // 加入集群之后，开始拉取快照
       dataGroupEngine.pullSnapshots();
       startClientRPC();
       logger.info(

@@ -46,6 +46,9 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 
+/**
+ * 元数据异步
+ */
 public class MetaAsyncService extends BaseAsyncService implements TSMetaService.AsyncIface {
   private static final String ERROR_MSG_META_NOT_READY = "The metadata not is not ready.";
   private static final Logger logger = LoggerFactory.getLogger(MetaAsyncService.class);

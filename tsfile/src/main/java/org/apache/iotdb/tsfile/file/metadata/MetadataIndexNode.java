@@ -38,7 +38,9 @@ import java.util.List;
 public class MetadataIndexNode {
 
   private static final TSFileConfig config = TSFileDescriptor.getInstance().getConfig();
+  // 只有叶子节点记录的是时间序列元数据的索引
   private final List<MetadataIndexEntry> children; // 子索引条目
+  // 记录的是256条时间序列元数据的结束位置，所以通过该条件肯定可以获取时间序列元信息
   private long endOffset; // 结束偏移量
 
   /** type of the child node at offset */
@@ -88,13 +90,24 @@ public class MetadataIndexNode {
     return children.get(0);
   }
 
+  /**
+   * 序列化MetadataIndexNode
+   * @param outputStream
+   * @return
+   * @throws IOException
+   */
   public int serializeTo(OutputStream outputStream) throws IOException {
     int byteLen = 0;
+    // 写入子节点的个数
     byteLen += ReadWriteForEncodingUtils.writeUnsignedVarInt(children.size(), outputStream);
+    // 遍历子节点，并序列化子节点
     for (MetadataIndexEntry metadataIndexEntry : children) {
       byteLen += metadataIndexEntry.serializeTo(outputStream);
     }
+    // 记录当前节点的结束偏移量，也是当前节点的子节点的结束便宜量。
+    // TODO 注意：这里是endOffset，因为下面还会序列化nodeType
     byteLen += ReadWriteIOUtils.write(endOffset, outputStream);
+    // 记录节点类型
     byteLen += ReadWriteIOUtils.write(nodeType.serialize(), outputStream);
     return byteLen;
   }

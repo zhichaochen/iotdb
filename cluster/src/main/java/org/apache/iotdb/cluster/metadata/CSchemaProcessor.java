@@ -123,6 +123,9 @@ import static org.apache.iotdb.cluster.query.ClusterPlanExecutor.THREAD_POOL_SIZ
 import static org.apache.iotdb.cluster.query.ClusterPlanExecutor.waitForThreadPool;
 import static org.apache.iotdb.db.utils.EncodingInferenceUtils.getDefaultEncoding;
 
+/**
+ *
+ */
 @SuppressWarnings("java:S1135") // ignore todos
 public class CSchemaProcessor extends LocalSchemaProcessor {
 

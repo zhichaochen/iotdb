@@ -56,6 +56,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * SlotPartitionTable使用查找表管理每个节点的插槽（数据分区）。
  * SlotPartitionTable manages the slots (data partition) of each node using a look-up table. Slot:
  * 1,2,3...
  */

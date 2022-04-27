@@ -30,6 +30,9 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 
+/**
+ * 共识工厂，用于创建一个共识组
+ */
 public class ConsensusFactory {
   public static final String CONSTRUCT_FAILED_MSG =
       "Construct consensusImpl failed, Please check your consensus className %s";
@@ -39,6 +42,7 @@ public class ConsensusFactory {
   public static Optional<IConsensus> getConsensusImpl(
       String className, TEndPoint endpoint, File storageDir, IStateMachine.Registry registry) {
     try {
+      // org.apache.iotdb.consensus.ratis.RatisConsensus
       Class<?> executor = Class.forName(className);
       Constructor<?> executorConstructor =
           executor.getDeclaredConstructor(

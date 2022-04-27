@@ -44,6 +44,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * 心跳检测线程
+ * 负责发送心跳（当该节点是领导者时）
+ * 检查领导者是否仍在线（当该节点是追随者时）
+ * 或开始选举（当该节点是选民时）。
  * HeartbeatThread takes the responsibility to send heartbeats (when this node is a leader), check
  * if the leader is still online (when this node is a follower) or start elections (when this node
  * is a elector).

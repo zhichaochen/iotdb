@@ -56,6 +56,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 数据组服务
+ */
 public class DataGroupServiceImpls implements TSDataService.AsyncIface, TSDataService.Iface {
 
   @Override

@@ -56,6 +56,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * 数据组引擎
+ */
 public class DataGroupEngine implements IService, DataGroupEngineMBean {
 
   private static final Logger logger = LoggerFactory.getLogger(DataGroupEngine.class);
@@ -312,6 +315,7 @@ public class DataGroupEngine implements IService, DataGroupEngineMBean {
   }
 
   /**
+   * 当节点加入集群时，它还会创建一个新的数据组和一个没有数据的对应成员。这是为了使该成员从其他节点提取数据。
    * When the node joins a cluster, it also creates a new data group and a corresponding member
    * which has no data. This is to make that member pull data from other nodes.
    */
@@ -319,8 +323,11 @@ public class DataGroupEngine implements IService, DataGroupEngineMBean {
     for (int raftId = 0;
         raftId < ClusterDescriptor.getInstance().getConfig().getMultiRaftFactor();
         raftId++) {
+      // 创建一个RaftNode节点
       RaftNode raftNode = new RaftNode(thisNode, raftId);
+      // 获取当前节点的所有slot
       List<Integer> slots = ((SlotPartitionTable) partitionTable).getNodeSlots(raftNode);
+      //
       DataGroupMember dataGroupMember = headerGroupMap.get(raftNode);
       dataGroupMember.pullNodeAdditionSnapshots(slots, thisNode);
     }

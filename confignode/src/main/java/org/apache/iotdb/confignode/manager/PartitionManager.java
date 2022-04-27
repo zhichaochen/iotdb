@@ -45,7 +45,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-/** manage data partition and schema partition */
+/**
+ * 数据分区管理器
+ * manage data partition and schema partition */
 public class PartitionManager {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionManager.class);

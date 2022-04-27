@@ -26,6 +26,9 @@ import org.apache.iotdb.db.service.IoTDB;
 import org.apache.iotdb.db.service.thrift.impl.TSServiceImpl;
 
 /**
+ * ClusterTSServiceImpl是TSServiceImpl的群集版本，它负责处理用户请求（sqls和会话api）。
+ * 它继承了TSServiceImpl，但将数据和元数据的查询重定向到本地节点。
+ *
  * ClusterTSServiceImpl is the cluster version of TSServiceImpl, which is responsible for the
  * processing of the user requests (sqls and session api). It inherits the basic procedures from
  * TSServiceImpl, but redirect the queries of data and metadata to a MetaGroupMember of the local

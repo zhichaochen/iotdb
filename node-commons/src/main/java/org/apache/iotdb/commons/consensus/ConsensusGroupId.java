@@ -22,6 +22,9 @@ package org.apache.iotdb.commons.consensus;
 import org.apache.iotdb.common.rpc.thrift.TConsensusGroupId;
 import org.apache.iotdb.common.rpc.thrift.TConsensusGroupType;
 
+/**
+ * 共识组ID
+ */
 public interface ConsensusGroupId {
 
   // return specific id

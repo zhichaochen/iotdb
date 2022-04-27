@@ -143,6 +143,7 @@ public class TimeseriesMetadata implements ITimeSeriesMetadata {
   }
 
   /**
+   * 序列化时间序列元数据
    * serialize to outputStream.
    *
    * @param outputStream outputStream

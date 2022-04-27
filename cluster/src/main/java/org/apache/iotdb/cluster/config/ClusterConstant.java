@@ -50,12 +50,14 @@ public class ClusterConstant {
   public static final int THREAD_POLL_WAIT_TERMINATION_TIME_S = 10;
 
   /**
+   * 每隔10秒，一个reporter线程就会打印该节点中所有raft成员的状态。
    * every "REPORT_INTERVAL_SEC" seconds, a reporter thread will print the status of all raft
    * members in this node.
    */
   public static final int REPORT_INTERVAL_SEC = 10;
 
   /**
+   * 在快照期间，将创建数据文件的硬链接以供下载。默认情况下，硬链接将每小时检查一次，以查看它们是否已过期，如果已过期，将进行清理。
    * during snapshot, hardlinks of data files are created to for downloading. hardlinks will be
    * checked every hour by default to see if they have expired, and will be cleaned if so.
    */

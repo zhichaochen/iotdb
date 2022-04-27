@@ -37,7 +37,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-/** Statemachine for PartitionRegion */
+/**
+ * 分区状态机
+ * Statemachine for PartitionRegion */
 public class PartitionRegionStateMachine implements IStateMachine {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PartitionRegionStateMachine.class);

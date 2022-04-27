@@ -24,6 +24,9 @@ import org.apache.iotdb.cluster.rpc.thrift.RaftService;
 
 import java.io.IOException;
 
+/**
+ * 客户端管理器
+ */
 public interface IClientManager {
   RaftService.AsyncClient borrowAsyncClient(Node node, ClientCategory category) throws IOException;
 

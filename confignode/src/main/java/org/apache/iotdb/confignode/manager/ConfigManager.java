@@ -54,7 +54,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Entry of all management, AssignPartitionManager,AssignRegionManager. */
+/**
+ * 配置管理器
+ * Entry of all management, AssignPartitionManager,AssignRegionManager. */
 public class ConfigManager implements Manager {
 
   /** Manage PartitionTable read/write requests through the ConsensusLayer */
@@ -72,6 +74,10 @@ public class ConfigManager implements Manager {
   /** Manage cluster authorization */
   private final PermissionManager permissionManager;
 
+  /**
+   * 创建配置的各种管理器
+   * @throws IOException
+   */
   public ConfigManager() throws IOException {
     this.dataNodeManager = new DataNodeManager(this);
     this.partitionManager = new PartitionManager(this);
@@ -89,6 +95,11 @@ public class ConfigManager implements Manager {
     return false;
   }
 
+  /**
+   * 注册数据节点
+   * @param physicalPlan RegisterDataNodePlan
+   * @return
+   */
   @Override
   public DataSet registerDataNode(RegisterDataNodeReq registerDataNodeReq) {
     TSStatus status = confirmLeader();

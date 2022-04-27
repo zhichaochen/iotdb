@@ -33,6 +33,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+/**
+ * 配置节点
+ */
 public class ConfigNode implements ConfigNodeMBean {
   private static final Logger LOGGER = LoggerFactory.getLogger(ConfigNode.class);
 
@@ -59,7 +62,12 @@ public class ConfigNode implements ConfigNodeMBean {
     }
   }
 
+  /**
+   * 启动配置节点
+   * @param args
+   */
   public static void main(String[] args) {
+    // 启动
     new ConfigNodeCommandLine().doMain(args);
   }
 
@@ -69,13 +77,18 @@ public class ConfigNode implements ConfigNodeMBean {
     registerManager.register(new JMXService());
     JMXService.registerMBean(this, mbeanName);
 
+    // 初始化一系列RPC服务的管理器
     configNodeRPCService.initSyncedServiceImpl(new ConfigNodeRPCServiceProcessor(configManager));
     registerManager.register(configNodeRPCService);
     LOGGER.info("Init rpc server success");
   }
 
+  /**
+   * 活跃当前配置节点
+   */
   public void active() {
     try {
+      // 创建
       setUp();
     } catch (StartupException | IOException e) {
       LOGGER.error("Meet error while starting up.", e);

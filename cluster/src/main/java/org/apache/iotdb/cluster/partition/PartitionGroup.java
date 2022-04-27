@@ -32,12 +32,13 @@ import java.util.Collection;
 import java.util.Objects;
 
 /**
+ * PartitionGroup包含数据组的所有节点。列表的第一个元素称为header。
  * PartitionGroup contains all the nodes of a data group. The first element of the list is called
  * header.
  */
 public class PartitionGroup extends ArrayList<Node> {
 
-  private int raftId;
+  private int raftId; // raft id
 
   public PartitionGroup() {}
 

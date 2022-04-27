@@ -118,6 +118,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import static org.apache.iotdb.cluster.config.ClusterConstant.THREAD_POLL_WAIT_TERMINATION_TIME_S;
 
 /**
+ * 表示Raft组中的一个成员
+ * RaftMember处理常见的raft逻辑，如领导人选举、日志追加、追赶等。
  * RaftMember process the common raft logic like leader election, log appending, catch-up and so on.
  */
 @SuppressWarnings("java:S3077") // reference volatile is enough
@@ -150,7 +152,9 @@ public abstract class RaftMember implements RaftMemberMBean {
 
   protected Node thisNode = ClusterIoTDB.getInstance().getThisNode();
 
-  /** the nodes that belong to the same raft group as thisNode. */
+  /**
+   * 这些节点与当前节点同属于一个raft group
+   * the nodes that belong to the same raft group as thisNode. */
   protected PartitionGroup allNodes;
 
   ClusterConfig config = ClusterDescriptor.getInstance().getConfig();
@@ -273,6 +277,7 @@ public abstract class RaftMember implements RaftMemberMBean {
     heartBeatService = IoTDBThreadPoolFactory.newSingleThreadScheduledExecutor(name + "-Heartbeat");
 
     catchUpService = IoTDBThreadPoolFactory.newCachedThreadPool(name + "-CatchUp");
+    // 追加日志线程池
     appendLogThreadPool =
         IoTDBThreadPoolFactory.newFixedThreadPool(
             Runtime.getRuntime().availableProcessors() * 10, name + "-AppendLog");
@@ -285,6 +290,7 @@ public abstract class RaftMember implements RaftMemberMBean {
             new LinkedBlockingQueue<>(),
             new IoTThreadFactory(getName() + "-SerialToParallel"),
             getName() + "-SerialToParallel");
+    // 提交日志线程池
     commitLogPool = IoTDBThreadPoolFactory.newSingleThreadExecutor("RaftCommitLog");
   }
 
@@ -1442,6 +1448,7 @@ public abstract class RaftMember implements RaftMemberMBean {
   }
 
   /**
+   * 从池中拿出一个客户端
    * Get an asynchronous thrift client of the given node.
    *
    * @return an asynchronous thrift client or null if the caller tries to connect the local node or

@@ -195,6 +195,9 @@ public class ClientMain {
     }
   }
 
+  /**
+   * 查询
+   */
   private static void doQuery(boolean noOption, CommandLine commandLine)
       throws StatementExecutionException, TException, IoTDBConnectionException {
     if (noOption || commandLine.hasOption(PARAM_QUERY)) {

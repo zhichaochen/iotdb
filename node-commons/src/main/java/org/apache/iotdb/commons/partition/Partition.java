@@ -21,6 +21,9 @@ package org.apache.iotdb.commons.partition;
 import org.apache.iotdb.common.rpc.thrift.TSeriesPartitionSlot;
 import org.apache.iotdb.commons.partition.executor.SeriesPartitionExecutor;
 
+/**
+ * 分区
+ */
 public abstract class Partition {
   protected String seriesSlotExecutorName;
   protected int seriesPartitionSlotNum;

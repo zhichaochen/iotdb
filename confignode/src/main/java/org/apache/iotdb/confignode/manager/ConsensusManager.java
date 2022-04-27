@@ -40,15 +40,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/** ConsensusManager maintains consensus class, request will redirect to consensus layer */
+/**
+ * 共识管理器维护共识类，请求将重定向到共识层
+ * ConsensusManager maintains consensus class, request will redirect to consensus layer */
 public class ConsensusManager {
   private static final Logger LOGGER = LoggerFactory.getLogger(ConsensusManager.class);
   private static final ConfigNodeConf conf = ConfigNodeDescriptor.getInstance().getConf();
 
-  private ConsensusGroupId consensusGroupId;
-  private IConsensus consensusImpl;
+  private ConsensusGroupId consensusGroupId; // 共识组ID
+  private IConsensus consensusImpl; // 共识实现
 
   public ConsensusManager() throws IOException {
+    // 构建共识层
     setConsensusLayer();
   }
 
@@ -56,9 +59,12 @@ public class ConsensusManager {
     consensusImpl.stop();
   }
 
-  /** Build ConfigNodeGroup ConsensusLayer */
+  /**
+   * 构建配置节点的共识层
+   * Build ConfigNodeGroup ConsensusLayer */
   private void setConsensusLayer() throws IOException {
     // There is only one ConfigNodeGroup
+    // 只有一个配置组，所以这里指定组ID是0
     consensusGroupId = new PartitionRegionId(0);
 
     // Ratis consensus local implement
@@ -74,6 +80,7 @@ public class ConsensusManager {
                         String.format(
                             ConsensusFactory.CONSTRUCT_FAILED_MSG,
                             conf.getConfigNodeConsensusProtocolClass())));
+    // 启动共识组
     consensusImpl.start();
 
     // Build ratis group from user properties

@@ -76,7 +76,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * 协调器
+ * 客户端非查询请求的协调器
+ *
  * Coordinator of client non-query request */
 public class Coordinator {
 
@@ -415,7 +416,9 @@ public class Coordinator {
     }
   }
 
-  /** split a plan into several sub-plans, each belongs to only one data group. */
+  /**
+   * 将计划拆分为多个子计划，每个子计划只属于一个数据组。
+   * split a plan into several sub-plans, each belongs to only one data group. */
   private Map<PhysicalPlan, PartitionGroup> splitPlan(PhysicalPlan plan)
       throws UnsupportedPlanException, CheckConsistencyException {
     Map<PhysicalPlan, PartitionGroup> planGroupMap = null;

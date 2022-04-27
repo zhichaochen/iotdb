@@ -141,7 +141,9 @@ public class MetaGroupMember extends RaftMember implements IService, MetaGroupMe
   /** the file that contains the identifier of this node */
   static final String NODE_IDENTIFIER_FILE_NAME =
       IoTDBDescriptor.getInstance().getConfig().getSystemDir() + File.separator + "node_identifier";
-  /** the file that contains the serialized partition table */
+  /**
+   * 分区文件名
+   * the file that contains the serialized partition table */
   static final String PARTITION_FILE_NAME =
       IoTDBDescriptor.getInstance().getConfig().getSystemDir() + File.separator + "partitions";
   /** in case of data loss, some file changes would be made to a temporary file first */
@@ -210,17 +212,26 @@ public class MetaGroupMember extends RaftMember implements IService, MetaGroupMe
   @TestOnly
   public MetaGroupMember() {}
 
+  /**
+   * 创建元数据组成员
+   * @param factory
+   * @param thisNode
+   * @param coordinator
+   */
   public MetaGroupMember(TProtocolFactory factory, Node thisNode, Coordinator coordinator) {
     super(
         "Meta",
         new ClientManager(
             ClusterDescriptor.getInstance().getConfig().isUseAsyncServer(),
             ClientManager.Type.MetaGroupClient));
+    // 创建分区组，并初始化
     allNodes = new PartitionGroup();
     initPeerMap();
 
     // committed logs are applied to the state machine (the IoTDB instance) through the applier
+    // 提交的日志通过申请器应用于状态机（IoTDB实例）
     LogApplier metaLogApplier = new MetaLogApplier(this);
+    // 创建日志管理器
     logManager = new MetaSingleSnapshotLogManager(metaLogApplier, this);
     term.set(logManager.getHardState().getCurrentTerm());
     voteFor = logManager.getHardState().getVoteFor();
@@ -235,6 +246,7 @@ public class MetaGroupMember extends RaftMember implements IService, MetaGroupMe
     // try loading the partition table if there was a previous cluster
     this.coordinator = coordinator;
     coordinator.linkMetaGroupMember(this);
+    // 加载分区表
     loadPartitionTable();
   }
 
@@ -379,6 +391,7 @@ public class MetaGroupMember extends RaftMember implements IService, MetaGroupMe
   }
 
   /**
+   * 此节点不是种子节点，希望加入已建立的群集。从种子节点中随机选取一个节点，并向其发送加入请求。
    * This node is not a seed node and wants to join an established cluster. Pick up a node randomly
    * from the seed nodes and send a join request to it.
    */
@@ -391,20 +404,24 @@ public class MetaGroupMember extends RaftMember implements IService, MetaGroupMe
     int retry = DEFAULT_JOIN_RETRY;
     while (retry > 0) {
       // randomly pick up a node to try
+      // 随机选择一个节点
       Node node = allNodes.get(random.nextInt(allNodes.size()));
       if (node.equals(thisNode)) {
         continue;
       }
       logger.info("start joining the cluster with the help of {}", node);
       try {
+        // 随机选择一个节点，执行加入集群操作
         if (joinCluster(node, startUpStatus)) {
           logger.info("Joined a cluster, starting the heartbeat thread");
           setCharacter(NodeCharacter.FOLLOWER);
           setLastHeartbeatReceivedTime(System.currentTimeMillis());
+          // 开启心跳检测
           threadTaskInit();
           return;
         }
         // wait 5s to start the next try
+        // 等待5s尝试下一次
         Thread.sleep(ClusterDescriptor.getInstance().getConfig().getJoinClusterTimeOutMs());
       } catch (TException e) {
         logger.warn("Cannot join the cluster from {}, because:", node, e);
@@ -420,6 +437,10 @@ public class MetaGroupMember extends RaftMember implements IService, MetaGroupMe
     throw new StartUpCheckFailureException();
   }
 
+  /**
+   *
+   * @return
+   */
   public StartUpStatus getNewStartUpStatus() {
     StartUpStatus newStartUpStatus = new StartUpStatus();
     newStartUpStatus.setPartitionInterval(
@@ -440,6 +461,9 @@ public class MetaGroupMember extends RaftMember implements IService, MetaGroupMe
   }
 
   /**
+   * 向“节点”发送加入群集请求。
+   * 如果接受加入，则设置分区表，启动DataClusterServer和ClusterTSServiceImpl并初始化DataGroupMembers。
+   *
    * Send a join cluster request to "node". If the joining is accepted, set the partition table,
    * start DataClusterServer and ClusterTSServiceImpl and initialize DataGroupMembers.
    *
@@ -718,6 +742,7 @@ public class MetaGroupMember extends RaftMember implements IService, MetaGroupMe
   }
 
   /**
+   * 当第一个领导者获胜，或者追随者从领导者那里收到分区表，或者节点恢复时，idNodeMap被初始化
    * idNodeMap is initialized when the first leader wins or the follower receives the partition
    * table from the leader or a node recovers
    */
@@ -1198,7 +1223,9 @@ public class MetaGroupMember extends RaftMember implements IService, MetaGroupMe
     }
   }
 
-  /** Load the partition table from a local file if it can be found. */
+  /**
+   * 加载分区表
+   * Load the partition table from a local file if it can be found. */
   private void loadPartitionTable() {
     File partitionFile = new File(PARTITION_FILE_NAME);
     if (!partitionFile.exists() && !recoverPartitionTableFile()) {
@@ -1269,6 +1296,8 @@ public class MetaGroupMember extends RaftMember implements IService, MetaGroupMe
   }
 
   /**
+   * 从磁盘加载标识符
+   * 如果标识符文件不存在，将生成新的标识符。如果标识符已设置，则不执行任何操作。
    * Load the identifier from the disk, if the identifier file does not exist, a new identifier will
    * be generated. Do nothing if the identifier is already set.
    */

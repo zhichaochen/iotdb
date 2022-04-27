@@ -23,6 +23,9 @@ import org.apache.iotdb.common.rpc.thrift.TConsensusGroupType;
 
 import java.util.Objects;
 
+/**
+ * 数据分区ID
+ */
 public class DataRegionId implements ConsensusGroupId {
 
   private int id;

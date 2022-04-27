@@ -19,7 +19,10 @@
 
 package org.apache.iotdb.cluster.log;
 
-/** LogApplier applies the log to the local node to make it take effect. */
+/**
+ * 日志申请器
+ * 日志申请器申请log到本地节点，使本地节点是有效的。
+ * LogApplier applies the log to the local node to make it take effect. */
 public interface LogApplier {
 
   /**

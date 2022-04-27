@@ -23,6 +23,9 @@ import java.util.Comparator;
 import java.util.Objects;
 
 /**
+ * 日志，一条数据
+ * 日志记录在此群集上执行的操作。每个日志记录2个long：currLogIndex、currLogTerm，
+ * 因此集群中的日志将形成一个日志链，从而可以区分和删除异常操作。
  * Log records operations that are made on this cluster. Each log records 2 longs: currLogIndex,
  * currLogTerm, so that the logs in a cluster will form a log chain and abnormal operations can thus
  * be distinguished and removed.
@@ -33,8 +36,8 @@ public abstract class Log implements Comparable<Log> {
       Comparator.comparingLong(Log::getCurrLogIndex).thenComparing(Log::getCurrLogTerm);
 
   protected static final int DEFAULT_BUFFER_SIZE = 4096;
-  private long currLogIndex;
-  private long currLogTerm;
+  private long currLogIndex; // 当前日志的下标
+  private long currLogTerm; // 当前日志的
 
   // for async application
   private volatile boolean applied;

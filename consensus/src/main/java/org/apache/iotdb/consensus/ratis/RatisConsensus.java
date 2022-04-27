@@ -75,6 +75,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
+ * 基于Ratis的multi-raft的实现
+ * 本质来说通过个数据结构来管理多个raft组
  * A multi-raft consensus implementation based on Ratis, currently still under development.
  *
  * <p>See jira [IOTDB-2674](https://issues.apache.org/jira/browse/IOTDB-2674) for more details.
@@ -84,8 +86,11 @@ class RatisConsensus implements IConsensus {
   private final Logger logger = LoggerFactory.getLogger(RatisConsensus.class);
 
   // the unique net communication endpoint
-  private final RaftPeer myself;
-  private final RaftServer server;
+  private final RaftPeer myself; // 表示当前节点
+  private final RaftServer server; // 表示当前节点的本地服务
+
+  private final Map<RaftGroupId, RaftClient> clientMap; // raft的客户端列表
+  private final Map<RaftGroupId, RaftGroup> raftGroupMap; // 多个raft组
 
   private final RaftProperties properties = new RaftProperties();
   private final RaftClientRpc clientRpc;
@@ -145,6 +150,9 @@ class RatisConsensus implements IConsensus {
   }
 
   /**
+   * write将首先向本地服务器发送请求，并使用方法调用。
+   * 如果本地服务器不是leader，它将使用RaftClient向read leader发送RPC
+   *
    * write will first send request to local server use method call if local server is not leader, it
    * will use RaftClient to send RPC to read leader
    */
@@ -163,18 +171,22 @@ class RatisConsensus implements IConsensus {
     Message message = new RequestMessage(IConsensusRequest);
 
     // 1. first try the local server
+    // 1. 首先尝试本地服务器
     RaftClientRequest clientRequest =
         buildRawRequest(groupId, message, RaftClientRequest.writeRequestType());
     RaftClientReply localServerReply;
     RaftPeer suggestedLeader = null;
     try {
+      // 向本地服务发送一个request
       localServerReply = server.submitClientRequest(clientRequest);
+      // 如果成功，表示本地服务就是一个leader
       if (localServerReply.isSuccess()) {
         ResponseMessage responseMessage = (ResponseMessage) localServerReply.getMessage();
         TSStatus writeStatus = (TSStatus) responseMessage.getContentHolder();
         return ConsensusWriteResponse.newBuilder().setStatus(writeStatus).build();
       }
 
+      // 表示本地服务不是一个leader，并获取建议的leader
       NotLeaderException ex = localServerReply.getNotLeaderException();
       if (ex != null) { // local server is not leader
         suggestedLeader = ex.getSuggestedLeader();
@@ -239,6 +251,7 @@ class RatisConsensus implements IConsensus {
    */
   @Override
   public ConsensusGenericResponse addConsensusGroup(ConsensusGroupId groupId, List<Peer> peers) {
+    // 构建一个RaftGroup
     RaftGroup group = buildRaftGroup(groupId, peers);
     // pre-conditions: myself in this new group
     if (!group.getPeers().contains(myself)) {

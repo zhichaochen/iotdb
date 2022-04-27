@@ -44,6 +44,7 @@ public interface IConsensus {
   ConsensusReadResponse read(ConsensusGroupId groupId, IConsensusRequest IConsensusRequest);
 
   // multi consensus group API
+  // 添加一个共识组，既然是muti-raft，那么肯定支持添加与删除一个raft组
   ConsensusGenericResponse addConsensusGroup(ConsensusGroupId groupId, List<Peer> peers);
 
   ConsensusGenericResponse removeConsensusGroup(ConsensusGroupId groupId);

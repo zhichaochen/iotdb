@@ -78,22 +78,22 @@ public class MetadataIndexConstructor {
       for (int i = 0; i < entry.getValue().size(); i++) {
         // 时间序列元数据
         timeseriesMetadata = entry.getValue().get(i);
-        // 判断设备的时间序列是否达到了256
+        // TODO 只有子节点是256的倍数，才会进入其中
         if (i % config.getMaxDegreeOfIndexNode() == 0) {
-          // 判断当前索引节点的子节点（MetadataIndexEntry）个数是否达到了256
-          // TODO 如果满了，则将当前节点加入队列，并创建新的currentIndexNode
+          // 如果子节点达到256了，则创建一个新的节点
           if (currentIndexNode.isFull()) {
             // 如果currentIndexNode的子节点达到了256，则添加currentIndexNode到队列中
             addCurrentIndexNodeToQueue(currentIndexNode, measurementMetadataIndexQueue, out);
             // 并创建新的索引节点。
             currentIndexNode = new MetadataIndexNode(MetadataIndexNodeType.LEAF_MEASUREMENT);
           }
-          // 如果【没有达到256】，则向其中添加MetadataIndexEntry，记录时间序列的偏移量
-          // TODO
+          // 如果child【达到256】，则向其中添加MetadataIndexEntry，记录时间序列的偏移量
+          // TODO 这里特别重要，如果没有达到256，时间序列元数据一直在序列化，pos一直在增加，
+          //  只有达到256，创建一个子条目，记录256条时间序列元数据的结束位置。
           currentIndexNode.addEntry(
               new MetadataIndexEntry(timeseriesMetadata.getMeasurementId(), out.getPosition()));
         }
-        // TODO 序列化当前时间序列
+        // 时间序列元数据序列化
         timeseriesMetadata.serializeTo(out.wrapAsStream());
       }
       // 添加当前索引节点到队列
@@ -117,6 +117,7 @@ public class MetadataIndexConstructor {
           new MetadataIndexNode(MetadataIndexNodeType.LEAF_DEVICE);
       // 遍历设备索引Map
       for (Map.Entry<String, MetadataIndexNode> entry : deviceMetadataIndexMap.entrySet()) {
+        //
         metadataIndexNode.addEntry(new MetadataIndexEntry(entry.getKey(), out.getPosition()));
         entry.getValue().serializeTo(out.wrapAsStream());
       }
@@ -151,6 +152,8 @@ public class MetadataIndexConstructor {
 
   /**
    * 生成根节点
+   * 先生成最底下一层，如果child超过256，则再创建一个MetadataIndexNode，包住256个child，直到只存在一个根节点
+   *
    * Generate root node, using the nodes in the queue as leaf nodes. The final metadata tree has two
    * levels: measurement leaf nodes will generate to measurement root node; device leaf nodes will
    * generate to device root node
@@ -167,7 +170,6 @@ public class MetadataIndexConstructor {
     MetadataIndexNode metadataIndexNode;
     MetadataIndexNode currentIndexNode = new MetadataIndexNode(type);
     // TODO 只要不是一个，没有得到根节点，就一直执行下面的步骤
-    //
     while (queueSize != 1) {
       for (int i = 0; i < queueSize; i++) {
         // 拿出一个
@@ -176,16 +178,17 @@ public class MetadataIndexConstructor {
         // 如果当前索引节点已经满了，则加入队列并创建一个新的
         // TODO 这里控制了一个MetadataIndexNode不能超过256
         if (currentIndexNode.isFull()) {
+          // TODO 如果已经达到256，则会加入队列，并创建一个新的MetadataIndexNode
           addCurrentIndexNodeToQueue(currentIndexNode, metadataIndexNodeQueue, out);
           currentIndexNode = new MetadataIndexNode(type);
         }
-        // 加入一个child
+        // 加入一个child，TODO 这里的out.getPosition()
         currentIndexNode.addEntry(
             new MetadataIndexEntry(metadataIndexNode.peek().getName(), out.getPosition()));
-        // 序列化MetadataIndexNode
+        // 序列化MetadataIndexNode，out.getPosition() 指针会向前推进的
+        // TODO 每【添加一个】MetadataIndexEntry则会序列化一下，指针向前推进，所以
         metadataIndexNode.serializeTo(out.wrapAsStream());
       }
-      //
       addCurrentIndexNodeToQueue(currentIndexNode, metadataIndexNodeQueue, out);
       currentIndexNode = new MetadataIndexNode(type);
       queueSize = metadataIndexNodeQueue.size();

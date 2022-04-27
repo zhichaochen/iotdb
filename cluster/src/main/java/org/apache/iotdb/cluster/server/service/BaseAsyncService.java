@@ -46,6 +46,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 
+/**
+ * 异步服务
+ * 注意是一个抽象类，提供了通用的异步服务
+ */
 public abstract class BaseAsyncService implements RaftService.AsyncIface {
 
   RaftMember member;
