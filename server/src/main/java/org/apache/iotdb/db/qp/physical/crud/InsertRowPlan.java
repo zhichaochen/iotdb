@@ -61,8 +61,7 @@ public class InsertRowPlan extends InsertPlan implements WALEntryValue {
 public class InsertRowPlan extends InsertPlan {
 
   private static final Logger logger = LoggerFactory.getLogger(InsertRowPlan.class);
-  private static final byte TYPE_RAW_STRING = -1; // 字符串类型，当类型为null的话，写入这种类型
-  private static final byte TYPE_NULL = -2; // null值得类型
+  private static final byte TYPE_RAW_STRING = -1;
 
   private long time; // 时间戳
   private Object[] values; // 所有插入的值
@@ -364,7 +363,6 @@ public class InsertRowPlan extends InsertPlan {
     size += Integer.BYTES;
     for (int i = 0; i < values.length; i++) {
       if (values[i] == null) {
-        size += Byte.BYTES;
         continue;
       }
       if (dataTypes == null || dataTypes[i] == null) {
@@ -413,8 +411,7 @@ public class InsertRowPlan extends InsertPlan {
   }
 
   void serializeMeasurementsAndValues(DataOutputStream stream) throws IOException {
-    stream.writeInt(
-        measurements.length - (failedMeasurements == null ? 0 : failedMeasurements.size()));
+    stream.writeInt(measurements.length - getFailedMeasurementNumber());
 
     for (String m : measurements) {
       if (m != null) {
@@ -423,7 +420,7 @@ public class InsertRowPlan extends InsertPlan {
     }
 
     try {
-      stream.writeInt(dataTypes.length);
+      stream.writeInt(values.length - getFailedMeasurementNumber());
       putValues(stream);
     } catch (QueryProcessException e) {
       throw new IOException(e);
@@ -439,7 +436,6 @@ public class InsertRowPlan extends InsertPlan {
   private void putValues(DataOutputStream outputStream) throws QueryProcessException, IOException {
     for (int i = 0; i < values.length; i++) {
       if (values[i] == null) {
-        ReadWriteIOUtils.write(TYPE_NULL, outputStream);
         continue;
       }
       // types are not determined, the situation mainly occurs when the plan uses string values
@@ -480,8 +476,8 @@ public class InsertRowPlan extends InsertPlan {
       // types are not determined, the situation mainly occurs when the plan uses string values
       // and is forwarded to other nodes
       byte typeNum = stream.readByte();
-      if (typeNum == TYPE_RAW_STRING || typeNum == TYPE_NULL) {
-        values[i] = typeNum == TYPE_RAW_STRING ? ReadWriteIOUtils.readString(stream) : null;
+      if (typeNum == TYPE_RAW_STRING) {
+        values[i] = ReadWriteIOUtils.readString(stream);
         continue;
       }
       dataTypes[i] = TSDataType.values()[typeNum];
@@ -518,8 +514,8 @@ public class InsertRowPlan extends InsertPlan {
       // types are not determined, the situation mainly occurs when the plan uses string values
       // and is forwarded to other nodes
       byte typeNum = (byte) ReadWriteIOUtils.read(buffer);
-      if (typeNum == TYPE_RAW_STRING || typeNum == TYPE_NULL) {
-        values[i] = typeNum == TYPE_RAW_STRING ? ReadWriteIOUtils.readString(buffer) : null;
+      if (typeNum == TYPE_RAW_STRING) {
+        values[i] = ReadWriteIOUtils.readString(buffer);
         continue;
       }
       dataTypes[i] = TSDataType.values()[typeNum];
@@ -573,9 +569,7 @@ public class InsertRowPlan extends InsertPlan {
 
   /*序列化物理量和其对应的值*/
   void serializeMeasurementsAndValues(ByteBuffer buffer) {
-    // 写入正常的物理量的个数（没有失败的）
-    buffer.putInt(
-        measurements.length - (failedMeasurements == null ? 0 : failedMeasurements.size()));
+    buffer.putInt(measurements.length - getFailedMeasurementNumber());
 
     // 遍历所有物理量，并写入
     for (String measurement : measurements) {
@@ -584,9 +578,7 @@ public class InsertRowPlan extends InsertPlan {
       }
     }
     try {
-      // 写入物理量的【数据类型的长度】
-      buffer.putInt(dataTypes.length);
-      // 写入物理量对应的值
+      buffer.putInt(values.length - getFailedMeasurementNumber());
       putValues(buffer);
     } catch (QueryProcessException e) {
       logger.error("Failed to serialize values for {}", this, e);
@@ -604,7 +596,6 @@ public class InsertRowPlan extends InsertPlan {
   private void putValues(ByteBuffer buffer) throws QueryProcessException {
     for (int i = 0; i < values.length; i++) {
       if (values[i] == null) {
-        ReadWriteIOUtils.write(TYPE_NULL, buffer);
         continue;
       }
       // types are not determined, the situation mainly occurs when the plan uses string values
@@ -654,8 +645,7 @@ public class InsertRowPlan extends InsertPlan {
   }
 
   void serializeMeasurementsAndValues(IWALByteBufferView buffer) {
-    buffer.putInt(
-        measurements.length - (failedMeasurements == null ? 0 : failedMeasurements.size()));
+    buffer.putInt(measurements.length - getFailedMeasurementNumber());
 
     for (String measurement : measurements) {
       if (measurement != null) {
@@ -663,7 +653,7 @@ public class InsertRowPlan extends InsertPlan {
       }
     }
     try {
-      buffer.putInt(dataTypes.length);
+      buffer.putInt(values.length - getFailedMeasurementNumber());
       putValues(buffer);
     } catch (QueryProcessException e) {
       logger.error("Failed to serialize values for {}", this, e);
@@ -679,7 +669,6 @@ public class InsertRowPlan extends InsertPlan {
   private void putValues(IWALByteBufferView buffer) throws QueryProcessException {
     for (int i = 0; i < values.length; i++) {
       if (values[i] == null) {
-        WALWriteUtils.write(TYPE_NULL, buffer);
         continue;
       }
       // types are not determined, the situation mainly occurs when the plan uses string values

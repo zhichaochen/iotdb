@@ -28,6 +28,7 @@ import org.apache.iotdb.db.exception.query.QueryProcessException;
 import org.apache.iotdb.db.metadata.idtable.entry.DeviceIDFactory;
 import org.apache.iotdb.db.metadata.idtable.entry.IDeviceID;
 import org.apache.iotdb.db.metadata.path.PartialPath;
+import org.apache.iotdb.db.metadata.utils.ResourceByPathUtils;
 import org.apache.iotdb.db.mpp.sql.planner.plan.node.write.InsertRowNode;
 import org.apache.iotdb.db.mpp.sql.planner.plan.node.write.InsertTabletNode;
 import org.apache.iotdb.db.qp.physical.crud.InsertRowPlan;
@@ -179,8 +180,15 @@ public abstract class AbstractMemTable implements IMemTable {
     // 遍历获取物理量的schema与类型
     List<IMeasurementSchema> schemaList = new ArrayList<>();
     List<TSDataType> dataTypes = new ArrayList<>();
+    int nullPointsNumber = 0;
     for (int i = 0; i < insertRowPlan.getMeasurements().length; i++) {
+      // use measurements[i] to ignore failed partial insert
       if (measurements[i] == null) {
+        continue;
+      }
+      // use values[i] to ignore null value
+      if (values[i] == null) {
+        nullPointsNumber++;
         continue;
       }
       IMeasurementSchema schema = insertRowPlan.getMeasurementMNodes()[i].getSchema();
@@ -195,7 +203,9 @@ public abstract class AbstractMemTable implements IMemTable {
 
     // 已经插入的数据点
     int pointsInserted =
-        insertRowPlan.getMeasurements().length - insertRowPlan.getFailedMeasurementNumber();
+        insertRowPlan.getMeasurements().length
+            - insertRowPlan.getFailedMeasurementNumber()
+            - nullPointsNumber;
 
     totalPointsNum += pointsInserted;
 
@@ -264,9 +274,12 @@ public abstract class AbstractMemTable implements IMemTable {
 
     updatePlanIndexes(insertRowPlan.getIndex());
     String[] measurements = insertRowPlan.getMeasurements();
+    Object[] values = insertRowPlan.getValues();
+
     List<IMeasurementSchema> schemaList = new ArrayList<>();
     List<TSDataType> dataTypes = new ArrayList<>();
     for (int i = 0; i < insertRowPlan.getMeasurements().length; i++) {
+      // use measurements[i] to ignore failed partial insert
       if (measurements[i] == null) {
         continue;
       }
@@ -277,13 +290,8 @@ public abstract class AbstractMemTable implements IMemTable {
     if (schemaList.isEmpty()) {
       return;
     }
-    memSize +=
-        MemUtils.getAlignedRecordsSize(dataTypes, insertRowPlan.getValues(), disableMemControl);
-    writeAlignedRow(
-        insertRowPlan.getDeviceID(),
-        schemaList,
-        insertRowPlan.getTime(),
-        insertRowPlan.getValues());
+    memSize += MemUtils.getAlignedRecordsSize(dataTypes, values, disableMemControl);
+    writeAlignedRow(insertRowPlan.getDeviceID(), schemaList, insertRowPlan.getTime(), values);
     int pointsInserted =
         insertRowPlan.getMeasurements().length - insertRowPlan.getFailedMeasurementNumber();
     totalPointsNum += pointsInserted;
@@ -653,7 +661,8 @@ public abstract class AbstractMemTable implements IMemTable {
   public ReadOnlyMemChunk query(
       PartialPath fullPath, long ttlLowerBound, List<Pair<Modification, IMemTable>> modsToMemtable)
       throws IOException, QueryProcessException {
-    return fullPath.getReadOnlyMemChunkFromMemTable(this, modsToMemtable, ttlLowerBound);
+    return ResourceByPathUtils.getResourceInstance(fullPath)
+        .getReadOnlyMemChunkFromMemTable(this, modsToMemtable, ttlLowerBound);
   }
 
   @SuppressWarnings("squid:S3776") // high Cognitive Complexity
