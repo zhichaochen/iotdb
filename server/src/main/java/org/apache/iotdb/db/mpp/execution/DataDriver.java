@@ -99,7 +99,7 @@ public class DataDriver extends Driver {
     List<DataSourceOperator> sourceOperators =
         ((DataDriverContext) driverContext).getSourceOperators();
     if (sourceOperators != null && !sourceOperators.isEmpty()) {
-      QueryDataSource dataSource = initQueryDataSourceCache();
+      QueryDataSource dataSource = initQueryDataSource();
       sourceOperators.forEach(
           sourceOperator -> {
             // construct QueryDataSource for source operator
@@ -119,7 +119,7 @@ public class DataDriver extends Driver {
    * The method is called in mergeLock() when executing query. This method will get all the
    * QueryDataSource needed for this query
    */
-  public QueryDataSource initQueryDataSourceCache() throws QueryProcessException {
+  private QueryDataSource initQueryDataSource() throws QueryProcessException {
     DataDriverContext context = (DataDriverContext) driverContext;
     DataRegion dataRegion = context.getDataRegion();
     dataRegion.readLock();
@@ -129,7 +129,7 @@ public class DataDriver extends Driver {
       // when all the selected series are under the same device, the QueryDataSource will be
       // filtered according to timeIndex
       Set<String> selectedDeviceIdSet =
-          pathList.stream().map(PartialPath::getDevice).collect(Collectors.toSet());
+          pathList.stream().map(PartialPath::getDeviceIdString).collect(Collectors.toSet());
 
       QueryDataSource dataSource =
           dataRegion.query(

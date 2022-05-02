@@ -404,7 +404,7 @@ public class TsFileIOWriter implements AutoCloseable {
             publicBAOS);
     // 将当前时间序列加入deviceTimeseriesMetadataMap
     deviceTimeseriesMetadataMap
-        .computeIfAbsent(path.getDevice(), k -> new ArrayList<>())
+        .computeIfAbsent(path.getDeviceIdString(), k -> new ArrayList<>())
         .add(timeseriesMetadata);
   }
 

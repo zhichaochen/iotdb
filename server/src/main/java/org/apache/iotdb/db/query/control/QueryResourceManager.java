@@ -146,7 +146,7 @@ public class QueryResourceManager {
       // filtered according to timeIndex
       // 选中的设备路径集合，也就是对设备路径进行去重
       Set<String> selectedDeviceIdSet =
-          pathList.stream().map(PartialPath::getDevice).collect(Collectors.toSet());
+          pathList.stream().map(PartialPath::getDeviceIdString).collect(Collectors.toSet());
 
       long queryId = context.getQueryId();
       String storageGroupPath = processor.getStorageGroupPath();
@@ -176,7 +176,7 @@ public class QueryResourceManager {
 
     long queryId = context.getQueryId();
     String storageGroupPath = StorageEngine.getInstance().getStorageGroupPath(selectedPath);
-    String deviceId = selectedPath.getDevice();
+    String deviceId = selectedPath.getDeviceIdString();
 
     // get cached QueryDataSource
     QueryDataSource cachedQueryDataSource;
@@ -190,7 +190,7 @@ public class QueryResourceManager {
       cachedQueryDataSource =
           processor.query(
               Collections.singletonList(translatedPath),
-              translatedPath.getDevice(),
+              translatedPath.getDeviceIdString(),
               context,
               filePathsManager,
               timeFilter);

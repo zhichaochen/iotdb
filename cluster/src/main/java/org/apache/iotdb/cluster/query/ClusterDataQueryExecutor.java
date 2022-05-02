@@ -176,7 +176,7 @@ public class ClusterDataQueryExecutor extends RawDataQueryExecutor {
         reader =
             readerFactory.getSeriesReader(
                 path,
-                queryPlan.getAllMeasurementsInDevice(path.getDevice()),
+                queryPlan.getAllMeasurementsInDevice(path.getDeviceIdString()),
                 dataType,
                 timeFilter,
                 null,
@@ -287,7 +287,7 @@ public class ClusterDataQueryExecutor extends RawDataQueryExecutor {
               IReaderByTimestamp readerByTimestamp =
                   readerFactory.getReaderByTimestamp(
                       path,
-                      queryPlan.getAllMeasurementsInDevice(path.getDevice()),
+                      queryPlan.getAllMeasurementsInDevice(path.getDeviceIdString()),
                       dataType,
                       context,
                       dataGroupMember,
@@ -302,7 +302,7 @@ public class ClusterDataQueryExecutor extends RawDataQueryExecutor {
               IPointReader pointReader =
                   readerFactory.getSeriesPointReader(
                       path,
-                      queryPlan.getAllMeasurementsInDevice(path.getDevice()),
+                      queryPlan.getAllMeasurementsInDevice(path.getDeviceIdString()),
                       dataType,
                       timeFilter,
                       null,

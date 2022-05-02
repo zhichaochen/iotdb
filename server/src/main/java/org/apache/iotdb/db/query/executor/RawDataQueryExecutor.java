@@ -150,7 +150,7 @@ public class RawDataQueryExecutor {
         ManagedSeriesReader reader =
             new SeriesRawDataBatchReader(
                 path,
-                queryPlan.getAllMeasurementsInDevice(path.getDevice()),
+                queryPlan.getAllMeasurementsInDevice(path.getDeviceIdString()),
                 dataType,
                 context,
                 queryDataSource,
@@ -287,7 +287,7 @@ public class RawDataQueryExecutor {
       IReaderByTimestamp seriesReaderByTimestamp =
           getReaderByTimestamp(
               path,
-              queryPlan.getAllMeasurementsInDevice(path.getDevice()),
+              queryPlan.getAllMeasurementsInDevice(path.getDeviceIdString()),
               queryPlan.getDeduplicatedDataTypes().get(i),
               context);
       readersOfSelectedSeries.add(seriesReaderByTimestamp);

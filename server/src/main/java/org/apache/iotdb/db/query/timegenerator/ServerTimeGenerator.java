@@ -194,7 +194,7 @@ public class ServerTimeGenerator extends TimeGenerator {
     // 创建原生数据批量读取器
     return new SeriesRawDataBatchReader(
         path,
-        queryPlan.getAllMeasurementsInDevice(path.getDevice()),
+        queryPlan.getAllMeasurementsInDevice(path.getDeviceIdString()),
         dataType,
         context,
         queryDataSource,

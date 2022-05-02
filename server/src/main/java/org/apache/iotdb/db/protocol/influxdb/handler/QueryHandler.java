@@ -48,8 +48,8 @@ import org.apache.iotdb.db.query.context.QueryContext;
 import org.apache.iotdb.db.query.control.SessionManager;
 import org.apache.iotdb.db.query.expression.Expression;
 import org.apache.iotdb.db.query.expression.ResultColumn;
-import org.apache.iotdb.db.query.expression.unary.FunctionExpression;
-import org.apache.iotdb.db.query.expression.unary.TimeSeriesOperand;
+import org.apache.iotdb.db.query.expression.leaf.TimeSeriesOperand;
+import org.apache.iotdb.db.query.expression.multi.FunctionExpression;
 import org.apache.iotdb.db.service.basic.ServiceProvider;
 import org.apache.iotdb.protocol.influxdb.rpc.thrift.InfluxQueryResultRsp;
 import org.apache.iotdb.rpc.RpcUtils;
@@ -647,7 +647,7 @@ public class QueryHandler {
                       String.format(
                           "select %s from %s where %s=%s",
                           function.getParmaName(),
-                          paths.get(i).getDevice(),
+                          paths.get(i).getDeviceIdString(),
                           paths.get(i).getFullPath(),
                           o);
                   QueryPlan queryPlanNew =

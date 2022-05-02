@@ -94,12 +94,13 @@ public class AlignedPath extends PartialPath {
     schemaList = new ArrayList<>();
   }
 
+  @Override
   public PartialPath getDevicePath() {
     return new PartialPath(Arrays.copyOf(nodes, nodes.length));
   }
 
   @Override
-  public String getDevice() {
+  public String getDeviceIdString() {
     return getFullPath();
   }
 
@@ -165,6 +166,7 @@ public class AlignedPath extends PartialPath {
     return this.schemaList == null ? Collections.emptyList() : this.schemaList;
   }
 
+  @Override
   public VectorMeasurementSchema getMeasurementSchema() {
     TSDataType[] types = new TSDataType[measurementList.size()];
     TSEncoding[] encodings = new TSEncoding[measurementList.size()];
@@ -181,6 +183,7 @@ public class AlignedPath extends PartialPath {
         VECTOR_PLACEHOLDER, array, types, encodings, schemaList.get(0).getCompressor());
   }
 
+  @Override
   public TSDataType getSeriesType() {
     return TSDataType.VECTOR;
   }
@@ -227,7 +230,7 @@ public class AlignedPath extends PartialPath {
     try {
       alignedPath =
           new AlignedPath(
-              this.getDevice(),
+              this.getDeviceIdString(),
               new ArrayList<>(this.measurementList),
               new ArrayList<>(this.schemaList));
     } catch (IllegalPathException e) {
@@ -236,6 +239,7 @@ public class AlignedPath extends PartialPath {
     return alignedPath;
   }
 
+  @Override
   public void serialize(ByteBuffer byteBuffer) {
     PathType.Aligned.serialize(byteBuffer);
     super.serializeWithoutType(byteBuffer);
@@ -283,7 +287,7 @@ public class AlignedPath extends PartialPath {
     alignedPath.measurementList = measurements;
     alignedPath.schemaList = measurementSchemas;
     alignedPath.nodes = partialPath.nodes;
-    alignedPath.device = partialPath.getDevice();
+    alignedPath.device = partialPath.getDeviceIdString();
     alignedPath.fullPath = partialPath.getFullPath();
     return alignedPath;
   }

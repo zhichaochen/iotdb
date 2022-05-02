@@ -22,8 +22,8 @@ package org.apache.iotdb.db.mpp.sql.statement.component;
 import org.apache.iotdb.db.metadata.path.PartialPath;
 import org.apache.iotdb.db.mpp.sql.statement.StatementNode;
 import org.apache.iotdb.db.query.expression.Expression;
-import org.apache.iotdb.db.query.expression.unary.FunctionExpression;
-import org.apache.iotdb.db.query.expression.unary.TimeSeriesOperand;
+import org.apache.iotdb.db.query.expression.leaf.TimeSeriesOperand;
+import org.apache.iotdb.db.query.expression.multi.FunctionExpression;
 import org.apache.iotdb.tsfile.read.common.Path;
 
 import java.time.ZoneId;
@@ -150,7 +150,7 @@ public class SelectComponent extends StatementNode {
       for (ResultColumn resultColumn : resultColumns) {
         for (PartialPath path : resultColumn.collectPaths()) {
           deviceNameToDeduplicatedPathsCache
-              .computeIfAbsent(path.getDevice(), k -> new HashSet<>())
+              .computeIfAbsent(path.getDeviceIdString(), k -> new HashSet<>())
               .add(path);
         }
       }
@@ -164,7 +164,7 @@ public class SelectComponent extends StatementNode {
       for (ResultColumn resultColumn : resultColumns) {
         for (PartialPath path : resultColumn.collectPaths()) {
           deviceNameToPathsCache
-              .computeIfAbsent(path.getDevice(), k -> new ArrayList<>())
+              .computeIfAbsent(path.getDeviceIdString(), k -> new ArrayList<>())
               .add(path);
         }
       }

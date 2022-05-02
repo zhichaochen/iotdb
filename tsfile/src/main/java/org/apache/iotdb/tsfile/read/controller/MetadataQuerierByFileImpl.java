@@ -106,10 +106,10 @@ public class MetadataQuerierByFileImpl implements IMetadataQuerier {
     // 通过设备对物理量进行分组
     TreeMap<String, Set<String>> deviceMeasurementsMap = new TreeMap<>();
     for (Path path : paths) {
-      if (!deviceMeasurementsMap.containsKey(path.getDevice())) {
-        deviceMeasurementsMap.put(path.getDevice(), new HashSet<>());
+      if (!deviceMeasurementsMap.containsKey(path.getDeviceIdString())) {
+        deviceMeasurementsMap.put(path.getDeviceIdString(), new HashSet<>());
       }
-      deviceMeasurementsMap.get(path.getDevice()).add(path.getMeasurement());
+      deviceMeasurementsMap.get(path.getDeviceIdString()).add(path.getMeasurement());
     }
     int count = 0;
     boolean enough = false;
@@ -192,7 +192,7 @@ public class MetadataQuerierByFileImpl implements IMetadataQuerier {
     TreeMap<String, Set<String>> deviceMeasurementsMap = new TreeMap<>();
     for (Path path : paths) {
       deviceMeasurementsMap
-          .computeIfAbsent(path.getDevice(), key -> new HashSet<>())
+          .computeIfAbsent(path.getDeviceIdString(), key -> new HashSet<>())
           .add(path.getMeasurement());
     }
     for (Map.Entry<String, Set<String>> deviceMeasurements : deviceMeasurementsMap.entrySet()) {
