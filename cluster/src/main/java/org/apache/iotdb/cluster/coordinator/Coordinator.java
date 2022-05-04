@@ -76,9 +76,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * 客户端非查询请求的协调器
- *
- * Coordinator of client non-query request */
+ * 集群的协调器
+ */
+/*Coordinator of client non-query request*/
 public class Coordinator {
 
   private static final Logger logger = LoggerFactory.getLogger(Coordinator.class);

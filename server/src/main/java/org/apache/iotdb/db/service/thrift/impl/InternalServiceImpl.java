@@ -74,6 +74,10 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 内部的RPC请求（数据节点）
+ * 处理数据节点内部的RPC请求，比如：处理派发过来的段实例。
+ */
 public class InternalServiceImpl implements InternalService.Iface {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(InternalServiceImpl.class);

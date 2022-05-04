@@ -132,6 +132,8 @@ import static org.apache.iotdb.db.qp.executor.PlanExecutor.operateClearCache;
 import static org.apache.iotdb.tsfile.common.constant.TsFileConstant.TSFILE_SUFFIX;
 
 /**
+ * 对于序列数据，数据区域有一些TsFileProcessor，其中只有一个TsFileProcessor处于工作状态<br>
+ *
  * For sequence data, a DataRegion has some TsFileProcessors, in which there is only one
  * TsFileProcessor in the working status. <br>
  *

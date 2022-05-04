@@ -97,6 +97,11 @@ public class DataRegionStateMachine extends BaseStateMachine {
     return StatusUtils.OK;
   }
 
+  /**
+   * TODO 读取数据，会将计划生成本地计划，生成一个个算子
+   * @param fragmentInstance
+   * @return
+   */
   @Override
   protected DataSet read(FragmentInstance fragmentInstance) {
     return QUERY_INSTANCE_MANAGER.execDataQueryFragmentInstance(fragmentInstance, region);

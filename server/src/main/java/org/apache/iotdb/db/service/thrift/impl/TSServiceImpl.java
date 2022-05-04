@@ -158,6 +158,10 @@ import static org.apache.iotdb.db.utils.ErrorHandlingUtils.onNPEOrUnexpectedExce
 import static org.apache.iotdb.db.utils.ErrorHandlingUtils.onNonQueryException;
 import static org.apache.iotdb.db.utils.ErrorHandlingUtils.onQueryException;
 
+/**
+ *
+ */
+
 /** Thrift RPC implementation at server side. */
 public class TSServiceImpl implements TSIEventHandler {
 

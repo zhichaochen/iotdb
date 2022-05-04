@@ -264,12 +264,17 @@ public class DistributionPlanner {
       }
 
       // Step 2: For the source nodes, group them by the DataRegion.
+      // 通过数据分布，对source nodes进行分组。也就是在同一个节点上的，时间序列分成一个组。
       Map<TRegionReplicaSet, List<SeriesScanNode>> sourceGroup =
           sources.stream().collect(Collectors.groupingBy(SeriesScanNode::getRegionReplicaSet));
       // Step 3: For the source nodes which belong to same data region, add a TimeJoinNode for them
       // and make the
       // new TimeJoinNode as the child of current TimeJoinNode
+      // 步骤3：对于属于同一数据区域的源节点，为它们添加一个TimeJoinNode，并将新的TimeJoinNode作为当前TimeJoinNode的子节点
       // TODO: (xingtanzjr) optimize the procedure here to remove duplicated TimeJoinNode
+      // 为啥这样做呢？
+      // TODO 在同一个节点上的时间序列，可以首先进行本地out join，所以需要创建一个TimeJoinNode
+      //  将新创建的TimeJoinNode作为父TimeJoinNode的子节点，父节点做分布式join。
       final boolean[] addParent = {false};
       sourceGroup.forEach(
           (dataRegion, seriesScanNodes) -> {
@@ -284,6 +289,7 @@ public class DistributionPlanner {
                 // But we need to assign a new ID to it
                 TimeJoinNode parentOfGroup = (TimeJoinNode) root.clone();
                 root.setPlanNodeId(context.queryContext.getQueryId().genPlanNodeId());
+                // TODO 将同一个节点的seriesScanNodes作为TimeJoinNode的子节点，TimeJoinNode首先进行本地JOin
                 seriesScanNodes.forEach(parentOfGroup::addChild);
                 root.addChild(parentOfGroup);
               }

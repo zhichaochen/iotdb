@@ -47,6 +47,10 @@ public class QueryId {
     this.nextPlanFragmentIndex = 0;
   }
 
+  /**
+   * 自增的方式生成一个计划节点ID
+   * @return
+   */
   public PlanNodeId genPlanNodeId() {
     return new PlanNodeId(String.format("%d", nextPlanNodeIndex++));
   }

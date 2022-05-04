@@ -30,12 +30,15 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
 /**
+ * 查询状态机
+ * 查询执行的状态机。它存储查询执行的状态。其他人可以在QueryExecution的状态更改时注册侦听器。
  * State machine for a QueryExecution. It stores the states for the QueryExecution. Others can
  * register listeners when the state changes of the QueryExecution.
  */
 public class QueryStateMachine {
   private final String name;
   private final StateMachine<QueryState> queryState;
+  // 段实例和段实例状态的映射
   private final Map<FragmentInstanceId, FragmentInstanceState> fragInstanceStateMap;
 
   // The executor will be used in all the state machines belonged to this query.
@@ -58,6 +61,11 @@ public class QueryStateMachine {
     this.fragInstanceStateMap.put(id, state);
   }
 
+  /**
+   * 更新状态
+   * @param id
+   * @param state
+   */
   public void updateFragInstanceState(FragmentInstanceId id, FragmentInstanceState state) {
     this.fragInstanceStateMap.put(id, state);
     // TODO: (xingtanzjr) we need to distinguish the Timeout situation

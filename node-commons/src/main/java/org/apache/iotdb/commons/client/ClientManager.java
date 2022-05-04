@@ -28,6 +28,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+/**
+ * 客户端管理器，管理连接池
+ * @param <K>
+ * @param <V>
+ */
 public class ClientManager<K, V> implements IClientManager<K, V> {
 
   private static final Logger logger = LoggerFactory.getLogger(ClientManager.class);

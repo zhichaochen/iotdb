@@ -31,9 +31,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 数据分区
+ */
 public class DataPartition extends Partition {
 
   // Map<StorageGroup, Map<TSeriesPartitionSlot, Map<TTimePartitionSlot, List<TRegionMessage>>>>
+  // 存储组，序列所在的slot，时间分区所在的slot，分区信息
+  // TODO TRegionReplicaSet 分区副本集，该对象表示一个数据分区，字段包括 1、分区ID，2、分区所在的各个副本。
   private Map<String, Map<TSeriesPartitionSlot, Map<TTimePartitionSlot, List<TRegionReplicaSet>>>>
       dataPartitionMap;
 
@@ -68,7 +73,9 @@ public class DataPartition extends Partition {
 
   public List<TRegionReplicaSet> getDataRegionReplicaSet(
       String deviceName, List<TTimePartitionSlot> timePartitionSlotList) {
+    // 存储组
     String storageGroup = getStorageGroupByDevice(deviceName);
+    // 计算当前设备所在的slot
     TSeriesPartitionSlot seriesPartitionSlot = calculateDeviceGroupId(deviceName);
     // TODO: (xingtanzjr) the timePartitionIdList is ignored
     return dataPartitionMap.get(storageGroup).get(seriesPartitionSlot).values().stream()

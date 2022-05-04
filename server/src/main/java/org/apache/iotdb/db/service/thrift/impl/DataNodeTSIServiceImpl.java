@@ -108,6 +108,12 @@ import static org.apache.iotdb.db.service.basic.ServiceProvider.SLOW_SQL_LOGGER;
 import static org.apache.iotdb.db.utils.ErrorHandlingUtils.onNPEOrUnexpectedException;
 import static org.apache.iotdb.db.utils.ErrorHandlingUtils.onQueryException;
 
+/**
+ * 数据节点的RPC服务，数据节点接受外部的RPC请求
+ *
+ * 关键方法如下：
+ * 1、executeStatement()：执行语句，会将查询sql生成分布式任务，并派发给任务节点
+ */
 public class DataNodeTSIServiceImpl implements TSIEventHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DataNodeTSIServiceImpl.class);
@@ -294,14 +300,21 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
     throw new UnsupportedOperationException();
   }
 
+  /**
+   * 执行语句
+   * @param req
+   * @return
+   */
   @Override
   public TSExecuteStatementResp executeStatement(TSExecuteStatementReq req) {
+    // Sql语句
     String statement = req.getStatement();
     if (!SESSION_MANAGER.checkLogin(req.getSessionId())) {
       return RpcUtils.getTSExecuteStatementResp(getNotLoggedInStatus());
     }
 
     long startTime = System.currentTimeMillis();
+    // 进行词法语法分析
     Statement s =
         StatementGenerator.createStatement(
             statement, SESSION_MANAGER.getZoneId(req.getSessionId()));
@@ -319,8 +332,10 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
       long queryId = SESSION_MANAGER.requestQueryId(req.statementId, true);
       QueryId id = new QueryId(String.valueOf(queryId));
       // create and cache dataset
+      // 这个结果只代表派发结果
       ExecutionResult result =
-          COORDINATOR.execute(
+              // TODO 这里会生成分布式查询计划，并执行
+              COORDINATOR.execute(
               s,
               id,
               SESSION_MANAGER.getSessionInfo(req.sessionId),
@@ -332,8 +347,10 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
         throw new RuntimeException("error code: " + result.status);
       }
 
+      // 获取查询结果
       IQueryExecution queryExecution = COORDINATOR.getQueryExecution(id);
 
+      // 封装响应结果
       TSExecuteStatementResp resp;
       if (queryExecution.isQuery()) {
         resp = createResponse(queryExecution.getDatasetHeader(), queryId);
