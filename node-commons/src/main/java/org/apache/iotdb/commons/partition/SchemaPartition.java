@@ -39,6 +39,11 @@ public class SchemaPartition extends Partition {
     super(seriesSlotExecutorName, seriesPartitionSlotNum);
   }
 
+  @Override
+  public boolean isEmpty() {
+    return schemaPartitionMap == null || schemaPartitionMap.isEmpty();
+  }
+
   public SchemaPartition(
       Map<String, Map<TSeriesPartitionSlot, TRegionReplicaSet>> schemaPartitionMap,
       String seriesSlotExecutorName,

@@ -18,12 +18,12 @@
  */
 package org.apache.iotdb.db.metadata.mtree.traverser.collector;
 
-import org.apache.iotdb.db.exception.metadata.MetadataException;
+import org.apache.iotdb.commons.exception.MetadataException;
+import org.apache.iotdb.commons.path.PartialPath;
 import org.apache.iotdb.db.metadata.mnode.IMNode;
 import org.apache.iotdb.db.metadata.mnode.IMeasurementMNode;
 import org.apache.iotdb.db.metadata.mtree.store.IMTreeStore;
 import org.apache.iotdb.db.metadata.path.MeasurementPath;
-import org.apache.iotdb.db.metadata.path.PartialPath;
 
 // 时间序列收集器, 如果使用该类，需要重写其collectMeasurement方法
 // 此类将MeasurementNode定义为目标节点，并定义度量过程框架。

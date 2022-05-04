@@ -18,11 +18,11 @@
  */
 package org.apache.iotdb.db.metadata.mtree.traverser.collector;
 
-import org.apache.iotdb.db.exception.metadata.MetadataException;
+import org.apache.iotdb.commons.exception.MetadataException;
+import org.apache.iotdb.commons.path.PartialPath;
 import org.apache.iotdb.db.metadata.mnode.IMNode;
 import org.apache.iotdb.db.metadata.mtree.store.IMTreeStore;
 import org.apache.iotdb.db.metadata.mtree.traverser.Traverser;
-import org.apache.iotdb.db.metadata.path.PartialPath;
 
 // 遍历结果的收集器，不同的节点都继承了该方法，以时其具有了遍历
 

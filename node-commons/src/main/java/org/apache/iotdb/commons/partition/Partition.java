@@ -41,4 +41,6 @@ public abstract class Partition {
   protected TSeriesPartitionSlot calculateDeviceGroupId(String deviceName) {
     return executor.getSeriesPartitionSlot(deviceName);
   }
+
+  public abstract boolean isEmpty();
 }

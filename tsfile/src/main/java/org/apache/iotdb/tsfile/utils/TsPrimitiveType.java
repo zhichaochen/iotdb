@@ -34,8 +34,34 @@ public abstract class TsPrimitiveType implements Serializable {
   /**
    * get tsPrimitiveType by resultDataType.
    *
-   * @param dataType -given TsDataType
-   * @param v -
+   * @param dataType given TsDataType
+   */
+  public static TsPrimitiveType getByType(TSDataType dataType) {
+    switch (dataType) {
+      case BOOLEAN:
+        return new TsPrimitiveType.TsBoolean();
+      case INT32:
+        return new TsPrimitiveType.TsInt();
+      case INT64:
+        return new TsPrimitiveType.TsLong();
+      case FLOAT:
+        return new TsPrimitiveType.TsFloat();
+      case DOUBLE:
+        return new TsPrimitiveType.TsDouble();
+      case TEXT:
+        return new TsPrimitiveType.TsBinary();
+      case VECTOR:
+        return new TsPrimitiveType.TsVector();
+      default:
+        throw new UnSupportedDataTypeException("Unsupported data type:" + dataType);
+    }
+  }
+
+  /**
+   * get tsPrimitiveType by resultDataType and initial value.
+   *
+   * @param dataType given TsDataType
+   * @param v initial value
    */
   public static TsPrimitiveType getByType(TSDataType dataType, Object v) {
     switch (dataType) {
@@ -114,6 +140,10 @@ public abstract class TsPrimitiveType implements Serializable {
     throw new UnsupportedOperationException("setVector() is not supported for current sub-class");
   }
 
+  public abstract void setObject(Object val);
+
+  public abstract void reset();
+
   /**
    * get the size of one instance of current class.
    *
@@ -147,6 +177,8 @@ public abstract class TsPrimitiveType implements Serializable {
 
     private boolean value;
 
+    public TsBoolean() {}
+
     public TsBoolean(boolean value) {
       this.value = value;
     }
@@ -159,6 +191,20 @@ public abstract class TsPrimitiveType implements Serializable {
     @Override
     public void setBoolean(boolean val) {
       this.value = val;
+    }
+
+    @Override
+    public void setObject(Object val) {
+      if (val instanceof Boolean) {
+        setBoolean((Boolean) val);
+        return;
+      }
+      throw new UnSupportedDataTypeException("TsBoolean can only be set Boolean value");
+    }
+
+    @Override
+    public void reset() {
+      value = false;
     }
 
     @Override
@@ -203,6 +249,8 @@ public abstract class TsPrimitiveType implements Serializable {
 
     private int value;
 
+    public TsInt() {}
+
     public TsInt(int value) {
       this.value = value;
     }
@@ -215,6 +263,20 @@ public abstract class TsPrimitiveType implements Serializable {
     @Override
     public void setInt(int val) {
       this.value = val;
+    }
+
+    @Override
+    public void setObject(Object val) {
+      if (val instanceof Integer) {
+        setInt((Integer) val);
+        return;
+      }
+      throw new UnSupportedDataTypeException("TsInt can only be set Integer value");
+    }
+
+    @Override
+    public void reset() {
+      value = 0;
     }
 
     @Override
@@ -259,6 +321,8 @@ public abstract class TsPrimitiveType implements Serializable {
 
     private long value;
 
+    public TsLong() {}
+
     public TsLong(long value) {
       this.value = value;
     }
@@ -271,6 +335,20 @@ public abstract class TsPrimitiveType implements Serializable {
     @Override
     public void setLong(long val) {
       this.value = val;
+    }
+
+    @Override
+    public void setObject(Object val) {
+      if (val instanceof Long) {
+        setLong((Long) val);
+        return;
+      }
+      throw new UnSupportedDataTypeException("TsLong can only be set Long value");
+    }
+
+    @Override
+    public void reset() {
+      value = 0;
     }
 
     @Override
@@ -315,6 +393,8 @@ public abstract class TsPrimitiveType implements Serializable {
 
     private float value;
 
+    public TsFloat() {}
+
     public TsFloat(float value) {
       this.value = value;
     }
@@ -327,6 +407,20 @@ public abstract class TsPrimitiveType implements Serializable {
     @Override
     public void setFloat(float val) {
       this.value = val;
+    }
+
+    @Override
+    public void setObject(Object val) {
+      if (val instanceof Float) {
+        setFloat((Float) val);
+        return;
+      }
+      throw new UnSupportedDataTypeException("TsFloat can only be set float value");
+    }
+
+    @Override
+    public void reset() {
+      value = 0;
     }
 
     @Override
@@ -371,6 +465,8 @@ public abstract class TsPrimitiveType implements Serializable {
 
     private double value;
 
+    public TsDouble() {}
+
     public TsDouble(double value) {
       this.value = value;
     }
@@ -383,6 +479,20 @@ public abstract class TsPrimitiveType implements Serializable {
     @Override
     public void setDouble(double val) {
       this.value = val;
+    }
+
+    @Override
+    public void setObject(Object val) {
+      if (val instanceof Double) {
+        setDouble((Double) val);
+        return;
+      }
+      throw new UnSupportedDataTypeException("TsDouble can only be set Double value");
+    }
+
+    @Override
+    public void reset() {
+      value = 0.0;
     }
 
     @Override
@@ -430,6 +540,8 @@ public abstract class TsPrimitiveType implements Serializable {
 
     private Binary value;
 
+    public TsBinary() {}
+
     public TsBinary(Binary value) {
       this.value = value;
     }
@@ -442,6 +554,20 @@ public abstract class TsPrimitiveType implements Serializable {
     @Override
     public void setBinary(Binary val) {
       this.value = val;
+    }
+
+    @Override
+    public void setObject(Object val) {
+      if (val instanceof Binary) {
+        setBinary((Binary) val);
+        return;
+      }
+      throw new UnSupportedDataTypeException("TsBinary can only be set Binary value");
+    }
+
+    @Override
+    public void reset() {
+      value = null;
     }
 
     @Override
@@ -486,6 +612,8 @@ public abstract class TsPrimitiveType implements Serializable {
 
     private TsPrimitiveType[] values;
 
+    public TsVector() {}
+
     public TsVector(TsPrimitiveType[] values) {
       this.values = values;
     }
@@ -498,6 +626,20 @@ public abstract class TsPrimitiveType implements Serializable {
     @Override
     public void setVector(TsPrimitiveType[] vals) {
       this.values = vals;
+    }
+
+    @Override
+    public void setObject(Object val) {
+      if (val instanceof TsPrimitiveType[]) {
+        setVector((TsPrimitiveType[]) val);
+        return;
+      }
+      throw new UnSupportedDataTypeException("TsVector can only be set TsPrimitiveType[] value");
+    }
+
+    @Override
+    public void reset() {
+      values = null;
     }
 
     @Override
