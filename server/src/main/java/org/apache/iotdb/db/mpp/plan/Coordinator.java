@@ -44,6 +44,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
+ * MPP协调员。
+ * 它管理当前节点中执行的所有查询。
+ * 它将负责查询的生命周期。
+ * 查询请求将表示为QueryExecution。
+ *
  * The coordinator for MPP. It manages all the queries which are executed in current Node. And it
  * will be responsible for the lifecycle of a query. A query request will be represented as a
  * QueryExecution.

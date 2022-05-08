@@ -61,6 +61,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+/**
+ * 集群计划路由器，将计划路由到不同的data node
+ */
 public class ClusterPlanRouter {
 
   private static final Logger logger = LoggerFactory.getLogger(ClusterPlanRouter.class);
@@ -119,6 +122,7 @@ public class ClusterPlanRouter {
   public Map<PhysicalPlan, PartitionGroup> splitAndRoutePlan(PhysicalPlan plan)
       throws UnsupportedPlanException, MetadataException, UnknownLogTypeException {
     if (plan instanceof InsertRowsPlan) {
+      // 批量插入时计算每条数据应该插入那个Region
       return splitAndRoutePlan((InsertRowsPlan) plan);
     } else if (plan instanceof InsertTabletPlan) {
       return splitAndRoutePlan((InsertTabletPlan) plan);
@@ -276,11 +280,13 @@ public class ClusterPlanRouter {
    */
   private Map<PhysicalPlan, PartitionGroup> splitAndRoutePlan(InsertRowsPlan insertRowsPlan)
       throws MetadataException {
+    // 每条插入的数据，应该属于那个共识组
     Map<PhysicalPlan, PartitionGroup> result = new HashMap<>();
     Map<PartitionGroup, InsertRowsPlan> groupPlanMap = new HashMap<>();
     for (int i = 0; i < insertRowsPlan.getInsertRowPlanList().size(); i++) {
       InsertRowPlan rowPlan = insertRowsPlan.getInsertRowPlanList().get(i);
       PartialPath storageGroup = SchemaProcessor().getBelongedStorageGroup(rowPlan.getDevicePath());
+      // TODO 计算分区组，也就是计算出当前数据应该写入哪一个共识组
       PartitionGroup group = partitionTable.route(storageGroup.getFullPath(), rowPlan.getTime());
       if (groupPlanMap.containsKey(group)) {
         InsertRowsPlan tmpPlan = groupPlanMap.get(group);

@@ -81,6 +81,7 @@ public class SlotPartitionTable implements PartitionTable {
   // the slots held by each node
   private Map<RaftNode, List<Integer>> nodeSlotMap = new ConcurrentHashMap<>();
   // each slot is managed by whom
+  // 10000个hash槽均匀地分配给多个数据节点，每个节点管理一部分hash槽
   private RaftNode[] slotNodes = new RaftNode[ClusterConstant.SLOT_NUM];
   // the nodes that each slot belongs to before a new node is added, used for the new node to
   // find the data source
@@ -243,7 +244,9 @@ public class SlotPartitionTable implements PartitionTable {
   @Override
   public PartitionGroup route(String storageGroupName, long timestamp) {
     synchronized (nodeRing) {
+      // 计算应该将数据写到那个节点
       RaftNode raftNode = routeToHeaderByTime(storageGroupName, timestamp);
+      // 通过raft node计算当前节点在那个分区组
       return getPartitionGroup(raftNode);
     }
   }
@@ -268,8 +271,10 @@ public class SlotPartitionTable implements PartitionTable {
   @Override
   public RaftNode routeToHeaderByTime(String storageGroupName, long timestamp) {
     synchronized (nodeRing) {
+      // 计算hash槽
       int slot =
           getSlotStrategy().calculateSlotByTime(storageGroupName, timestamp, getTotalSlotNumbers());
+      // 通过hash槽，获取hash槽所对应的节点
       RaftNode raftNode = slotNodes[slot];
       logger.trace(
           "The slot of {}@{} is {}, held by {}", storageGroupName, timestamp, slot, raftNode);

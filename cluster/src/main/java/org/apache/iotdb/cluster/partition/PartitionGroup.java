@@ -32,12 +32,15 @@ import java.util.Collection;
 import java.util.Objects;
 
 /**
+ * 分区组，表示一个Region
+ * 其持有一个raft id，通过这个raft id能获取到共识组，然后做数据备份
  * PartitionGroup包含数据组的所有节点。列表的第一个元素称为header。
  * PartitionGroup contains all the nodes of a data group. The first element of the list is called
  * header.
  */
 public class PartitionGroup extends ArrayList<Node> {
 
+  // TODO
   private int raftId; // raft id
 
   public PartitionGroup() {}

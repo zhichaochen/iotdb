@@ -59,6 +59,9 @@ import java.util.stream.Collectors;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+/**
+ * 分布式计划生成器
+ */
 public class DistributionPlanner {
   private Analysis analysis;
   private MPPQueryContext context;

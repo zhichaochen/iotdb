@@ -81,11 +81,13 @@ public class ClusterSchemaInfo {
     storageGroupReadWriteLock.writeLock().lock();
     try {
       // Set StorageGroup
+      // 设置存储组
       TStorageGroupSchema storageGroupSchema = req.getSchema();
       PartialPath partialPathName = new PartialPath(storageGroupSchema.getName());
       mTree.setStorageGroup(partialPathName);
 
       // Set StorageGroupSchema
+      // 设置存储组元数据
       mTree.getStorageGroupNodeByPath(partialPathName).setStorageGroupSchema(storageGroupSchema);
 
       result.setCode(TSStatusCode.SUCCESS_STATUS.getStatusCode());

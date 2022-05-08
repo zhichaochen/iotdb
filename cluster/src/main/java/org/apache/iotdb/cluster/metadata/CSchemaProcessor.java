@@ -449,6 +449,10 @@ public class CSchemaProcessor extends LocalSchemaProcessor {
   }
 
   /**
+   * 需要向config node发送请求么
+   * 为CreateTimeseriesPlan、CreateMultimeSeriesPlan和InsertPlan创建存储组，也为InsertPlan创建时间序列。
+   * 只有这三种计划可以使用这种方法。
+   *
    * create storage groups for CreateTimeseriesPlan, CreateMultiTimeseriesPlan and InsertPlan, also
    * create timeseries for InsertPlan. Only the three kind of plans can use this method.
    */

@@ -45,6 +45,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * 重写了Ratis的状态机的一些防范
+ */
 public class ApplicationStateMachineProxy extends BaseStateMachine {
   private final Logger logger = LoggerFactory.getLogger(ApplicationStateMachineProxy.class);
   private final IStateMachine applicationStateMachine;
@@ -94,6 +97,11 @@ public class ApplicationStateMachineProxy extends BaseStateMachine {
     getLifeCycle().checkStateAndClose(applicationStateMachine::stop);
   }
 
+  /**
+   * TODO
+   * @param trx
+   * @return
+   */
   @Override
   public CompletableFuture<Message> applyTransaction(TransactionContext trx) {
     RaftProtos.LogEntryProto log = trx.getLogEntry();

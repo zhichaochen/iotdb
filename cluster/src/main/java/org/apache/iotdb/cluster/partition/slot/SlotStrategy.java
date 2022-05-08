@@ -34,13 +34,16 @@ public interface SlotStrategy {
 
     @Override
     public int calculateSlotByTime(String storageGroupName, long timestamp, int maxSlotNum) {
+      // 分区数量
       long partitionNum = StorageEngine.getTimePartition(timestamp);
+      //
       return calculateSlotByPartitionNum(storageGroupName, partitionNum, maxSlotNum);
     }
 
     @Override
     public int calculateSlotByPartitionNum(
         String storageGroupName, long partitionId, int maxSlotNum) {
+      // 计算hash值
       int hash = Murmur128Hash.hash(storageGroupName, partitionId, HASH_SALT);
       return Math.abs(hash % maxSlotNum);
     }

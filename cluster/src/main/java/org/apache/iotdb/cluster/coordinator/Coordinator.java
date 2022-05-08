@@ -125,16 +125,20 @@ public class Coordinator {
   public TSStatus executeNonQueryPlan(PhysicalPlan plan) {
     TSStatus result;
     long startTime = Timer.Statistic.COORDINATOR_EXECUTE_NON_QUERY.getOperationStartTime();
+    // 计划应该直接执行
     if (PartitionUtils.isLocalNonQueryPlan(plan)) {
       // run locally
       result = executeNonQueryLocally(plan);
     } else if (PartitionUtils.isGlobalMetaPlan(plan)) {
       // forward the plan to all meta group nodes
       result = metaGroupMember.processNonPartitionedMetaPlan(plan);
-    } else if (PartitionUtils.isGlobalDataPlan(plan)) {
+    }
+    // GlobalDataPlan将在所有数据组节点上执行。
+    else if (PartitionUtils.isGlobalDataPlan(plan)) {
       // forward the plan to all data group nodes
       result = processNonPartitionedDataPlan(plan);
-    } else {
+    }
+    else {
       // split the plan and forward them to some PartitionGroups
       try {
         result = processPartitionedPlan(plan);
@@ -223,6 +227,9 @@ public class Coordinator {
   }
 
   /**
+   * 一个分区计划（如批量插入）将被拆分为几个子计划，每个子计划都属于一个数据组。
+   * 这些子计划将分别发送给相应的小组并在其上执行。
+   *
    * A partitioned plan (like batch insertion) will be split into several sub-plans, each belongs to
    * a data group. And these sub-plans will be sent to and executed on the corresponding groups
    * separately.
@@ -240,8 +247,10 @@ public class Coordinator {
     }
 
     // split the plan into sub-plans that each only involve one data group
+    // 将计划拆分为子计划，每个子计划只涉及一个数据组
     Map<PhysicalPlan, PartitionGroup> planGroupMap;
     try {
+      // TODO 计算每条数据应该写入那个分区
       planGroupMap = splitPlan(plan);
     } catch (CheckConsistencyException checkConsistencyException) {
       return StatusUtils.getStatus(
@@ -249,6 +258,7 @@ public class Coordinator {
     }
 
     // the storage group is not found locally
+    // 本地存储组为空
     if (planGroupMap == null || planGroupMap.isEmpty()) {
       if ((plan instanceof InsertPlan
               || plan instanceof CreateTimeSeriesPlan
@@ -258,7 +268,9 @@ public class Coordinator {
 
         logger.debug("{}: No associated storage group found for {}, auto-creating", name, plan);
         try {
+          // TODO 没有找到关联的存储组，则自动创建，这里
           ((CSchemaProcessor) IoTDB.schemaProcessor).createSchema(plan);
+          // TODO 这里递归调用，再次做之前的逻辑
           return processPartitionedPlan(plan);
         } catch (MetadataException | CheckConsistencyException e) {
           logger.error(
@@ -269,6 +281,7 @@ public class Coordinator {
       return StatusUtils.NO_STORAGE_GROUP;
     }
     logger.debug("{}: The data groups of {} are {}", name, plan, planGroupMap);
+    // TODO
     return forwardPlan(planGroupMap, plan);
   }
 
@@ -423,9 +436,12 @@ public class Coordinator {
       throws UnsupportedPlanException, CheckConsistencyException {
     Map<PhysicalPlan, PartitionGroup> planGroupMap = null;
     try {
+      // 计算每条数据应该写入那个Region
       planGroupMap = router.splitAndRoutePlan(plan);
     } catch (StorageGroupNotSetException e) {
       // synchronize with the leader to see if this node has unpulled storage groups
+      // 与leader同步，查看此节点是否有未占用的存储组
+      // TODO 当找不到某个存储组时，则进行一致性检查
       metaGroupMember.syncLeaderWithConsistencyCheck(true);
       try {
         planGroupMap = router.splitAndRoutePlan(plan);
@@ -440,6 +456,11 @@ public class Coordinator {
   }
 
   /**
+   * 转发计划到对应的分区节点
+   * TODO 为啥有多个分支呢？是为了处理不同情况下的响应结果，
+   *  比如批量插入，不同数据会插入不同的节点，那么如何多个响应结果呢？
+   *
+   * 将计划转发给相应组中一个节点的DataGroupMember。只有当所有节点超时时，才会返回超时。
    * Forward plans to the DataGroupMember of one node in the corresponding group. Only when all
    * nodes time out, will a TIME_OUT be returned.
    *
@@ -461,8 +482,10 @@ public class Coordinator {
     if (plan instanceof InsertMultiTabletsPlan
         || plan instanceof CreateMultiTimeSeriesPlan
         || plan instanceof InsertRowsPlan) {
+      // 插入多条数据
       status = forwardMultiSubPlan(planGroupMap, plan);
     } else if (planGroupMap.size() == 1) {
+      // 一条数据
       status = forwardToSingleGroup(planGroupMap.entrySet().iterator().next());
     } else {
       status = forwardToMultipleGroup(planGroupMap);
@@ -475,6 +498,11 @@ public class Coordinator {
     return status;
   }
 
+  /**
+   * 将当前数据转发到对应的Region
+   * @param entry
+   * @return
+   */
   private TSStatus forwardToSingleGroup(Map.Entry<PhysicalPlan, PartitionGroup> entry) {
     TSStatus result;
     if (entry.getValue().contains(thisNode)) {
@@ -482,6 +510,7 @@ public class Coordinator {
       long startTime =
           Timer.Statistic.META_GROUP_MEMBER_EXECUTE_NON_QUERY_IN_LOCAL_GROUP
               .getOperationStartTime();
+      // TODO 交给共识组去执行executeNonQueryPlan()
       result =
           metaGroupMember
               .getLocalDataMember(entry.getValue().getHeader())
@@ -508,6 +537,8 @@ public class Coordinator {
   }
 
   /**
+   * 将每个子计划转发到其相应的数据组，如果某些组出错，每个组的错误消息将压缩为一个字符串
+   *
    * forward each sub-plan to its corresponding data group, if some groups goes wrong, the error
    * messages from each group will be compacted into one string.
    *
@@ -549,6 +580,7 @@ public class Coordinator {
   }
 
   /**
+   * 将每个子计划转发到其所属的数据组，并合并来自这些组的响应。
    * Forward each sub-plan to its belonging data group, and combine responses from the groups.
    *
    * @param planGroupMap sub-plan -> data group pairs
@@ -565,6 +597,7 @@ public class Coordinator {
     int totalRowNum = parentPlan.getPaths().size();
     // send sub-plans to each belonging data group and collect results
     for (Map.Entry<PhysicalPlan, PartitionGroup> entry : planGroupMap.entrySet()) {
+      // TODO 转发到单个组节点
       tmpStatus = forwardToSingleGroup(entry);
       logger.debug("{}: from {},{},{}", name, entry.getKey(), entry.getValue(), tmpStatus);
       noFailure = (tmpStatus.getCode() == TSStatusCode.SUCCESS_STATUS.getStatusCode()) && noFailure;
@@ -639,7 +672,9 @@ public class Coordinator {
           for (int i = 0; i < subPlan.getIndexes().size(); i++) {
             subStatus[subPlan.getIndexes().get(i)] = tmpStatus.subStatus.get(i);
           }
-        } else if (parentPlan instanceof InsertRowsPlan) {
+        }
+        // 批量插入的计划
+        else if (parentPlan instanceof InsertRowsPlan) {
           InsertRowsPlan subPlan = (InsertRowsPlan) entry.getKey();
           if (tmpStatus.getCode() == TSStatusCode.MULTIPLE_ERROR.getStatusCode()) {
             for (int i = 0; i < subPlan.getInsertRowPlanIndexList().size(); i++) {

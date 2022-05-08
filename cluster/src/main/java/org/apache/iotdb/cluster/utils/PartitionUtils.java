@@ -63,6 +63,7 @@ public class PartitionUtils {
   }
 
   /**
+   * 计划是否应该直接执行，而不将其分散到集群中。
    * Whether the plan should be directly executed without spreading it into the cluster.
    *
    * @param plan
@@ -105,6 +106,7 @@ public class PartitionUtils {
   }
 
   /**
+   * GlobalDataPlan将在所有数据组节点上执行。
    * GlobalDataPlan will be executed on all data group nodes.
    *
    * @param plan the plan to check

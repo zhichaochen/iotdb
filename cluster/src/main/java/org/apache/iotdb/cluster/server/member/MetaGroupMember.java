@@ -130,6 +130,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.apache.iotdb.cluster.utils.ClusterUtils.WAIT_START_UP_CHECK_TIME_SEC;
 import static org.apache.iotdb.cluster.utils.ClusterUtils.analyseStartUpCheckResult;
 
+/**
+ * 元数据组成员
+ */
 @SuppressWarnings("java:S1135")
 public class MetaGroupMember extends RaftMember implements IService, MetaGroupMemberMBean {
 

@@ -33,6 +33,9 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
+ * 分区表
+ * 记录分区相关信息
+ * PartitionTable管理一个映射，其键是具有时间间隔的StorageGroupName，其值是一个PartitionGroup，其中包含管理相应数据的所有节点。
  * PartitionTable manages the map whose key is the StorageGroupName with a time interval and the
  * value is a PartitionGroup which contains all nodes that manage the corresponding data.
  */

@@ -129,6 +129,9 @@ import java.util.concurrent.TimeUnit;
 
 import static org.apache.iotdb.cluster.config.ClusterConstant.THREAD_POLL_WAIT_TERMINATION_TIME_S;
 
+/**
+ * 数据组成员
+ */
 public class DataGroupMember extends RaftMember implements DataGroupMemberMBean {
 
   private final String mbeanName;
@@ -703,6 +706,8 @@ public class DataGroupMember extends RaftMember implements DataGroupMemberMBean 
   }
 
   /**
+   * 执行非查询计划。
+   * 如果成员是领导，将创建计划日志并通过raft程序进行处理，否则计划将转发给领导。
    * Execute a non-query plan. If the member is a leader, a log for the plan will be created and
    * process through the raft procedure, otherwise the plan will be forwarded to the leader.
    *
@@ -710,6 +715,7 @@ public class DataGroupMember extends RaftMember implements DataGroupMemberMBean 
    */
   @Override
   public TSStatus executeNonQueryPlan(PhysicalPlan plan) {
+    // 处理没有数据备份数为1的情况
     if (ClusterDescriptor.getInstance().getConfig().getReplicationNum() == 1) {
       try {
         if (plan instanceof LogPlan) {
@@ -754,12 +760,16 @@ public class DataGroupMember extends RaftMember implements DataGroupMemberMBean 
         }
         return handleLogExecutionException(plan, cause);
       }
-    } else {
+    }
+    // 处理多备份情况
+    else {
+      // 执行非查询计划
       TSStatus status = executeNonQueryPlanWithKnownLeader(plan);
       if (!StatusUtils.NO_LEADER.equals(status)) {
         return status;
       }
 
+      // ====== 如果没有leader执行如下逻辑
       long startTime = Timer.Statistic.DATA_GROUP_MEMBER_WAIT_LEADER.getOperationStartTime();
       waitLeader();
       Timer.Statistic.DATA_GROUP_MEMBER_WAIT_LEADER.calOperationCostTimeFromStart(startTime);
@@ -800,9 +810,15 @@ public class DataGroupMember extends RaftMember implements DataGroupMemberMBean 
     }
   }
 
+  /**
+   * 在leader上执行非查询计划
+   * @param plan
+   * @return
+   */
   private TSStatus executeNonQueryPlanWithKnownLeader(PhysicalPlan plan) {
     if (character == NodeCharacter.LEADER) {
       long startTime = Statistic.DATA_GROUP_MEMBER_LOCAL_EXECUTION.getOperationStartTime();
+      // TODO 在raft上执行计划
       TSStatus status = processPlanLocally(plan);
       boolean hasCreated = false;
       try {

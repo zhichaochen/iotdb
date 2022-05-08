@@ -434,6 +434,7 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
       }
 
       // Step 1: TODO(INSERT) transfer from TSInsertTabletsReq to Statement
+      // 将插入请求转化为InsertRowsStatement
       InsertRowsStatement statement = (InsertRowsStatement) StatementGenerator.createStatement(req);
 
       // permission check

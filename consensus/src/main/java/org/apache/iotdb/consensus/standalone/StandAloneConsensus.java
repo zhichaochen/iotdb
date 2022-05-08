@@ -50,6 +50,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * 一个简单的共识实现，当replicaNum为1时可以使用。
+ * 注意：状态机需要自行实现WAL，以确保重启后恢复
+ *
  * A simple consensus implementation, which can be used when replicaNum is 1.
  *
  * <p>Notice: The stateMachine needs to implement WAL itself to ensure recovery after a restart

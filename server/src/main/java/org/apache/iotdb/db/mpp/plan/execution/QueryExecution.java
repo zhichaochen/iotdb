@@ -143,11 +143,14 @@ public class QueryExecution implements IQueryExecution {
       stateMachine.transitionToFinished();
       return;
     }
+    // 生成逻辑计划
     doLogicalPlan();
+    // 生成分布式计划
     doDistributedPlan();
     if (context.getQueryType() == QueryType.READ) {
       initResultHandle();
     }
+    // 调度分布式计划
     schedule();
   }
 

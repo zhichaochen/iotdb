@@ -90,6 +90,9 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.iotdb.tsfile.common.constant.TsFileConstant.PATH_SEPARATOR;
 
 /**
+ * 本地元数据处理器
+ * 很多元数据信息不需要每次都去Config node查询，本地会缓存一份
+ *
  * 这个类负责序列化所有元数据信息并将其持久化到文件中。该类包含修改delta系统元数据的所有接口。
  * This class takes the responsibility of serialization of all the metadata info and persistent it
  * into files. This class contains all the interfaces to modify the metadata for delta system.

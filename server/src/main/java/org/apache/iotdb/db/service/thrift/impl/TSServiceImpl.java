@@ -162,7 +162,10 @@ import static org.apache.iotdb.db.utils.ErrorHandlingUtils.onQueryException;
  *
  */
 
-/** Thrift RPC implementation at server side. */
+/**
+ * Server端的RPC实现
+ * rpc请求会走到这个类中
+ * Thrift RPC implementation at server side. */
 public class TSServiceImpl implements TSIEventHandler {
 
   private static final SessionManager SESSION_MANAGER = SessionManager.getInstance();
@@ -612,6 +615,7 @@ public class TSServiceImpl implements TSIEventHandler {
       }
 
       long startTime = System.currentTimeMillis();
+      // 通过sql生成物理计划
       PhysicalPlan physicalPlan =
           serviceProvider
               .getPlanner()
@@ -650,7 +654,9 @@ public class TSServiceImpl implements TSIEventHandler {
       }
 
       long startTime = System.currentTimeMillis();
+      // 查询语句
       String statement = req.getStatement();
+      //
       PhysicalPlan physicalPlan =
           serviceProvider
               .getPlanner()

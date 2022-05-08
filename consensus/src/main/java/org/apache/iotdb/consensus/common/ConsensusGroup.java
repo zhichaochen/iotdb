@@ -24,6 +24,10 @@ import org.apache.iotdb.commons.consensus.ConsensusGroupId;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * 共识组
+ * 一个组ID和当前组中的多个节点
+ */
 // TODO Use a mature IDL framework such as Protobuf to manage this structure
 public class ConsensusGroup {
 

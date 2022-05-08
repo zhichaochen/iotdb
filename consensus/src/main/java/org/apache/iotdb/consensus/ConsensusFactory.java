@@ -30,7 +30,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 
 /**
- * 共识工厂，用于创建一个共识组
+ * 共识工厂
+ * 用于创建一个共识组
  */
 public class ConsensusFactory {
   public static final String CONSTRUCT_FAILED_MSG =
@@ -38,6 +39,14 @@ public class ConsensusFactory {
 
   private static final Logger logger = LoggerFactory.getLogger(ConsensusFactory.class);
 
+  /**
+   * 创建一个共识组
+   * @param className 共识协议
+   * @param endpoint 端点
+   * @param storageDir 存储目录
+   * @param registry
+   * @return
+   */
   public static Optional<IConsensus> getConsensusImpl(
       String className, TEndPoint endpoint, File storageDir, IStateMachine.Registry registry) {
     try {

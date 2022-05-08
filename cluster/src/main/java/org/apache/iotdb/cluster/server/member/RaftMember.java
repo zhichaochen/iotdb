@@ -171,6 +171,7 @@ public abstract class RaftMember implements RaftMemberMBean {
   AtomicLong term = new AtomicLong(0);
 
   volatile NodeCharacter character = NodeCharacter.ELECTOR;
+  // leader所在节点
   AtomicReference<Node> leader = new AtomicReference<>(ClusterConstant.EMPTY_NODE);
   /**
    * the node that thisNode has voted for in this round of election, which prevents a node voting
@@ -741,6 +742,7 @@ public abstract class RaftMember implements RaftMemberMBean {
   abstract ClientCategory getClientCategory();
 
   /**
+   * 一致性检查
    * according to the consistency configuration, decide whether to execute syncLeader or not and
    * throws exception when failed. Note that the write request will always try to sync leader
    */
@@ -856,7 +858,7 @@ public abstract class RaftMember implements RaftMemberMBean {
     logger.debug("{}: try synchronizing with the leader {}", name, leader.get());
     return waitUntilCatchUp(checkConsistency);
   }
-
+  /* 等待直到leader已知或者超时*/
   /** Wait until the leader of this node becomes known or time out. */
   public void waitLeader() {
     long startTime = System.currentTimeMillis();

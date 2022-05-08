@@ -169,6 +169,7 @@ public class IoTDB implements IoTDBMBean {
     registerManager.register(WALManager.getInstance());
 
     // in mpp mode we need to start some other services
+    // 在分布式计算模式下我们需要启动一些其他的服务
     if (IoTDBDescriptor.getInstance().getConfig().isMppMode()) {
       registerManager.register(StorageEngineV2.getInstance());
       registerManager.register(DataBlockService.getInstance());

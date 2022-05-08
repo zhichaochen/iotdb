@@ -42,6 +42,7 @@ import java.util.Arrays;
 
 /**
  * 数据分区状态机
+ *
  */
 public class DataRegionStateMachine extends BaseStateMachine {
 
@@ -79,6 +80,7 @@ public class DataRegionStateMachine extends BaseStateMachine {
       } else if (insertNode instanceof InsertTabletNode) {
         region.insertTablet((InsertTabletNode) insertNode);
       } else if (insertNode instanceof InsertRowsNode) {
+        // 具体的共识组节点上，处理raft append日志
         region.insert((InsertRowsNode) insertNode);
       } else if (insertNode instanceof InsertMultiTabletsNode) {
         region.insertTablets((InsertMultiTabletsNode) (insertNode));
