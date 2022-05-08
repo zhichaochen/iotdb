@@ -238,8 +238,15 @@ public abstract class AbstractMemTable implements IMemTable {
 
     List<IMeasurementSchema> schemaList = new ArrayList<>();
     List<TSDataType> dataTypes = new ArrayList<>();
+    int nullPointsNumber = 0;
     for (int i = 0; i < insertRowNode.getMeasurements().length; i++) {
+      // use measurements[i] to ignore failed partial insert
       if (measurements[i] == null) {
+        continue;
+      }
+      // use values[i] to ignore null value
+      if (values[i] == null) {
+        nullPointsNumber++;
         continue;
       }
       IMeasurementSchema schema = insertRowNode.getMeasurementSchemas()[i];
@@ -249,7 +256,10 @@ public abstract class AbstractMemTable implements IMemTable {
     memSize += MemUtils.getRecordsSize(dataTypes, values, disableMemControl);
     write(insertRowNode.getDeviceID(), schemaList, insertRowNode.getTime(), values);
 
-    int pointsInserted = insertRowNode.getMeasurements().length;
+    int pointsInserted =
+        insertRowNode.getMeasurements().length
+            - insertRowNode.getFailedMeasurementNumber()
+            - nullPointsNumber;
 
     totalPointsNum += pointsInserted;
 
@@ -312,16 +322,17 @@ public abstract class AbstractMemTable implements IMemTable {
   public void insertAlignedRow(InsertRowNode insertRowNode) {
     // if this insert node isn't from storage engine, we should set a temp device id for it
     if (insertRowNode.getDeviceID() == null) {
-      insertRowNode.setDeviceID(
-          DeviceIDFactory.getInstance().getDeviceID(insertRowNode.getDevicePath()));
+      insertRowNode.setDeviceID(deviceIDFactory.getDeviceID(insertRowNode.getDevicePath()));
     }
 
-    // updatePlanIndexes(insertRowNode.getIndex());
+    // TODO updatePlanIndexes(insertRowNode.getIndex());
     updatePlanIndexes(0);
     String[] measurements = insertRowNode.getMeasurements();
+    Object[] values = insertRowNode.getValues();
     List<IMeasurementSchema> schemaList = new ArrayList<>();
     List<TSDataType> dataTypes = new ArrayList<>();
     for (int i = 0; i < insertRowNode.getMeasurements().length; i++) {
+      // use measurements[i] to ignore failed partial insert
       if (measurements[i] == null) {
         continue;
       }
@@ -332,13 +343,8 @@ public abstract class AbstractMemTable implements IMemTable {
     if (schemaList.isEmpty()) {
       return;
     }
-    memSize +=
-        MemUtils.getAlignedRecordsSize(dataTypes, insertRowNode.getValues(), disableMemControl);
-    writeAlignedRow(
-        insertRowNode.getDeviceID(),
-        schemaList,
-        insertRowNode.getTime(),
-        insertRowNode.getValues());
+    memSize += MemUtils.getAlignedRecordsSize(dataTypes, values, disableMemControl);
+    writeAlignedRow(insertRowNode.getDeviceID(), schemaList, insertRowNode.getTime(), values);
     int pointsInserted = insertRowNode.getMeasurements().length;
     totalPointsNum += pointsInserted;
 

@@ -894,6 +894,13 @@ public class DataRegion {
     } finally {
       writeUnlock();
     }
+
+    if (insertRowNode.hasFailedMeasurements()) {
+      logger.warn(
+          "Fail to insert measurements {} caused by {}",
+          insertRowNode.getFailedMeasurements(),
+          insertRowNode.getFailedMessages());
+    }
   }
 
   /**
@@ -1115,6 +1122,13 @@ public class DataRegion {
       //      TriggerEngine.fire(TriggerEvent.AFTER_INSERT, insertTabletPlan, firePosition);
     } finally {
       writeUnlock();
+    }
+
+    if (insertTabletNode.hasFailedMeasurements()) {
+      logger.warn(
+          "Fail to insert measurements {} caused by {}",
+          insertTabletNode.getFailedMeasurements(),
+          insertTabletNode.getFailedMessages());
     }
   }
 

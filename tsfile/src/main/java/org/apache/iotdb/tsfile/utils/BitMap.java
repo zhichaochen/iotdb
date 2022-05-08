@@ -20,6 +20,7 @@
 package org.apache.iotdb.tsfile.utils;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * BitMap
@@ -125,6 +126,28 @@ public class BitMap {
       res.append(isMarked(i) ? 1 : 0);
     }
     return res.toString();
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(size);
+    result = 31 * result + Arrays.hashCode(bits);
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == this) {
+      return true;
+    }
+    if (obj == null) {
+      return false;
+    }
+    if (!(obj instanceof BitMap)) {
+      return false;
+    }
+    BitMap other = (BitMap) obj;
+    return this.size == other.size && Arrays.equals(this.bits, other.bits);
   }
 
   @Override
