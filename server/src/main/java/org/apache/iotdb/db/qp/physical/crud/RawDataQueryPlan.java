@@ -149,7 +149,7 @@ public class RawDataQueryPlan extends QueryPlan {
     if (expression instanceof SingleSeriesExpression) {
       Path path = ((SingleSeriesExpression) expression).getSeriesPath();
       deviceToMeasurements
-          .computeIfAbsent(path.getDeviceIdString(), key -> new HashSet<>())
+          .computeIfAbsent(path.getDevice(), key -> new HashSet<>())
           .add(path.getMeasurement());
     } else if (expression instanceof IBinaryExpression) {
       updateDeviceMeasurementsUsingExpression(((IBinaryExpression) expression).getLeft());
@@ -163,7 +163,7 @@ public class RawDataQueryPlan extends QueryPlan {
 
   public void addDeduplicatedPaths(PartialPath path) {
     deviceToMeasurements
-        .computeIfAbsent(path.getDeviceIdString(), key -> new HashSet<>())
+        .computeIfAbsent(path.getDevice(), key -> new HashSet<>())
         .add(path.getMeasurement());
     this.deduplicatedPaths.add(path);
   }
@@ -181,8 +181,7 @@ public class RawDataQueryPlan extends QueryPlan {
     deduplicatedPaths.forEach(
         path -> {
           Set<String> set =
-              deviceToMeasurements.computeIfAbsent(
-                  path.getDeviceIdString(), key -> new HashSet<>());
+              deviceToMeasurements.computeIfAbsent(path.getDevice(), key -> new HashSet<>());
           if (path instanceof AlignedPath) {
             set.addAll(((AlignedPath) path).getMeasurementList());
           } else {
@@ -202,7 +201,7 @@ public class RawDataQueryPlan extends QueryPlan {
 
   public void addFilterPathInDeviceToMeasurements(Path path) {
     deviceToMeasurements
-        .computeIfAbsent(path.getDeviceIdString(), key -> new HashSet<>())
+        .computeIfAbsent(path.getDevice(), key -> new HashSet<>())
         .add(path.getMeasurement());
   }
 

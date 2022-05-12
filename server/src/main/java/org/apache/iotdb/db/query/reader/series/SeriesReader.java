@@ -194,7 +194,7 @@ public class SeriesReader {
     this.dataType = dataType;
     this.context = context;
     this.dataSource = new QueryDataSource(seqFileResource, unseqFileResource);
-    QueryUtils.fillOrderIndexes(dataSource, seriesPath.getDeviceIdString(), ascending);
+    QueryUtils.fillOrderIndexes(dataSource, seriesPath.getDevice(), ascending);
     this.timeFilter = timeFilter;
     this.valueFilter = valueFilter;
     this.fileFilter = null;
@@ -1299,7 +1299,7 @@ public class SeriesReader {
 
     @Override
     public long getOrderTime(TsFileResource fileResource) {
-      return fileResource.getEndTime(seriesPath.getDeviceIdString());
+      return fileResource.getEndTime(seriesPath.getDevice());
     }
 
     @Override
@@ -1319,7 +1319,7 @@ public class SeriesReader {
 
     @Override
     public boolean isOverlapped(long time, TsFileResource right) {
-      return time <= right.getEndTime(seriesPath.getDeviceIdString());
+      return time <= right.getEndTime(seriesPath.getDevice());
     }
 
     @Override
@@ -1362,7 +1362,7 @@ public class SeriesReader {
         TsFileResource tsFileResource = dataSource.getSeqResourceByIndex(curSeqFileIndex);
         if (tsFileResource != null
             && tsFileResource.isSatisfied(
-                seriesPath.getDeviceIdString(), timeFilter, fileFilter, true, context.isDebug())) {
+                seriesPath.getDevice(), timeFilter, fileFilter, true, context.isDebug())) {
           break;
         }
         curSeqFileIndex--;
@@ -1376,7 +1376,7 @@ public class SeriesReader {
         TsFileResource tsFileResource = dataSource.getUnseqResourceByIndex(curUnseqFileIndex);
         if (tsFileResource != null
             && tsFileResource.isSatisfied(
-                seriesPath.getDeviceIdString(), timeFilter, fileFilter, false, context.isDebug())) {
+                seriesPath.getDevice(), timeFilter, fileFilter, false, context.isDebug())) {
           break;
         }
         curUnseqFileIndex++;
@@ -1418,7 +1418,7 @@ public class SeriesReader {
 
     @Override
     public long getOrderTime(TsFileResource fileResource) {
-      return fileResource.getStartTime(seriesPath.getDeviceIdString());
+      return fileResource.getStartTime(seriesPath.getDevice());
     }
 
     @Override
@@ -1438,7 +1438,7 @@ public class SeriesReader {
 
     @Override
     public boolean isOverlapped(long time, TsFileResource right) {
-      return time >= right.getStartTime(seriesPath.getDeviceIdString());
+      return time >= right.getStartTime(seriesPath.getDevice());
     }
 
     @Override
@@ -1481,7 +1481,7 @@ public class SeriesReader {
         TsFileResource tsFileResource = dataSource.getSeqResourceByIndex(curSeqFileIndex);
         if (tsFileResource != null
             && tsFileResource.isSatisfied(
-                seriesPath.getDeviceIdString(), timeFilter, fileFilter, true, context.isDebug())) {
+                seriesPath.getDevice(), timeFilter, fileFilter, true, context.isDebug())) {
           break;
         }
         curSeqFileIndex++;
@@ -1495,7 +1495,7 @@ public class SeriesReader {
         TsFileResource tsFileResource = dataSource.getUnseqResourceByIndex(curUnseqFileIndex);
         if (tsFileResource != null
             && tsFileResource.isSatisfied(
-                seriesPath.getDeviceIdString(), timeFilter, fileFilter, false, context.isDebug())) {
+                seriesPath.getDevice(), timeFilter, fileFilter, false, context.isDebug())) {
           break;
         }
         curUnseqFileIndex++;

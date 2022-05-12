@@ -102,7 +102,7 @@ public class AlignedPath extends PartialPath {
   }
 
   @Override
-  public String getDeviceIdString() {
+  public String getDevice() {
     return getFullPath();
   }
 
@@ -232,7 +232,7 @@ public class AlignedPath extends PartialPath {
     try {
       alignedPath =
           new AlignedPath(
-              this.getDeviceIdString(),
+              this.getDevice(),
               new ArrayList<>(this.measurementList),
               new ArrayList<>(this.schemaList));
     } catch (IllegalPathException e) {
@@ -289,7 +289,7 @@ public class AlignedPath extends PartialPath {
     alignedPath.measurementList = measurements;
     alignedPath.schemaList = measurementSchemas;
     alignedPath.nodes = partialPath.getNodes();
-    alignedPath.device = partialPath.getDeviceIdString();
+    alignedPath.device = partialPath.getDevice();
     alignedPath.fullPath = partialPath.getFullPath();
     return alignedPath;
   }

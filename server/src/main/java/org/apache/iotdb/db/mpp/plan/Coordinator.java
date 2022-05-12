@@ -58,6 +58,8 @@ public class Coordinator {
 
   private static final String COORDINATOR_EXECUTOR_NAME = "MPPCoordinator";
   private static final int COORDINATOR_EXECUTOR_SIZE = 10;
+  private static final String COORDINATOR_WRITE_EXECUTOR_NAME = "MPPCoordinatorWrite";
+  private static final int COORDINATOR_WRITE_EXECUTOR_SIZE = 10;
   private static final String COORDINATOR_SCHEDULED_EXECUTOR_NAME = "MPPCoordinatorScheduled";
   private static final int COORDINATOR_SCHEDULED_EXECUTOR_SIZE = 1;
 
@@ -78,6 +80,7 @@ public class Coordinator {
                   new DataNodeClientPoolFactory.SyncDataNodeInternalServiceClientPoolFactory());
 
   private final ExecutorService executor;
+  private final ExecutorService writeOperationExecutor;
   private final ScheduledExecutorService scheduledExecutor;
 
   private static final Coordinator INSTANCE = new Coordinator();
@@ -87,6 +90,7 @@ public class Coordinator {
   private Coordinator() {
     this.queryExecutionMap = new ConcurrentHashMap<>();
     this.executor = getQueryExecutor();
+    this.writeOperationExecutor = getWriteExecutor();
     this.scheduledExecutor = getScheduledExecutor();
   }
 
@@ -103,6 +107,7 @@ public class Coordinator {
         statement,
         queryContext,
         executor,
+        writeOperationExecutor,
         scheduledExecutor,
         partitionFetcher,
         schemaFetcher,
@@ -143,6 +148,12 @@ public class Coordinator {
     return IoTDBThreadPoolFactory.newFixedThreadPool(
         COORDINATOR_EXECUTOR_SIZE, COORDINATOR_EXECUTOR_NAME);
   }
+
+  private ExecutorService getWriteExecutor() {
+    return IoTDBThreadPoolFactory.newFixedThreadPool(
+        COORDINATOR_WRITE_EXECUTOR_SIZE, COORDINATOR_WRITE_EXECUTOR_NAME);
+  }
+
   // TODO: (xingtanzjr) need to redo once we have a concrete policy for the threadPool management
   private ScheduledExecutorService getScheduledExecutor() {
     return IoTDBThreadPoolFactory.newScheduledThreadPool(

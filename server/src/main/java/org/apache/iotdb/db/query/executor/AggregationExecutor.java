@@ -151,7 +151,7 @@ public class AggregationExecutor {
       aggregateOneSeries(
           seriesPath,
           entry.getValue(),
-          aggregationPlan.getAllMeasurementsInDevice(seriesPath.getDeviceIdString()),
+          aggregationPlan.getAllMeasurementsInDevice(seriesPath.getDevice()),
           timeFilter);
     }
     for (Map.Entry<AlignedPath, List<List<Integer>>> entry :
@@ -160,7 +160,7 @@ public class AggregationExecutor {
       aggregateOneAlignedSeries(
           alignedPath,
           entry.getValue(),
-          aggregationPlan.getAllMeasurementsInDevice(alignedPath.getDeviceIdString()),
+          aggregationPlan.getAllMeasurementsInDevice(alignedPath.getDevice()),
           timeFilter);
     }
 
@@ -732,7 +732,7 @@ public class AggregationExecutor {
     // 创建时间序列读取器
     return new SeriesReaderByTimestamp(
         path,
-        queryPlan.getAllMeasurementsInDevice(path.getDeviceIdString()),
+        queryPlan.getAllMeasurementsInDevice(path.getDevice()),
         dataType,
         context,
         QueryResourceManager.getInstance().getQueryDataSource(path, context, null, ascending),
