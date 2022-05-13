@@ -16,16 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.iotdb.commons.client.sync;
 
-public interface SyncThriftClient {
+package org.apache.iotdb.db.mpp.plan.execution.memory;
 
-  /** close the connection */
-  void invalidate();
+import org.apache.iotdb.db.mpp.common.header.DatasetHeader;
+import org.apache.iotdb.tsfile.read.common.block.TsBlock;
 
-  /**
-   * Clears the specified pool, removing all pooled instances corresponding to current instance's
-   * endPoint.
-   */
-  void invalidateAll();
+public class StatementMemorySource {
+  private final TsBlock tsBlock;
+  private final DatasetHeader datasetHeader;
+
+  public StatementMemorySource(TsBlock tsBlock, DatasetHeader datasetHeader) {
+    this.tsBlock = tsBlock;
+    this.datasetHeader = datasetHeader;
+  }
+
+  public TsBlock getTsBlock() {
+    return tsBlock;
+  }
+
+  public DatasetHeader getDatasetHeader() {
+    return datasetHeader;
+  }
 }

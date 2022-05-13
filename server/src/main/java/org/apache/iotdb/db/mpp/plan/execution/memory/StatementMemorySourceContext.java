@@ -16,16 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.iotdb.commons.client.sync;
 
-public interface SyncThriftClient {
+package org.apache.iotdb.db.mpp.plan.execution.memory;
 
-  /** close the connection */
-  void invalidate();
+import org.apache.iotdb.db.mpp.common.MPPQueryContext;
+import org.apache.iotdb.db.mpp.plan.analyze.Analysis;
 
-  /**
-   * Clears the specified pool, removing all pooled instances corresponding to current instance's
-   * endPoint.
-   */
-  void invalidateAll();
+public class StatementMemorySourceContext {
+  private final MPPQueryContext queryContext;
+  private final Analysis analysis;
+
+  public StatementMemorySourceContext(MPPQueryContext queryContext, Analysis analysis) {
+    this.queryContext = queryContext;
+    this.analysis = analysis;
+  }
+
+  public MPPQueryContext getQueryContext() {
+    return queryContext;
+  }
+
+  public Analysis getAnalysis() {
+    return analysis;
+  }
 }

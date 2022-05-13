@@ -16,16 +16,27 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.iotdb.commons.client.sync;
 
-public interface SyncThriftClient {
+package org.apache.iotdb.db.mpp.execution.memory;
 
-  /** close the connection */
-  void invalidate();
+import org.apache.iotdb.db.mpp.plan.execution.memory.MemorySourceHandle;
+import org.apache.iotdb.tsfile.read.common.block.TsBlock;
 
-  /**
-   * Clears the specified pool, removing all pooled instances corresponding to current instance's
-   * endPoint.
-   */
-  void invalidateAll();
+import com.google.common.util.concurrent.ListenableFuture;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class MemorySourceHandleTest {
+
+  @Test
+  public void testNormalFinished() {
+    TsBlock rawResult = new TsBlock(0);
+    MemorySourceHandle sourceHandle = new MemorySourceHandle(rawResult);
+    Assert.assertFalse(sourceHandle.isFinished());
+    ListenableFuture<Void> blocked = sourceHandle.isBlocked();
+    Assert.assertTrue(blocked.isDone());
+    TsBlock result = sourceHandle.receive();
+    Assert.assertEquals(rawResult, result);
+    Assert.assertTrue(sourceHandle.isFinished());
+  }
 }
