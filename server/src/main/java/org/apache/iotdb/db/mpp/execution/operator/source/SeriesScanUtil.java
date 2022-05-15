@@ -58,17 +58,25 @@ import java.util.Set;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 
+/**
+ * 查询时间序列的工具类
+ * 用户查询某个时间序列的数据
+ */
 public class SeriesScanUtil {
   private final FragmentInstanceContext context;
 
   // The path of the target series which will be scanned.
+  // 将被扫描的目标序列的路径。
   private final PartialPath seriesPath;
 
   // all the sensors in this device;
+  // 设备中的所有传感器
   protected final Set<String> allSensors;
+  // 数据类型
   protected final TSDataType dataType;
 
   // inner class of SeriesReader for order purpose
+  // 用于排序目的
   private TimeOrderUtils orderUtils;
 
   /*
@@ -77,6 +85,10 @@ public class SeriesScanUtil {
    * timeFilter is pushed down to all pages (seq, unseq) without correctness problem
    *
    * valueFilter is pushed down to non-overlapped page only
+   *
+   * timeFilter和valueFilter之间最多有一个不为null
+   * timeFilter被下推到所有page（seq，unseq）而没有正确性问题
+   * valueFilter只被下推到非重叠页面
    */
   private final Filter timeFilter;
   private final Filter valueFilter;
@@ -94,6 +106,7 @@ public class SeriesScanUtil {
    */
   protected ITimeSeriesMetadata firstTimeSeriesMetadata;
   protected final List<ITimeSeriesMetadata> seqTimeSeriesMetadata = new LinkedList<>();
+  // 注意使用了PriorityQueue，会以正序查询/倒序查询，通过startTime / endTime排序
   protected final PriorityQueue<ITimeSeriesMetadata> unSeqTimeSeriesMetadata;
 
   /*
@@ -106,7 +119,9 @@ public class SeriesScanUtil {
    * page cache
    */
   protected VersionPageReader firstPageReader;
+  // 有序的page读取器
   protected final List<VersionPageReader> seqPageReaders = new LinkedList<>();
+  // 无序的page读取器
   protected final PriorityQueue<VersionPageReader> unSeqPageReaders;
 
   /*
@@ -147,10 +162,12 @@ public class SeriesScanUtil {
         new PriorityQueue<>(
             orderUtils.comparingLong(
                 timeSeriesMetadata -> orderUtils.getOrderTime(timeSeriesMetadata.getStatistics())));
+
     cachedChunkMetadata =
         new PriorityQueue<>(
             orderUtils.comparingLong(
                 chunkMetadata -> orderUtils.getOrderTime(chunkMetadata.getStatistics())));
+
     unSeqPageReaders =
         new PriorityQueue<>(
             orderUtils.comparingLong(
@@ -410,6 +427,7 @@ public class SeriesScanUtil {
       }
     }
 
+    // 如果page reader存在，则表示可以读取数据
     if (firstPageReader != null) {
       return true;
     }
@@ -417,6 +435,8 @@ public class SeriesScanUtil {
     /*
      * construct first page reader
      */
+    // 如果不存在firstPageReader，那么需要初始化firstChunkMetadata
+    // TODO 初始化PageReader，首先需要初始化ChunkMetadata
     if (firstChunkMetadata != null) {
       /*
        * try to unpack all overlapped ChunkMetadata to cachedPageReaders
@@ -468,6 +488,7 @@ public class SeriesScanUtil {
       return false;
     }
 
+    // 结束时间
     long endpointTime = orderUtils.getOverlapCheckTime(firstPageReader.getStatistics());
     unpackAllOverlappedTsFilesToTimeSeriesMetadata(endpointTime);
     unpackAllOverlappedTimeSeriesMetadataToCachedChunkMetadata(endpointTime, false);
@@ -485,10 +506,17 @@ public class SeriesScanUtil {
                     firstPageReader.getStatistics())));
   }
 
+  /**
+   * 将所有Overlapped chunk元数据解压到page reader
+   * @param endpointTime
+   * @param init
+   * @throws IOException
+   */
   private void unpackAllOverlappedChunkMetadataToPageReaders(long endpointTime, boolean init)
       throws IOException {
     if (firstChunkMetadata != null
         && orderUtils.isOverlapped(endpointTime, firstChunkMetadata.getStatistics())) {
+      //
       unpackOneChunkMetaData(firstChunkMetadata);
       firstChunkMetadata = null;
     }
@@ -503,6 +531,7 @@ public class SeriesScanUtil {
       }
       unpackOneChunkMetaData(cachedChunkMetadata.poll());
     }
+    //
     if (init
         && firstPageReader == null
         && (!seqPageReaders.isEmpty() || !unSeqPageReaders.isEmpty())) {
@@ -510,10 +539,17 @@ public class SeriesScanUtil {
     }
   }
 
+  /**
+   * 解压一个chunk元数据
+   * @param chunkMetaData
+   * @throws IOException
+   */
   private void unpackOneChunkMetaData(IChunkMetadata chunkMetaData) throws IOException {
+    // 一个chunk中有多少page，则加载多少个IPageReader
     List<IPageReader> pageReaderList =
         FileLoaderUtils.loadPageReaderList(chunkMetaData, timeFilter);
 
+    // 判断是否有序，如果是有序，则区分正序还是倒叙，如果是无序，则无序区分了
     if (chunkMetaData.isSeq()) {
       if (orderUtils.getAscending()) {
         for (IPageReader iPageReader : pageReaderList) {
@@ -629,6 +665,7 @@ public class SeriesScanUtil {
       /*
        * next page is not overlapped, push down value filter if it exists
        */
+      // next page 不重叠，如果存在则下推值过滤器
       if (valueFilter != null) {
         firstPageReader.setFilter(valueFilter);
       }
@@ -856,15 +893,24 @@ public class SeriesScanUtil {
     unpackAllOverlappedUnseqPageReadersToMergeReader(currentPageEndpointTime);
   }
 
+  /**
+   * 初始化
+   * @throws IOException
+   */
   private void initFirstPageReader() throws IOException {
     while (this.firstPageReader == null) {
+      // 从已缓存的读取器中获取FirstPageReader
       VersionPageReader firstPageReader = getFirstPageReaderFromCachedReaders();
 
       // unpack overlapped page using current page reader
+      // 打开
       if (firstPageReader != null) {
         long overlapCheckTime = orderUtils.getOverlapCheckTime(firstPageReader.getStatistics());
+        // 打开所有的TsFile到TimeSeriesMetadata
         unpackAllOverlappedTsFilesToTimeSeriesMetadata(overlapCheckTime);
+        // 打开所有的TimeSeriesMetadata到cachedChunkMetadata
         unpackAllOverlappedTimeSeriesMetadataToCachedChunkMetadata(overlapCheckTime, false);
+        // 打开所有的ChunkMetadata到PageReader
         unpackAllOverlappedChunkMetadataToPageReaders(overlapCheckTime, false);
 
         // this page after unpacking must be the first page
@@ -885,9 +931,15 @@ public class SeriesScanUtil {
     }
   }
 
+  /**
+   * 从已缓存的读取器中获取FirstPageReader
+   * @return
+   */
   // We use get() and peek() here in case it's not the first page reader before unpacking
+  // 我们在这里使用get（）和peek（），以防它不是解包前的第一个page reader
   private VersionPageReader getFirstPageReaderFromCachedReaders() {
     VersionPageReader firstPageReader = null;
+    // 如果seqPageReaders和unSeqPageReaders都不为空
     if (!seqPageReaders.isEmpty() && !unSeqPageReaders.isEmpty()) {
       if (orderUtils.isTakeSeqAsFirst(
           seqPageReaders.get(0).getStatistics(), unSeqPageReaders.peek().getStatistics())) {
@@ -895,9 +947,13 @@ public class SeriesScanUtil {
       } else {
         firstPageReader = unSeqPageReaders.peek();
       }
-    } else if (!seqPageReaders.isEmpty()) {
+    }
+    // 如果seqPageReaders不为空，则取第一个
+    else if (!seqPageReaders.isEmpty()) {
       firstPageReader = seqPageReaders.get(0);
-    } else if (!unSeqPageReaders.isEmpty()) {
+    }
+    // 如果unSeqPageReaders不为空，则取第一个
+    else if (!unSeqPageReaders.isEmpty()) {
       firstPageReader = unSeqPageReaders.peek();
     }
     return firstPageReader;
@@ -1170,6 +1226,7 @@ public class SeriesScanUtil {
 
     boolean isExcessEndpoint(long time, long endpointTime);
 
+    /*如果从seq readers获取第一页阅读器，则返回true*/
     /** Return true if taking first page reader from seq readers */
     boolean isTakeSeqAsFirst(
         Statistics<? extends Object> seqStatistics, Statistics<? extends Object> unseqStatistics);

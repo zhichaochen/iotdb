@@ -78,11 +78,13 @@ public class SeriesScanOperator implements DataSourceOperator {
   public boolean hasNext() {
 
     try {
+      // 如果有缓存，则返回true
       if (hasCachedTsBlock) {
         return true;
       }
 
       /*
+       * 首先看还有page了没有
        * consume page data firstly
        */
       if (readPageData()) {
@@ -91,6 +93,7 @@ public class SeriesScanOperator implements DataSourceOperator {
       }
 
       /*
+       * 再次查看是否有chunk
        * consume chunk data secondly
        */
       if (readChunkData()) {
@@ -99,6 +102,7 @@ public class SeriesScanOperator implements DataSourceOperator {
       }
 
       /*
+       * 最后查看一个Tile
        * consume next file finally
        */
       while (seriesScanUtil.hasNextFile()) {

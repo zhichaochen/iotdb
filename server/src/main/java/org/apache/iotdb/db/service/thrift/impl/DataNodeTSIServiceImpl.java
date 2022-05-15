@@ -528,6 +528,7 @@ public class DataNodeTSIServiceImpl implements TSIEventHandler {
     AUDIT_LOGGER.debug("Session {} execute Query: {}", req.sessionId, statement);
 
     try {
+      // 通过自增的方式生成一个查询ID
       long queryId = SESSION_MANAGER.requestQueryId(req.statementId, true);
       QueryId id = new QueryId(String.valueOf(queryId));
       // create and cache dataset

@@ -37,6 +37,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * 此类用于监视每个查询的执行时间。一旦超过阈值，它将被终止并返回超时异常。
+ *
  * This class is used to monitor the executing time of each query. Once one is over the threshold,
  * it will be killed and return the time out exception.
  */
@@ -64,6 +66,7 @@ public class QueryTimeManager implements IService {
     }
     if (context.getTimeout() != 0) {
       // submit a scheduled task to judge whether query is still running after timeout
+      // 提交计划任务，判断查询超时后是否仍在运行
       ScheduledFuture<?> scheduledFuture =
           executorService.schedule(
               () -> {
@@ -112,6 +115,7 @@ public class QueryTimeManager implements IService {
   }
 
   /**
+   * 检查给定的查询是否存活
    * Check given query is alive or not. We only throw the queryTimeoutRunTimeException once. If the
    * runTimeException is thrown in main thread, it will quit directly while the return value will be
    * used to ask sub query threads to quit. Else if it's thrown in one sub thread, other sub threads

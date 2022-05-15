@@ -87,10 +87,10 @@ public class DataSetWithTimeGenerator extends QueryDataSet {
   public RowRecord nextWithoutConstraint() throws IOException {
     // TODO 通过时间生成器生成一个时间戳
     long timestamp = timeGenerator.next();
-    // 一行数据
+    // 创建一行数据
     RowRecord rowRecord = new RowRecord(timestamp);
 
-    // 遍历所有序列
+    // 遍历所有时间序列
     for (int i = 0; i < paths.size(); i++) {
       // get value from readers in time generator
       // 如果有过滤条件，则通过时间生成器获取值
@@ -106,11 +106,11 @@ public class DataSetWithTimeGenerator extends QueryDataSet {
       }
 
       // get value from series reader without filter
-      // 如果没有过滤条件，则
+      //  如果没有过滤条件，则使用FileSeriesReaderByTimestamp查找时间戳对应的值
       FileSeriesReaderByTimestamp fileSeriesReaderByTimestamp = readers.get(i);
       // 通过时间戳获取值
       Object value = fileSeriesReaderByTimestamp.getValueInTimestamp(timestamp);
-      // 添加一个字段
+      // 如果返回多个值，则取第一个
       if (dataTypes.get(i) == TSDataType.VECTOR) {
         TsPrimitiveType v = ((TsPrimitiveType[]) value)[0];
         rowRecord.addField(v.getValue(), v.getDataType());

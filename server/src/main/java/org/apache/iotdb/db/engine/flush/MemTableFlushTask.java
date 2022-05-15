@@ -109,13 +109,11 @@ public class MemTableFlushTask {
         memTable.getTotalPointsNum() / memTable.getSeriesNumber(),
         memTable.getSeriesNumber());
 
-    // 评估临时内存大小
+    // 内存控制，预估刷盘需要的内存，并更新使用内存
     long estimatedTemporaryMemSize = 0L;
     if (config.isEnableMemControl() && SystemInfo.getInstance().isEncodingFasterThanIo()) {
-      // 预估临时内存大小
       estimatedTemporaryMemSize =
           memTable.memSize() / memTable.getSeriesNumber() * config.getIoTaskQueueSizeForFlushing();
-      // 设置刷盘的临时内存
       SystemInfo.getInstance().applyTemporaryMemoryForFlushing(estimatedTemporaryMemSize);
     }
     // 记录开始时间戳
@@ -129,9 +127,9 @@ public class MemTableFlushTask {
         memTable.getMemTableMap().entrySet()) {
       // TODO 开启一个刷写chunk group的任务，一个TsFile包含多个chunk group，所以会创建多个chunk group的任务
       encodingTaskQueue.put(new StartFlushGroupIOTask(memTableEntry.getKey().toStringID()));
-
+      // 表示一个chunk group
       final Map<String, IWritableMemChunk> value = memTableEntry.getValue().getMemChunkMap();
-      //
+      // 遍历chunk group中的多个chunk
       for (Map.Entry<String, IWritableMemChunk> iWritableMemChunkEntry : value.entrySet()) {
         // 开始时间
         long startTime = System.currentTimeMillis();

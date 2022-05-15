@@ -36,7 +36,7 @@ public abstract class Log implements Comparable<Log> {
       Comparator.comparingLong(Log::getCurrLogIndex).thenComparing(Log::getCurrLogTerm);
 
   protected static final int DEFAULT_BUFFER_SIZE = 4096;
-  private long currLogIndex; // 当前日志的下标
+  private long currLogIndex; // 当前日志的下标，自增ID
   private long currLogTerm; // 当前日志的
 
   // for async application

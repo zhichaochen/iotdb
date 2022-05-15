@@ -271,15 +271,16 @@ public class TsFileIOWriter implements AutoCloseable {
    */
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
   public void endFile() throws IOException {
-    // 当前文件的位置
+    // 记录元数据开始的位置
     long metaOffset = out.getPosition();
 
     // serialize the SEPARATOR of MetaData
-    // 写入元数据的分隔符
+    // 写入元数据的分隔符2
     ReadWriteIOUtils.write(MetaMarker.SEPARATOR, out.wrapAsStream());
 
     // group ChunkMetadata by series
     // 通过时间序列对ChunkMetadata进行分组
+    // 一条时间序列，可能对应多个chunk中，这里构造 series 到 chunk元数据的映射
     Map<Path, List<IChunkMetadata>> chunkMetadataListMap = new TreeMap<>();
 
     // 遍历chunk group元数据列表
@@ -301,14 +302,14 @@ public class TsFileIOWriter implements AutoCloseable {
     tsFileMetaData.setMetadataIndex(metadataIndex);
     tsFileMetaData.setMetaOffset(metaOffset);
 
-    //
+    // 记录开始写元数据的位置
     long footerIndex = out.getPosition();
     if (logger.isDebugEnabled()) {
       logger.debug("start to flush the footer,file pos:{}", footerIndex);
     }
 
     // write TsFileMetaData
-    // 写TsFileMetaData
+    // TODO 写入FsFile元数据信息
     int size = tsFileMetaData.serializeTo(out.wrapAsStream());
     if (logger.isDebugEnabled()) {
       logger.debug("finish flushing the footer {}, file pos:{}", tsFileMetaData, out.getPosition());
@@ -326,7 +327,7 @@ public class TsFileIOWriter implements AutoCloseable {
     ReadWriteIOUtils.write(size, out.wrapAsStream()); // write the size of the file metadata.
 
     // write magic string
-    // 写魔数
+    // 写魔数TsFile
     out.write(MAGIC_STRING_BYTES);
 
     // close file
@@ -351,7 +352,7 @@ public class TsFileIOWriter implements AutoCloseable {
     // convert ChunkMetadataList to this field
     deviceTimeseriesMetadataMap = new LinkedHashMap<>();
     // create device -> TimeseriesMetaDataList Map
-    // 创建 设备 和 TimeseriesMetaDataList 的樱色
+    // 创建设备和TimeseriesMetaDataList 的映射
     for (Map.Entry<Path, List<IChunkMetadata>> entry : chunkMetadataListMap.entrySet()) {
       // for ordinary path
       // 序列化一个时间序列的chunk元数据列表
@@ -382,7 +383,7 @@ public class TsFileIOWriter implements AutoCloseable {
     int chunkMetadataListLength = 0;
     boolean serializeStatistic = (chunkMetadataList.size() > 1);
     // flush chunkMetadataList one by one
-    // 序列化当前时间序列的chunk元数据列表
+    // 遍历chunk列表，序列化多个chunk数据
     for (IChunkMetadata chunkMetadata : chunkMetadataList) {
       if (!chunkMetadata.getDataType().equals(dataType)) {
         continue;

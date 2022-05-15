@@ -133,7 +133,7 @@ public abstract class TimeGenerator {
    * 构造生成时间戳的树
    * construct the tree that generate timestamp. */
   protected Node construct(IExpression expression) throws IOException {
-    // 如果不是单序列表达式，说明有多个表达式
+    // 单序列表达式，一元表达式
     if (expression.getType() == ExpressionType.SERIES) {
       SingleSeriesExpression singleSeriesExp = (SingleSeriesExpression) expression;
       // 生成批量数据读取器，比如:TsFileTimeGenerator会生成FileSeriesReader
@@ -147,18 +147,20 @@ public abstract class TimeGenerator {
       leafNodeCache.computeIfAbsent(path, p -> new ArrayList<>()).add(leafNode);
 
       return leafNode;
-    } else {
+    }
+    // 二元表达式
+    else {
       // 构造当前表达式左边的节点
       Node leftChild = construct(((IBinaryExpression) expression).getLeft());
       // 构造当前表达式右边的节点
       Node rightChild = construct(((IBinaryExpression) expression).getRight());
 
-      // Or节点，返回最上层的OR节点
+      // Or节点
       if (expression.getType() == ExpressionType.OR) {
         hasOrNode = true;
         return new OrNode(leftChild, rightChild, isAscending());
       }
-      // And节点，返回最上层的AND节点
+      // And节点
       else if (expression.getType() == ExpressionType.AND) {
         return new AndNode(leftChild, rightChild, isAscending());
       }

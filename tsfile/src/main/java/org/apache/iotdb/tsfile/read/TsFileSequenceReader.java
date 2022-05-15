@@ -89,7 +89,8 @@ import java.util.stream.Collectors;
 
 /**
  * TsFile时间序列读取器
- * 支持读取TsFile的各个数据结构
+ *
+ * 支持读取TsFile的各个数据结构，当加载一个TsFile的时候，底层都会使用该类
  */
 public class TsFileSequenceReader implements AutoCloseable {
 
@@ -354,6 +355,13 @@ public class TsFileSequenceReader implements AutoCloseable {
     return deviceMetadata;
   }
 
+  /**
+   *
+   * @param path
+   * @param ignoreNotExists
+   * @return
+   * @throws IOException
+   */
   public TimeseriesMetadata readTimeseriesMetadata(Path path, boolean ignoreNotExists)
       throws IOException {
     readFileMetadata();

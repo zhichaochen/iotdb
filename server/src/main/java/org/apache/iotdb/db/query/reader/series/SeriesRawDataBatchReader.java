@@ -62,6 +62,7 @@ public class SeriesRawDataBatchReader implements ManagedSeriesReader {
       Filter valueFilter,
       TsFileFilter fileFilter,
       boolean ascending) {
+    //
     this.seriesReader =
         ResourceByPathUtils.getResourceInstance(seriesPath)
             .createSeriesReader(
@@ -106,13 +107,13 @@ public class SeriesRawDataBatchReader implements ManagedSeriesReader {
    */
   @Override
   public boolean hasNextBatch() throws IOException {
-
+    // 首先判断是否已缓存数据
     if (hasCachedBatchData) {
       return true;
     }
 
     /*
-     * 首先消费page数据
+     * 首先读取page
      * consume page data firstly
      */
     if (readPageData()) {
@@ -121,7 +122,7 @@ public class SeriesRawDataBatchReader implements ManagedSeriesReader {
     }
 
     /*
-     * 其次消费chunk数据
+     * 其次读取chunk数据
      * consume chunk data secondly
      */
     if (readChunkData()) {

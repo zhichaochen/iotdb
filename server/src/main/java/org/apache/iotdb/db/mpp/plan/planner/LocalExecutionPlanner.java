@@ -178,6 +178,7 @@ public class LocalExecutionPlanner {
       throw new UnsupportedOperationException("should call the concrete visitXX() method");
     }
 
+    /* 通过SeriesScanNode生成SeriesScanOperator */
     @Override
     public Operator visitSeriesScan(SeriesScanNode node, LocalExecutionPlanContext context) {
       PartialPath seriesPath = node.getSeriesPath();

@@ -52,7 +52,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 服务端时间生成器
+ * 服务端时间生成器（适用于从存储引擎过来的服务）
  *
  * 带有过滤器的查询时间戳生成器, 例如查询字句select s1, s2 from root where s3 < 0 and time > 100"，该类可以迭代回查询的每个时间戳。
  * A timestamp generator for query with filter. e.g. For query clause "select s1, s2 from root where

@@ -82,6 +82,7 @@ public class DataSetWithoutTimeGenerator extends QueryDataSet {
     timeSet = new HashSet<>();
 
     for (int i = 0; i < paths.size(); i++) {
+      // 序列读取器，用于读取一条时间序列的数据
       AbstractFileSeriesReader reader = readers.get(i);
       if (!reader.hasNextBatch()) {
         batchDataList.add(new BatchData());
@@ -92,7 +93,6 @@ public class DataSetWithoutTimeGenerator extends QueryDataSet {
       }
     }
 
-    // 遍历所有Page数据
     for (BatchData data : batchDataList) {
       // 将其加入时间戳的优先队列，注意：不会存储到相同的时间
       if (data.hasCurrent()) {
@@ -109,6 +109,7 @@ public class DataSetWithoutTimeGenerator extends QueryDataSet {
   @SuppressWarnings("squid:S3776") // Suppress high Cognitive Complexity warning
   @Override
   public RowRecord nextWithoutConstraint() throws IOException {
+    // 从最小堆
     long minTime = timeHeapGet();
 
     RowRecord record = new RowRecord(minTime);

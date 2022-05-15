@@ -122,6 +122,7 @@ public class Coordinator {
       IPartitionFetcher partitionFetcher,
       ISchemaFetcher schemaFetcher) {
 
+    // 创建IQueryExecution
     IQueryExecution execution =
         createQueryExecution(
             statement,
@@ -134,6 +135,7 @@ public class Coordinator {
             partitionFetcher,
             schemaFetcher);
     queryExecutionMap.put(queryId, execution);
+    // 开始执行
     execution.start();
 
     return execution.getStatus();

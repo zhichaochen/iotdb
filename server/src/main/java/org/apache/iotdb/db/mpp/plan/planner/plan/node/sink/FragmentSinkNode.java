@@ -33,6 +33,10 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * 段下沉节点
+ * 特别注意：是用于向下游传递数据的，其实是上游的节点，而不是表示下游节点。
+ */
 public class FragmentSinkNode extends SinkNode {
   private PlanNode child;
 

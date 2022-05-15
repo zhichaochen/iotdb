@@ -101,22 +101,28 @@ public class LogicalPlanBuilder {
       Map<String, Set<Expression>> deviceNameToSourceExpressions,
       OrderBy scanOrder,
       Filter timeFilter) {
+    // 源头节点列表
     List<PlanNode> sourceNodeList = new ArrayList<>();
     for (Set<Expression> sourceExpressionList :
         deviceNameToSourceExpressions.values()) { // for each device
+      // 查询语句中涉及到的序列
       List<PartialPath> selectedPaths =
           sourceExpressionList.stream()
               .map(expression -> ((TimeSeriesOperand) expression).getPath())
               .collect(Collectors.toList());
+      // 对路径进行分组
       List<PartialPath> groupedPaths = MetaUtils.groupAlignedPaths(selectedPaths);
       for (PartialPath path : groupedPaths) {
+        // 无需对齐的序列
         if (path instanceof MeasurementPath) { // non-aligned series
           SeriesScanNode seriesScanNode =
               new SeriesScanNode(
                   context.getQueryId().genPlanNodeId(), (MeasurementPath) path, scanOrder);
           seriesScanNode.setTimeFilter(timeFilter);
           sourceNodeList.add(seriesScanNode);
-        } else if (path instanceof AlignedPath) { // aligned series
+        }
+        // 需要对齐的序列
+        else if (path instanceof AlignedPath) { // aligned series
           AlignedSeriesScanNode alignedSeriesScanNode =
               new AlignedSeriesScanNode(
                   context.getQueryId().genPlanNodeId(), (AlignedPath) path, scanOrder);
@@ -128,6 +134,7 @@ public class LogicalPlanBuilder {
       }
     }
 
+    // 生成根节点
     this.root = convergeWithTimeJoin(sourceNodeList, scanOrder);
     return this;
   }
@@ -244,6 +251,7 @@ public class LogicalPlanBuilder {
     if (sourceNodes.size() == 1) {
       tmpNode = sourceNodes.get(0);
     } else {
+      // 如果有多个source节点，说明
       tmpNode = new TimeJoinNode(context.getQueryId().genPlanNodeId(), mergeOrder, sourceNodes);
     }
     return tmpNode;

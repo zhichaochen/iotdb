@@ -61,7 +61,7 @@ public class MetadataIndexConstructor {
     Map<String, MetadataIndexNode> deviceMetadataIndexMap = new TreeMap<>();
 
     // for timeseriesMetadata of each device
-    // 每个设备的时间序列元数据
+    // 遍历所有设备及其元数据
     for (Entry<String, List<TimeseriesMetadata>> entry : deviceTimeseriesMetadataMap.entrySet()) {
       // 如果为空，继续
       if (entry.getValue().isEmpty()) {

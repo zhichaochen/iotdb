@@ -155,13 +155,16 @@ public class TimeSeriesMetadataCache {
       throws IOException {
     if (!CACHE_ENABLE) {
       // bloom filter part
-      //
+      // 获取一个TsFile文件读取器
       TsFileSequenceReader reader = FileReaderManager.getInstance().get(key.filePath, true);
+      // 加载布隆过滤器
       BloomFilter bloomFilter = reader.readBloomFilter();
+      // 使用布隆过滤器校验当前文件是否存在该物理量
       if (bloomFilter != null
           && !bloomFilter.contains(key.device + IoTDBConstant.PATH_SEPARATOR + key.measurement)) {
         return null;
       }
+      // 读取timeseriesMetadata
       TimeseriesMetadata timeseriesMetadata =
           reader.readTimeseriesMetadata(new Path(key.device, key.measurement), ignoreNotExists);
       return (timeseriesMetadata == null || timeseriesMetadata.getStatistics().getCount() == 0)

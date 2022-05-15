@@ -674,6 +674,7 @@ public class TsFileResource {
       return isSatisfied(timeFilter, isSeq, ttl, debug);
     }
 
+    // 使用DeviceTimeIndex，对每个设备的开始、结束时间进行判断
     if (!mayContainsDevice(deviceId)) {
       if (debug) {
         DEBUG_LOGGER.info(
@@ -682,6 +683,7 @@ public class TsFileResource {
       return false;
     }
 
+    // 当前TsFile中该设备deviceId的开始、结束时间
     long startTime = getStartTime(deviceId);
     long endTime = isClosed() || !isSeq ? getEndTime(deviceId) : Long.MAX_VALUE;
 
@@ -692,6 +694,7 @@ public class TsFileResource {
       return false;
     }
 
+    // 如果当前查询有时间过滤器的话，使用过滤器进行过滤
     if (timeFilter != null) {
       boolean res = timeFilter.satisfyStartEndTime(startTime, endTime);
       if (debug && !res) {

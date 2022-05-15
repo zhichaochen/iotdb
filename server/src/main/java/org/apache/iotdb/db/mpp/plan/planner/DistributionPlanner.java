@@ -76,7 +76,7 @@ public class DistributionPlanner {
   }
 
   public PlanNode rewriteSource() {
-    SourceRewriter rewriter = new SourceRewriter();
+      SourceRewriter rewriter = new SourceRewriter();
     return rewriter.visit(logicalPlan.getRootNode(), new DistributionPlanContext(context));
   }
 
@@ -91,16 +91,21 @@ public class DistributionPlanner {
   }
 
   public DistributedQueryPlan planFragments() {
+    // 重写数据源
     PlanNode rootAfterRewrite = rewriteSource();
+    // 添加ExchangeNode
     PlanNode rootWithExchange = addExchangeNode(rootAfterRewrite);
+    // 如果是查询语句，则构建列到TsBlock的映射
     if (analysis.getStatement() instanceof QueryStatement) {
       analysis
           .getRespDatasetHeader()
           .setColumnToTsBlockIndexMap(rootWithExchange.getOutputColumnNames());
     }
+    // 分段
     SubPlan subPlan = splitFragment(rootWithExchange);
     List<FragmentInstance> fragmentInstances = planFragmentInstances(subPlan);
     // Only execute this step for READ operation
+    // 如果是读请求，需要设置一个最终聚合的节点示例
     if (context.getQueryType() == QueryType.READ) {
       SetSinkForRootInstance(subPlan, fragmentInstances);
     }
@@ -122,6 +127,7 @@ public class DistributionPlanner {
   public void SetSinkForRootInstance(SubPlan subPlan, List<FragmentInstance> instances) {
     FragmentInstance rootInstance = null;
     for (FragmentInstance instance : instances) {
+      // 实例ID和根计划的ID相同
       if (instance.getFragment().getId().equals(subPlan.getPlanFragment().getId())) {
         rootInstance = instance;
         break;
@@ -132,18 +138,22 @@ public class DistributionPlanner {
       return;
     }
 
+    // 创建下沉节点
     FragmentSinkNode sinkNode = new FragmentSinkNode(context.getQueryId().genPlanNodeId());
+    // 设置下游
     sinkNode.setDownStream(
         context.getLocalDataBlockEndpoint(),
         context.getResultNodeContext().getVirtualFragmentInstanceId(),
         context.getResultNodeContext().getVirtualResultNodeId());
     sinkNode.setChild(rootInstance.getFragment().getRoot());
+    // 设置上游
     context
         .getResultNodeContext()
         .setUpStream(
             rootInstance.getHostDataNode().dataBlockManagerEndPoint,
             rootInstance.getId(),
             sinkNode.getPlanNodeId());
+    // 设置该sinkNode为根实例
     rootInstance.getFragment().setRoot(sinkNode);
   }
 
@@ -217,15 +227,20 @@ public class DistributionPlanner {
     // TODO: (xingtanzjr) a temporary way to resolve the distribution of single SeriesScanNode issue
     @Override
     public PlanNode visitSeriesScan(SeriesScanNode node, DistributionPlanContext context) {
+      // Region列表
       List<TRegionReplicaSet> dataDistribution =
           analysis.getPartitionInfo(node.getSeriesPath(), node.getTimeFilter());
+      // 如果Region的size等于1，则
       if (dataDistribution.size() == 1) {
         node.setRegionReplicaSet(dataDistribution.get(0));
         return node;
       }
+      // 创建TimeJoinNode节点
       TimeJoinNode timeJoinNode =
           new TimeJoinNode(context.queryContext.getQueryId().genPlanNodeId(), node.getScanOrder());
+      // 遍历多个数据分区
       for (TRegionReplicaSet dataRegion : dataDistribution) {
+        // 创建一个SeriesScanNode，并将其作为timeJoinNode的子节点
         SeriesScanNode split = (SeriesScanNode) node.clone();
         split.setPlanNodeId(context.queryContext.getQueryId().genPlanNodeId());
         split.setRegionReplicaSet(dataRegion);
@@ -269,23 +284,27 @@ public class DistributionPlanner {
 
       // Step 1: Get all source nodes. For the node which is not source, add it as the child of
       // current TimeJoinNode
+      // 步骤1：获取所有源节点。对于非源节点，将其添加为当前TimeJoinNode的子节点
       List<SeriesScanNode> sources = new ArrayList<>();
       for (PlanNode child : node.getChildren()) {
         if (child instanceof SeriesScanNode) {
           // If the child is SeriesScanNode, we need to check whether this node should be seperated
           // into several splits.
+          // 如果子节点是SeriesScanNode，我们需要检查这个节点是否应该分成几个部分。
           SeriesScanNode handle = (SeriesScanNode) child;
           List<TRegionReplicaSet> dataDistribution =
               analysis.getPartitionInfo(handle.getSeriesPath(), handle.getTimeFilter());
           // If the size of dataDistribution is m, this SeriesScanNode should be seperated into m
           // SeriesScanNode.
+          // 如果数据分布的大小为m，则该序列扫描节点应划分为m序列扫描节点。
           for (TRegionReplicaSet dataRegion : dataDistribution) {
             SeriesScanNode split = (SeriesScanNode) handle.clone();
             split.setPlanNodeId(context.queryContext.getQueryId().genPlanNodeId());
             split.setRegionReplicaSet(dataRegion);
             sources.add(split);
           }
-        } else if (child instanceof SeriesAggregationScanNode) {
+        }
+        else if (child instanceof SeriesAggregationScanNode) {
           // TODO: (xingtanzjr) We should do the same thing for SeriesAggregateScanNode. Consider to
           // make SeriesAggregateScanNode
           // and SeriesScanNode to derived from the same parent Class because they have similar
@@ -452,6 +471,8 @@ public class DistributionPlanner {
     @Override
     public PlanNode visitTimeJoin(TimeJoinNode node, NodeGroupContext context) {
       TimeJoinNode newNode = (TimeJoinNode) node.clone();
+      // 遍历当前节点的子节点SeriesScanNode
+      // 注意：在添加的时候，使用了visit()，可以看下visitSeriesScan()走做了什么操作即可。
       List<PlanNode> visitedChildren = new ArrayList<>();
       node.getChildren()
           .forEach(
@@ -459,7 +480,13 @@ public class DistributionPlanner {
                 visitedChildren.add(visit(child, context));
               });
 
+      // 通过TimeJoinNode的子计算分区
+      // 由之前的逻辑可知，TimeJoinNode的子节点便是SeriesScanNode，有多少个region就会有多少个SeriesScanNode
+      // TODO 父级的region
+      // 为啥要这样做呢？为啥它就是父级分区呢？
+      // 我理解是为了计算，在那个节点上做的操作最多，就把
       TRegionReplicaSet dataRegion = calculateDataRegionByChildren(visitedChildren, context);
+      // 判断所有子节点是否都分布在相同的节点上
       NodeDistributionType distributionType =
           nodeDistributionIsSame(visitedChildren, context)
               ? NodeDistributionType.SAME_WITH_ALL_CHILDREN
@@ -468,6 +495,7 @@ public class DistributionPlanner {
           newNode.getPlanNodeId(), new NodeDistribution(distributionType, dataRegion));
 
       // If the distributionType of all the children are same, no ExchangeNode need to be added.
+      // 如果都分布在相同的节点上了，那么不需要远程交互
       if (distributionType == NodeDistributionType.SAME_WITH_ALL_CHILDREN) {
         newNode.setChildren(visitedChildren);
         return newNode;
@@ -475,8 +503,11 @@ public class DistributionPlanner {
 
       // Otherwise, we need to add ExchangeNode for the child whose DataRegion is different from the
       // parent.
+      // 否则，我们需要为DataRegion不同于父级的子级添加ExchangeNode。
+      //
       visitedChildren.forEach(
           child -> {
+            // 父region地址不同子region，则添加一个ExchangeNode节点，否则，无需添加ExchangeNode
             if (!dataRegion.equals(context.getNodeDistribution(child.getPlanNodeId()).region)) {
               ExchangeNode exchangeNode =
                   new ExchangeNode(context.queryContext.getQueryId().genPlanNodeId());
@@ -573,7 +604,9 @@ public class DistributionPlanner {
     }
 
     public SubPlan splitToSubPlan(PlanNode root) {
+      // 创建一个子计划
       SubPlan rootSubPlan = createSubPlan(root);
+      // 切分子计划
       splitToSubPlan(root, rootSubPlan);
       return rootSubPlan;
     }
@@ -583,6 +616,11 @@ public class DistributionPlanner {
       if (root instanceof WritePlanNode) {
         return;
       }
+      // TODO root是最终的聚合节点，scan是最底层的节点
+      // 举例表示下面逻辑
+      // 上游节点：扫描源数据是上游节点，查出来数据之后需要向下游传递处理
+      // 中间节点：ExchangeNode是中间节点，用于上下游通信，记录了上游节点地址，同时也记录了下游节点信息
+      // 下游节点：
       if (root instanceof ExchangeNode) {
         // We add a FragmentSinkNode for newly created PlanFragment
         ExchangeNode exchangeNode = (ExchangeNode) root;
@@ -592,14 +630,18 @@ public class DistributionPlanner {
 
         // Record the source node info in the ExchangeNode so that we can keep the connection of
         // these nodes/fragments
+        // 在ExchangeNode中记录源节点信息，以便我们可以保持这些节点/片段的连接
         exchangeNode.setRemoteSourceNode(sinkNode);
         // We cut off the subtree to make the ExchangeNode as the leaf node of current PlanFragment
+        // 我们切断子树，使ExchangeNode成为当前PlanFragment的叶节点
         exchangeNode.cleanChildren();
 
         // Build the child SubPlan Tree
+        // 递归切分子树
         SubPlan childSubPlan = createSubPlan(sinkNode);
         splitToSubPlan(sinkNode, childSubPlan);
 
+        // 设置段的子段
         subPlan.addChild(childSubPlan);
         return;
       }

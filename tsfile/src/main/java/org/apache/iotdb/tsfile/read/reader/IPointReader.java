@@ -22,6 +22,10 @@ import org.apache.iotdb.tsfile.read.TimeValuePair;
 
 import java.io.IOException;
 
+/**
+ * 数据点读取器
+ * 用来读取时间、值的key value数据
+ */
 public interface IPointReader {
 
   boolean hasNextTimeValuePair() throws IOException;

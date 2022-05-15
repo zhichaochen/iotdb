@@ -176,12 +176,15 @@ public class LogicalPlanner {
 
       // plan data source node
       if (isRawDataSource) {
+        // 计划数据源节点
         planBuilder =
             planBuilder.planRawDataSource(
                 sourceExpressions, queryStatement.getResultOrder(), analysis.getGlobalTimeFilter());
 
+        // 如果有聚合查询
         if (queryStatement.isAggregationQuery()) {
           if (analysis.hasValueFilter()) {
+            // 生成FilterNode
             planBuilder =
                 planBuilder.planFilterAndTransform(
                     queryFilter,
@@ -192,11 +195,14 @@ public class LogicalPlanner {
                     queryStatement.getSelectComponent().getZoneId());
           }
 
+          // 是否是部分输出
           boolean outputPartial =
               queryStatement.isGroupByLevel()
                   || (queryStatement.isGroupByTime()
                       && analysis.getGroupByTimeParameter().hasOverlap());
+          // 是部分聚合还是最终聚合
           AggregationStep curStep = outputPartial ? AggregationStep.PARTIAL : AggregationStep.FINAL;
+          // 生成聚合节点AggregationNode
           planBuilder =
               planBuilder.planAggregation(
                   aggregationExpressions,
@@ -204,24 +210,30 @@ public class LogicalPlanner {
                   curStep,
                   analysis.getTypeProvider());
 
+          // 如果是部分输出
           if (curStep.isOutputPartial()) {
+            // 是否通过时间进行分组
             if (queryStatement.isGroupByTime() && analysis.getGroupByTimeParameter().hasOverlap()) {
               curStep =
                   queryStatement.isGroupByLevel()
                       ? AggregationStep.INTERMEDIATE
                       : AggregationStep.FINAL;
+              // 创建GroupByTimeNode
               planBuilder =
                   planBuilder.planGroupByTime(
                       aggregationExpressions, analysis.getGroupByTimeParameter(), curStep);
             }
 
+            // 如果包含group by level语句，生成GroupByLevelNode
             if (queryStatement.isGroupByLevel()) {
               curStep = AggregationStep.FINAL;
               planBuilder =
                   planBuilder.planGroupByLevel(analysis.getGroupByLevelExpressions(), curStep);
             }
           }
-        } else {
+        }
+        // 如果不是部分输出outputPartial = false
+        else {
           if (analysis.hasValueFilter()) {
             planBuilder =
                 planBuilder.planFilterAndTransform(

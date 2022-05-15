@@ -28,6 +28,9 @@ import org.apache.iotdb.tsfile.read.common.BatchData;
 import java.io.IOException;
 import java.util.NoSuchElementException;
 
+/**
+ *
+ */
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class ManagedPriorityMergeReader extends PriorityMergeReader implements ManagedSeriesReader {
 

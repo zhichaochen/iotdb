@@ -28,6 +28,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.PriorityQueue;
 
+/**
+ * 具有优先级的读取器
+ * 优先级：优先什么呢？指的是：PriorityQueue
+ * merge：merge什么呢？
+ */
 /** This class implements {@link IPointReader} for data sources with different priorities. */
 @SuppressWarnings("ConstantConditions") // heap is ensured by hasNext non-empty
 public class PriorityMergeReader implements IPointReader {

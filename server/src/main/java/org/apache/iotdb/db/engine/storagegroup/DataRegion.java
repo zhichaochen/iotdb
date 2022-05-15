@@ -2035,7 +2035,7 @@ public class DataRegion {
     // 对于升级文件和旧文件，必须关闭
     // 遍历升级的TsFileResources
     for (TsFileResource tsFileResource : upgradeTsFileResources) {
-      // 如果不满足则继续
+      // 使用时间过滤器进行过滤
       if (!tsFileResource.isSatisfied(
           singleDeviceId, timeFilter, isSeq, dataTTL, context.isDebug())) {
         continue;

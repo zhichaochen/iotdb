@@ -28,6 +28,7 @@ import java.util.List;
 
 /**
  * 查询数据源
+ * TODO 表示一次查询中所有需要查询的TsFile文件，在存储引擎中便是：TsFileResource
  * QueryDataSource在一个查询中包含一个时间序列的所有有序和无序的TsFileResources
  * The QueryDataSource contains all the seq and unseq TsFileResources for one timeseries in one
  * query

@@ -34,8 +34,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+/**
+ * 内存表中的一个chunk group
+ */
 public class WritableMemChunkGroup implements IWritableMemChunkGroup {
 
+  // 一个chunk group中恩多个chunk，也就是设备中的多个物理量
+  // key：物理量，value：物理量对应的chunk
   private Map<String, IWritableMemChunk> memChunkMap;
 
   public WritableMemChunkGroup() {

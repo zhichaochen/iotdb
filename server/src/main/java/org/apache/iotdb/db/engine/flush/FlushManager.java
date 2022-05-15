@@ -48,6 +48,7 @@ public class FlushManager implements FlushManagerMBean, IService {
   private static final Logger LOGGER = LoggerFactory.getLogger(FlushManager.class);
   private final IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
 
+  // TsFile处理器队列
   private ConcurrentLinkedDeque<TsFileProcessor> tsFileProcessorQueue =
       new ConcurrentLinkedDeque<>();
 

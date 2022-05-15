@@ -40,7 +40,7 @@ import java.util.Set;
 public class TsFileMetadata {
 
   // bloom filter
-  private BloomFilter bloomFilter; // 布隆过滤器，是用来过滤【device】的
+  private BloomFilter bloomFilter; // 布隆过滤器，是用来过滤【物理量】的
 
   // List of <name, offset, childMetadataIndexType>
   private MetadataIndexNode metadataIndex; // 元数据索引节点

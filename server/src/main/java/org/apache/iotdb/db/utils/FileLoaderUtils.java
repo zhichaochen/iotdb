@@ -47,6 +47,10 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
+/**
+ * TsFile文件加载的工具类
+ * 该类在server模块下，围绕的是TsFileResource对象读取TsFile
+ */
 public class FileLoaderUtils {
 
   private FileLoaderUtils() {}
@@ -82,6 +86,7 @@ public class FileLoaderUtils {
   }
 
   /**
+   * 加载时间序列元数据
    * @param resource TsFile
    * @param seriesPath Timeseries path
    * @param allSensors measurements queried at the same time of this device
@@ -99,9 +104,13 @@ public class FileLoaderUtils {
     // common path
     TimeseriesMetadata timeSeriesMetadata;
     // If the tsfile is closed, we need to load from tsfile
+    // 如果tsFile已经关闭，我们需要加载TsFile
     if (resource.isClosed()) {
       // when resource.getTimeIndexType() == 1, TsFileResource.timeIndexType is deviceTimeIndex
       // we should not ignore the non-exist of device in TsFileMetadata
+      // 当资源。getTimeIndexType（）==1，TsFileResource。timeIndexType是deviceTimeIndex
+      // 我们不应该忽视TsFileMetadata中设备的不存在
+      // TODO 获取当前文件的TsFile的时间序列索引
       timeSeriesMetadata =
           TimeSeriesMetadataCache.getInstance()
               .get(
@@ -117,6 +126,7 @@ public class FileLoaderUtils {
             new DiskChunkMetadataLoader(resource, seriesPath, context, filter));
       }
     } else { // if the tsfile is unclosed, we just get it directly from TsFileResource
+      // 如果tsfile未关闭，我们只需直接从TsFileResource获取它
       timeSeriesMetadata = (TimeseriesMetadata) resource.getTimeSeriesMetadata(seriesPath);
       if (timeSeriesMetadata != null) {
         timeSeriesMetadata.setChunkMetadataLoader(
@@ -132,6 +142,7 @@ public class FileLoaderUtils {
           > timeSeriesMetadata.getStatistics().getEndTime()) {
         return null;
       }
+      // 判断开始、结束时间是否满足
       if (filter != null
           && !filter.satisfyStartEndTime(
               timeSeriesMetadata.getStatistics().getStartTime(),
@@ -249,6 +260,7 @@ public class FileLoaderUtils {
   }
 
   /**
+   * 将所有page读取器加载到一个块中，以满足时间过滤器的要求
    * load all page readers in one chunk that satisfying the timeFilter
    *
    * @param chunkMetaData the corresponding chunk metadata

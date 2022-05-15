@@ -388,6 +388,7 @@ public class ClusterReaderFactory {
         path,
         partitionGroups.size());
     PriorityMergeReader mergeReader;
+    // 根据正序还是倒序生成不同的读取器
     if (ascending) {
       mergeReader = new ManagedPriorityMergeReader(dataType);
     } else {
@@ -395,6 +396,7 @@ public class ClusterReaderFactory {
     }
     try {
       // build a reader for each group and merge them
+      // 为每个组构建一个读取器并合并它们
       for (PartitionGroup partitionGroup : partitionGroups) {
         IPointReader seriesReader =
             getSeriesReader(
@@ -436,6 +438,7 @@ public class ClusterReaderFactory {
       boolean ascending,
       Set<Integer> requiredSlots)
       throws IOException, StorageEngineException, QueryProcessException {
+    //
     if (partitionGroup.contains(metaGroupMember.getThisNode())) {
       // the target storage group contains this node, perform a local query
       DataGroupMember dataGroupMember =
@@ -465,7 +468,9 @@ public class ClusterReaderFactory {
             !seriesPointReader.hasNextTimeValuePair());
       }
       return seriesPointReader;
-    } else {
+    }
+    //
+    else {
       return getRemoteSeriesPointReader(
           timeFilter,
           valueFilter,
@@ -622,6 +627,10 @@ public class ClusterReaderFactory {
   }
 
   /**
+   * 查询“partitionGroup”中的远程节点，以获取带有“timeFilter”和“valueFilter”的“path”读取器。
+   * 首先，将向该节点发送一个请求，在那里构造一个读卡器，
+   * 然后返回读卡器的id，以便我们可以使用读卡器id从该节点获取数据。
+   *
    * Query a remote node in "partitionGroup" to get the reader of "path" with "timeFilter" and
    * "valueFilter". Firstly, a request will be sent to that node to construct a reader there, then
    * the id of the reader will be returned so that we can fetch data from that node using the reader

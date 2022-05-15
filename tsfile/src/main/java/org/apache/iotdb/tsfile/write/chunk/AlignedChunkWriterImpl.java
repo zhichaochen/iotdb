@@ -39,8 +39,11 @@ import java.util.List;
  */
 public class AlignedChunkWriterImpl implements IChunkWriter {
 
+  // 时间戳数据块写入器
   private final TimeChunkWriter timeChunkWriter;
+  // 值数据块写入器
   private final List<ValueChunkWriter> valueChunkWriterList;
+  // 值索引
   private int valueIndex;
 
   /** @param schema schema of this measurement */
@@ -75,6 +78,7 @@ public class AlignedChunkWriterImpl implements IChunkWriter {
     TSEncoding timeEncoding =
         TSEncoding.valueOf(TSFileDescriptor.getInstance().getConfig().getTimeEncoder());
     TSDataType timeType = TSFileDescriptor.getInstance().getConfig().getTimeSeriesDataType();
+    // 创建时间戳数据块写入器
     timeChunkWriter =
         new TimeChunkWriter(
             "",
@@ -82,6 +86,7 @@ public class AlignedChunkWriterImpl implements IChunkWriter {
             timeEncoding,
             TSEncodingBuilder.getEncodingBuilder(timeEncoding).getEncoder(timeType));
 
+    // 创建值数据块写入器
     valueChunkWriterList = new ArrayList<>(schemaList.size());
     for (int i = 0; i < schemaList.size(); i++) {
       valueChunkWriterList.add(

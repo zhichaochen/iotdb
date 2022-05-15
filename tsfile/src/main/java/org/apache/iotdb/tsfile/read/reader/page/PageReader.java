@@ -41,6 +41,9 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Page读取器
+ */
 public class PageReader implements IPageReader {
 
   private PageHeader pageHeader;

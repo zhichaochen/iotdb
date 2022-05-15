@@ -75,6 +75,7 @@ public class RawDataQueryExecutor {
 
   /**
    * 没有过滤器或者有一个全局时间过滤器
+   * 也就是只有全局时间的过滤器
    * without filter or with global time filter. */
   public QueryDataSet executeWithoutValueFilter(QueryContext context)
       throws StorageEngineException, QueryProcessException {
@@ -82,6 +83,7 @@ public class RawDataQueryExecutor {
     if (dataSet != null) {
       return dataSet;
     }
+    // 初始化时间序列读取器
     List<ManagedSeriesReader> readersOfSelectedSeries = initManagedSeriesReader(context);
 
     try {
@@ -127,7 +129,7 @@ public class RawDataQueryExecutor {
 
     try {
       // init QueryDataSource cache
-      // 初始化QueryDataSource缓存
+      // 初始化QueryDataSource缓存，初始化需要查询哪些TsFile
       QueryResourceManager.getInstance()
           .initQueryDataSourceCache(processorToSeriesMap, context, timeFilter);
     } catch (Exception e) {
@@ -138,6 +140,7 @@ public class RawDataQueryExecutor {
     }
 
     try {
+      // 对路径进行去重
       List<PartialPath> paths = queryPlan.getDeduplicatedPaths();
       for (PartialPath path : paths) {
         TSDataType dataType = path.getSeriesType();
@@ -169,6 +172,7 @@ public class RawDataQueryExecutor {
   }
 
   /**
+   * 执行值过滤（也可能包含时间）
    * executeWithValueFilter query.
    *
    * @return QueryDataSet object
@@ -187,6 +191,7 @@ public class RawDataQueryExecutor {
             .map(p -> ((MeasurementPath) p).transformToExactPath())
             .collect(Collectors.toList()));
 
+    // 获取时间生成器
     TimeGenerator timestampGenerator = getTimeGenerator(context, queryPlan);
     List<Boolean> cached =
         markFilterdPaths(

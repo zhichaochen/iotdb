@@ -111,7 +111,8 @@ public abstract class PhysicalPlan implements IConsensusRequest {
   private String loginUserName;
 
   // a bridge from a cluster raft log to a physical plan
-  protected long index; // 索引，集群raft log到一个物理计划的桥梁
+  // raft 共识组中的自增ID
+  protected long index;
 
   private boolean debug;
 

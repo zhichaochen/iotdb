@@ -69,6 +69,7 @@ public class QueryContext {
 
   private long timeout;
 
+  // 查询是否被打断
   private volatile boolean isInterrupted = false;
 
   public QueryContext() {}

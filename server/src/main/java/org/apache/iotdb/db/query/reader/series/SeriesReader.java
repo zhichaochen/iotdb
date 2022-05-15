@@ -493,6 +493,7 @@ public class SeriesReader {
   @SuppressWarnings("squid:S3776")
   // Suppress high Cognitive Complexity warning
   boolean hasNextPage() throws IOException {
+    // 检查query是否已经被打断
     if (!QueryTimeManager.checkQueryAlive(context.getQueryId())) {
       return false;
     }
@@ -567,6 +568,11 @@ public class SeriesReader {
     return false;
   }
 
+  /**
+   *
+   * @return
+   * @throws IOException
+   */
   private boolean firstPageOverlapped() throws IOException {
     if (firstPageReader == null) {
       return false;

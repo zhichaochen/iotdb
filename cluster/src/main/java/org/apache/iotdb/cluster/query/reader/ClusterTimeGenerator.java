@@ -74,6 +74,7 @@ public class ClusterTimeGenerator extends ServerTimeGenerator {
         whetherHasLocalDataGroup(
             queryPlan.getExpression(), metaGroupMember, queryPlan.isAscending());
       } else {
+        // 构造节点
         constructNode(queryPlan.getExpression());
       }
     } catch (IOException | CheckConsistencyException e) {
@@ -105,6 +106,12 @@ public class ClusterTimeGenerator extends ServerTimeGenerator {
     }
   }
 
+  /**
+   * 核心这样
+   * @param expression
+   * @return
+   * @throws IOException
+   */
   @Override
   protected IBatchReader generateNewBatchReader(SingleSeriesExpression expression)
       throws IOException {

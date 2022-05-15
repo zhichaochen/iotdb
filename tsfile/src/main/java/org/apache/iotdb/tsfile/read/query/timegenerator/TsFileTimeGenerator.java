@@ -31,7 +31,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * TsFile的时间生成器
+ * TsFile的时间生成器（适用于直接查询某个TsFile文件）
  */
 public class TsFileTimeGenerator extends TimeGenerator {
 
